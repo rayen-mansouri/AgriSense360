@@ -1,0 +1,172 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}User Management{% endblock %}
+{% block eyebrow %}User Management{% endblock %}
+{% block heading %}Users, access, and roles{% endblock %}
+{% block subhead %}CRUD UI for User and Role. Actions are visual only.{% endblock %}
+
+{% block body %}
+<section class="crud-section">
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>User</h2>
+                <p>Manage accounts, email, and status.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add user</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search users">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nom</th>
+                            <th>Prenom</th>
+                            <th>Email</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#US-01</td>
+                            <td>Hamdi</td>
+                            <td>Leila</td>
+                            <td>leila@farm.tn</td>
+                            <td><span class="status ok">Active</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#US-07</td>
+                            <td>Gharbi</td>
+                            <td>Youssef</td>
+                            <td>youssef@farm.tn</td>
+                            <td><span class="status warn">Pending</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit user</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" placeholder="Last name">
+                        </label>
+                        <label class="field">
+                            <span>Prenom</span>
+                            <input class="input" type="text" placeholder="First name">
+                        </label>
+                        <label class="field">
+                            <span>Email</span>
+                            <input class="input" type="email" placeholder="email@domain.tn">
+                        </label>
+                        <label class="field">
+                            <span>Mot de passe</span>
+                            <input class="input" type="password" placeholder="********">
+                        </label>
+                        <label class="field">
+                            <span>Statut</span>
+                            <select class="input">
+                                <option>Active</option>
+                                <option>Pending</option>
+                                <option>Suspended</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Role</h2>
+                <p>Define permissions and descriptions.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add role</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search roles">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nom</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#RL-01</td>
+                            <td>Admin</td>
+                            <td>Full access to management</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#RL-03</td>
+                            <td>Supervisor</td>
+                            <td>Read/write for operational teams</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit role</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" placeholder="Role name">
+                        </label>
+                        <label class="field">
+                            <span>Description</span>
+                            <input class="input" type="text" placeholder="Role description">
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

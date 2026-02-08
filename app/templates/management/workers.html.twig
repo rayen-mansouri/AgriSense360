@@ -1,0 +1,263 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}Workers Management{% endblock %}
+{% block eyebrow %}Workers Management{% endblock %}
+{% block heading %}Workers, assignments, and payments{% endblock %}
+{% block subhead %}CRUD UI for Ouvrier, Affectation, and Paiement. Actions are visual only.{% endblock %}
+
+{% block body %}
+<section class="crud-section">
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Ouvrier</h2>
+                <p>Track workforce roles and availability.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add ouvrier</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search ouvriers">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nom</th>
+                            <th>Prenom</th>
+                            <th>Poste</th>
+                            <th>Salaire</th>
+                            <th>Disponibilite</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#OW-12</td>
+                            <td>Ben Ali</td>
+                            <td>Rim</td>
+                            <td>Field lead</td>
+                            <td>1200</td>
+                            <td><span class="status ok">Available</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#OW-18</td>
+                            <td>Jradi</td>
+                            <td>Omar</td>
+                            <td>Irrigation</td>
+                            <td>900</td>
+                            <td><span class="status warn">Busy</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit ouvrier</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" placeholder="Last name">
+                        </label>
+                        <label class="field">
+                            <span>Prenom</span>
+                            <input class="input" type="text" placeholder="First name">
+                        </label>
+                        <label class="field">
+                            <span>Poste</span>
+                            <input class="input" type="text" placeholder="Role">
+                        </label>
+                        <label class="field">
+                            <span>Salaire</span>
+                            <input class="input" type="number" placeholder="0">
+                        </label>
+                        <label class="field">
+                            <span>Disponibilite</span>
+                            <select class="input">
+                                <option>Available</option>
+                                <option>Busy</option>
+                                <option>On leave</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Affectation</h2>
+                <p>Assign tasks with start and end dates.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add affectation</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search affectations">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Tache</th>
+                            <th>DateDebut</th>
+                            <th>DateFin</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#AF-07</td>
+                            <td>Soil prep</td>
+                            <td>2026-02-01</td>
+                            <td>2026-02-08</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#AF-09</td>
+                            <td>Harvest crew</td>
+                            <td>2026-03-12</td>
+                            <td>2026-03-18</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit affectation</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Tache</span>
+                            <input class="input" type="text" placeholder="Task name">
+                        </label>
+                        <label class="field">
+                            <span>Date debut</span>
+                            <input class="input" type="date">
+                        </label>
+                        <label class="field">
+                            <span>Date fin</span>
+                            <input class="input" type="date">
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Paiement</h2>
+                <p>Payment history and status tracking.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add paiement</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search paiements">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Montant</th>
+                            <th>DatePaiement</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#PM-04</td>
+                            <td>420</td>
+                            <td>2026-01-28</td>
+                            <td><span class="status ok">Paid</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#PM-11</td>
+                            <td>380</td>
+                            <td>2026-02-05</td>
+                            <td><span class="status warn">Pending</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit paiement</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Montant</span>
+                            <input class="input" type="number" placeholder="0">
+                        </label>
+                        <label class="field">
+                            <span>Date paiement</span>
+                            <input class="input" type="date">
+                        </label>
+                        <label class="field">
+                            <span>Statut</span>
+                            <select class="input">
+                                <option>Paid</option>
+                                <option>Pending</option>
+                                <option>Failed</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

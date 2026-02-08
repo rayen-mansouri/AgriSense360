@@ -1,0 +1,36 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}Animals Management{% endblock %}
+{% block eyebrow %}Animals Management{% endblock %}
+{% block heading %}Animals management UI placeholder{% endblock %}
+{% block subhead %}No animal tables were provided in the schema images. This is a UI-only placeholder.{% endblock %}
+
+{% block body %}
+<section class="crud-section">
+    <div class="crud-card empty-state">
+        <div class="crud-head">
+            <div>
+                <h2>Animals</h2>
+                <p>Add tables to enable CRUD UI for livestock, health, and productivity.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button" disabled>New animal</button>
+            </div>
+        </div>
+        <div class="empty-body">
+            <div class="empty-illustration" aria-hidden="true">
+                <span></span>
+            </div>
+            <div>
+                <h3>No tables configured</h3>
+                <p>Add an animal-related table (ex: Animal, Sante, Vaccination) to generate a full CRUD UI.</p>
+                <div class="empty-actions">
+                    <button class="primary" type="button">Create first table</button>
+                    <button class="ghost" type="button">Request schema update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

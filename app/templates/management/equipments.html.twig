@@ -1,0 +1,175 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}Equipments Management{% endblock %}
+{% block eyebrow %}Equipments Management{% endblock %}
+{% block heading %}Equipment fleet and maintenance{% endblock %}
+{% block subhead %}CRUD UI for Equipement and Maintenance. Actions are visual only.{% endblock %}
+
+{% block body %}
+<section class="crud-section">
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Equipement</h2>
+                <p>Inventory and lifecycle tracking for machines.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add equipement</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search equipements">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Etat</th>
+                            <th>DateAchat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#EQ-41</td>
+                            <td>Harvester X</td>
+                            <td>Harvest</td>
+                            <td><span class="status ok">Ready</span></td>
+                            <td>2024-03-14</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#EQ-58</td>
+                            <td>Sprayer 400</td>
+                            <td>Spray</td>
+                            <td><span class="status warn">Service</span></td>
+                            <td>2023-09-02</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit equipement</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" placeholder="Equipment name">
+                        </label>
+                        <label class="field">
+                            <span>Type</span>
+                            <input class="input" type="text" placeholder="Harvest, spray">
+                        </label>
+                        <label class="field">
+                            <span>Etat</span>
+                            <select class="input">
+                                <option>Ready</option>
+                                <option>Service</option>
+                                <option>Offline</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Date achat</span>
+                            <input class="input" type="date">
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Maintenance</h2>
+                <p>Service history and maintenance costs.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add maintenance</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search maintenance">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>DateMaintenance</th>
+                            <th>TypeMaintenance</th>
+                            <th>Cout</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#MT-07</td>
+                            <td>2025-02-10</td>
+                            <td>Inspection</td>
+                            <td>180</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#MT-12</td>
+                            <td>2025-05-21</td>
+                            <td>Oil change</td>
+                            <td>95</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit maintenance</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Date maintenance</span>
+                            <input class="input" type="date">
+                        </label>
+                        <label class="field">
+                            <span>Type maintenance</span>
+                            <input class="input" type="text" placeholder="Inspection, repair">
+                        </label>
+                        <label class="field">
+                            <span>Cout</span>
+                            <input class="input" type="number" placeholder="0">
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

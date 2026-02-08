@@ -1,0 +1,284 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}Culture Management{% endblock %}
+{% block eyebrow %}Culture Management{% endblock %}
+{% block heading %}Crops, parcels, and treatments{% endblock %}
+{% block subhead %}CRUD UI for Parcelle, Culture, and Traitement. Actions are visual only.{% endblock %}
+
+{% block body %}
+<section class="crud-section">
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Parcelle</h2>
+                <p>Register parcels, soil type, and status.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add parcelle</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search parcelles">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Localisation</th>
+                            <th>Surface</th>
+                            <th>TypeSol</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#PA-01</td>
+                            <td>East Field</td>
+                            <td>12.4 ha</td>
+                            <td>Loam</td>
+                            <td><span class="status ok">Active</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#PA-07</td>
+                            <td>South Ridge</td>
+                            <td>8.1 ha</td>
+                            <td>Clay</td>
+                            <td><span class="status warn">Resting</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit parcelle</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Localisation</span>
+                            <input class="input" type="text" placeholder="Area or zone">
+                        </label>
+                        <label class="field">
+                            <span>Surface</span>
+                            <input class="input" type="text" placeholder="ha">
+                        </label>
+                        <label class="field">
+                            <span>Type sol</span>
+                            <input class="input" type="text" placeholder="Loam, clay">
+                        </label>
+                        <label class="field">
+                            <span>Statut</span>
+                            <select class="input">
+                                <option>Active</option>
+                                <option>Resting</option>
+                                <option>Planned</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Culture</h2>
+                <p>Plan plantings, harvest dates, and surface area.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add culture</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search cultures">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>DatePlantation</th>
+                            <th>DateRecoltePrevue</th>
+                            <th>Superficie</th>
+                            <th>Etat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#CU-16</td>
+                            <td>Wheat</td>
+                            <td>Cereal</td>
+                            <td>2025-10-01</td>
+                            <td>2026-05-20</td>
+                            <td>6.5 ha</td>
+                            <td><span class="status ok">On track</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#CU-19</td>
+                            <td>Sunflower</td>
+                            <td>Oilseed</td>
+                            <td>2025-04-15</td>
+                            <td>2025-09-10</td>
+                            <td>4.2 ha</td>
+                            <td><span class="status warn">At risk</span></td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit culture</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" placeholder="Crop name">
+                        </label>
+                        <label class="field">
+                            <span>Type</span>
+                            <input class="input" type="text" placeholder="Cereal, oilseed">
+                        </label>
+                        <label class="field">
+                            <span>Date plantation</span>
+                            <input class="input" type="date">
+                        </label>
+                        <label class="field">
+                            <span>Date recolte prevue</span>
+                            <input class="input" type="date">
+                        </label>
+                        <label class="field">
+                            <span>Superficie</span>
+                            <input class="input" type="text" placeholder="ha">
+                        </label>
+                        <label class="field">
+                            <span>Etat</span>
+                            <select class="input">
+                                <option>On track</option>
+                                <option>At risk</option>
+                                <option>Harvested</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Traitement</h2>
+                <p>Track recommended doses and frequency.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button">Add traitement</button>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" type="search" placeholder="Search traitements">
+                    <span class="pill">2 records</span>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>DoseRecommandee</th>
+                            <th>Frequence</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#TR-03</td>
+                            <td>Fungicide A</td>
+                            <td>Protection</td>
+                            <td>2.5 L/ha</td>
+                            <td>Every 14 days</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>#TR-09</td>
+                            <td>Foliar Feed</td>
+                            <td>Nutrition</td>
+                            <td>1.2 L/ha</td>
+                            <td>Every 21 days</td>
+                            <td>
+                                <button class="link" type="button">Edit</button>
+                                <button class="link danger" type="button">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Create / Edit traitement</h3>
+                <form>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" placeholder="Treatment name">
+                        </label>
+                        <label class="field">
+                            <span>Type</span>
+                            <input class="input" type="text" placeholder="Protection, nutrition">
+                        </label>
+                        <label class="field">
+                            <span>Dose recommandee</span>
+                            <input class="input" type="text" placeholder="L/ha">
+                        </label>
+                        <label class="field">
+                            <span>Frequence</span>
+                            <input class="input" type="text" placeholder="Every 14 days">
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="button">Save</button>
+                        <button class="ghost" type="button">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
