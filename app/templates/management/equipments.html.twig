@@ -2,27 +2,31 @@
 
 {% block title %}Equipments Management{% endblock %}
 {% block eyebrow %}Equipments Management{% endblock %}
-{% block heading %}Equipment fleet and maintenance{% endblock %}
-{% block subhead %}CRUD UI for Equipement and Maintenance. Actions are visual only.{% endblock %}
+{% block heading %}Equipment management{% endblock %}
+{% block subhead %}{% endblock %}
 
 {% block body %}
+{% set isEditing = editing ?? false %}
+{% set formAction = isEditing ? path('management_equipments_edit', { id: equipment.id }) : path('management_equipments') %}
+{% set isMaintenanceEditing = maintenanceEditing ?? false %}
+{% set maintenanceAction = isMaintenanceEditing ? path('management_maintenance_edit', { id: maintenance.id }) : path('management_equipments') %}
 <section class="crud-section">
     <div class="crud-card">
         <div class="crud-head">
             <div>
                 <h2>Equipement</h2>
-                <p>Inventory and lifecycle tracking for machines.</p>
+                <p>Manage equipment inventory and status.</p>
             </div>
             <div class="crud-actions">
                 <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add equipement</button>
+                <button class="primary" type="button" onclick="location.href='#equipment-form'">Add equipement</button>
             </div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
                     <input class="input" type="search" placeholder="Search equipements">
-                    <span class="pill">2 records</span>
+                    <span class="pill">{{ equipments|length }} records</span>
                 </div>
                 <table class="data-table">
                     <thead>
@@ -36,59 +40,66 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>#EQ-41</td>
-                            <td>Harvester X</td>
-                            <td>Harvest</td>
-                            <td><span class="status ok">Ready</span></td>
-                            <td>2024-03-14</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#EQ-58</td>
-                            <td>Sprayer 400</td>
-                            <td>Spray</td>
-                            <td><span class="status warn">Service</span></td>
-                            <td>2023-09-02</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                        {% for row in equipments %}
+                            <tr>
+                                <td>#EQ-{{ '%02d'|format(row.id) }}</td>
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.type }}</td>
+                                <td>
+                                    {% if row.status == 'Ready' %}
+                                        <span class="status ok">Ready</span>
+                                    {% elseif row.status == 'Service' %}
+                                        <span class="status warn">Service</span>
+                                    {% else %}
+                                        <span class="status danger">{{ row.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ row.purchaseDate ? row.purchaseDate|date('Y-m-d') : '' }}</td>
+                                <td>
+                                    <button class="link" type="button" onclick="location.href='{{ path('management_equipments_edit', { id: row.id }) }}'">Edit</button>
+                                    <form action="{{ path('management_equipments_delete', { id: row.id }) }}" method="post" style="display:inline">
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6">No equipment found yet.</td>
+                            </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="crud-form">
+            <div class="crud-form" id="equipment-form">
                 <h3>Create / Edit equipement</h3>
-                <form>
+                <form method="post" action="{{ formAction }}">
+                    <input type="hidden" name="form_type" value="equipment">
                     <div class="form-grid">
                         <label class="field">
                             <span>Nom</span>
-                            <input class="input" type="text" placeholder="Equipment name">
+                            <input class="input" type="text" name="name" placeholder="Equipment name" value="{{ equipment.name ?? '' }}" required>
                         </label>
                         <label class="field">
                             <span>Type</span>
-                            <input class="input" type="text" placeholder="Harvest, spray">
+                            <input class="input" type="text" name="type" placeholder="Harvest, spray" value="{{ equipment.type ?? '' }}" required>
                         </label>
                         <label class="field">
                             <span>Etat</span>
-                            <select class="input">
-                                <option>Ready</option>
-                                <option>Service</option>
-                                <option>Offline</option>
+                            <select class="input" name="status" required>
+                                {% set currentStatus = equipment.status ?? 'Ready' %}
+                                <option value="Ready" {% if currentStatus == 'Ready' %}selected{% endif %}>Ready</option>
+                                <option value="Service" {% if currentStatus == 'Service' %}selected{% endif %}>Service</option>
+                                <option value="Offline" {% if currentStatus == 'Offline' %}selected{% endif %}>Offline</option>
                             </select>
                         </label>
                         <label class="field">
                             <span>Date achat</span>
-                            <input class="input" type="date">
+                            <input class="input" type="date" name="purchase_date" value="{{ equipment.purchaseDate ? equipment.purchaseDate|date('Y-m-d') : '' }}">
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">{{ isEditing ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path('management_equipments') }}">Reset</a>
                     </div>
                 </form>
             </div>
@@ -103,14 +114,14 @@
             </div>
             <div class="crud-actions">
                 <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add maintenance</button>
+                <button class="primary" type="button" onclick="location.href='#maintenance-form'">Add maintenance</button>
             </div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
                     <input class="input" type="search" placeholder="Search maintenance">
-                    <span class="pill">2 records</span>
+                    <span class="pill">{{ maintenances|length }} records</span>
                 </div>
                 <table class="data-table">
                     <thead>
@@ -123,49 +134,61 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>#MT-07</td>
-                            <td>2025-02-10</td>
-                            <td>Inspection</td>
-                            <td>180</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#MT-12</td>
-                            <td>2025-05-21</td>
-                            <td>Oil change</td>
-                            <td>95</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                        {% for row in maintenances %}
+                            <tr>
+                                <td>#MT-{{ '%02d'|format(row.id) }}</td>
+                                <td>{{ row.maintenanceDate ? row.maintenanceDate|date('Y-m-d') : '' }}</td>
+                                <td>{{ row.maintenanceType }}</td>
+                                <td>{{ row.cost }}</td>
+                                <td>
+                                    <button class="link" type="button" onclick="location.href='{{ path('management_maintenance_edit', { id: row.id }) }}'">Edit</button>
+                                    <form action="{{ path('management_maintenance_delete', { id: row.id }) }}" method="post" style="display:inline">
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5">No maintenance found yet.</td>
+                            </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="crud-form">
+            <div class="crud-form" id="maintenance-form">
                 <h3>Create / Edit maintenance</h3>
-                <form>
+                <form method="post" action="{{ maintenanceAction }}">
+                    <input type="hidden" name="form_type" value="maintenance">
                     <div class="form-grid">
                         <label class="field">
+                            <span>Equipement</span>
+                            {% set currentEquipmentId = maintenance.equipment ? maintenance.equipment.id : null %}
+                            <select class="input" name="equipment_id" required {% if equipments is empty %}disabled{% endif %}>
+                                {% if equipments is empty %}
+                                    <option value="">Add equipment first</option>
+                                {% else %}
+                                    {% for eq in equipments %}
+                                        <option value="{{ eq.id }}" {% if currentEquipmentId == eq.id %}selected{% endif %}>#EQ-{{ '%02d'|format(eq.id) }} - {{ eq.name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </label>
+                        <label class="field">
                             <span>Date maintenance</span>
-                            <input class="input" type="date">
+                            <input class="input" type="date" name="maintenance_date" value="{{ maintenance.maintenanceDate ? maintenance.maintenanceDate|date('Y-m-d') : '' }}" required>
                         </label>
                         <label class="field">
                             <span>Type maintenance</span>
-                            <input class="input" type="text" placeholder="Inspection, repair">
+                            <input class="input" type="text" name="maintenance_type" placeholder="Inspection, repair" value="{{ maintenance.maintenanceType ?? '' }}" required>
                         </label>
                         <label class="field">
                             <span>Cout</span>
-                            <input class="input" type="number" placeholder="0">
+                            <input class="input" type="number" name="cost" placeholder="0" step="0.01" value="{{ maintenance.cost ?? '' }}" required>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">{{ isMaintenanceEditing ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path('management_equipments') }}">Reset</a>
                     </div>
                 </form>
             </div>

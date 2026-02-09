@@ -33,21 +33,23 @@ body {
 
 .page {
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: minmax(240px, 300px) 1fr;
     min-height: 100vh;
+    transition: grid-template-columns 0.3s ease;
 }
 
 .sidebar {
-    background: linear-gradient(180deg, #1a271c 0%, #121c14 100%);
+    background: linear-gradient(180deg, rgba(32, 61, 28, 0.98) 0%, rgba(24, 44, 20, 0.98) 100%);
     color: var(--sidebar-text);
-    padding: 32px 24px;
+    padding: 36px 28px;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 32px;
     position: sticky;
     top: 0;
     height: 100vh;
     border-right: 1px solid var(--sidebar-edge);
+    transition: width 0.3s ease, padding 0.3s ease;
 }
 
 .brand {
@@ -57,8 +59,8 @@ body {
 }
 
 .brand-logo {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.08);
     padding: 6px;
@@ -110,7 +112,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: inherit;
     text-decoration: none;
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, width 0.3s ease;
 }
 
 .managements li.active .nav-link,
@@ -172,6 +174,98 @@ body {
     display: flex;
     flex-direction: column;
     gap: 32px;
+}
+
+.sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(47, 123, 90, 0.14);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.toggle-icon {
+    width: 18px;
+    height: 12px;
+    display: inline-block;
+    position: relative;
+}
+
+.toggle-icon::before,
+.toggle-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+}
+
+.toggle-icon::before {
+    top: 0;
+}
+
+.toggle-icon::after {
+    bottom: 0;
+}
+
+.sidebar-collapsed .page {
+    grid-template-columns: 96px 1fr;
+}
+
+.sidebar-collapsed .sidebar {
+    padding: 24px 12px;
+}
+
+.sidebar-collapsed .brand-text,
+.sidebar-collapsed .sidebar-foot,
+.sidebar-collapsed .nav-title {
+    opacity: 0;
+    pointer-events: none;
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.sidebar-collapsed .brand {
+    justify-content: center;
+}
+
+.sidebar-collapsed .brand-logo {
+    width: 44px;
+    height: 44px;
+}
+
+.sidebar-collapsed .managements li {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+}
+
+.sidebar-collapsed .nav-link {
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+}
+
+.sidebar-collapsed .nav-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+}
+
+.sidebar-collapsed .nav-label {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
 }
 
 .topbar {
