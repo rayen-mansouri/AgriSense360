@@ -1,0 +1,349 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Animals Management{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/animals-management.css') }}">
+{% endblock %}
+
+{% block javascripts %}{% endblock %}
+
+{% block body %}
+<div class="mgmt-page">
+    <div class="mgmt-form-card" style="margin-bottom:14px;">
+        <div class="mgmt-form-body">
+            <div class="mgmt-table-title">Preview Mode</div>
+            <div class="inline-form">
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: 'admin', tab: 'animaux'}) }}">Admin</a>
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: 'worker', tab: 'animaux'}) }}">Worker</a>
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: 'other_worker', tab: 'animaux'}) }}">Worker (Other Department)</a>
+            </div>
+        </div>
+    </div>
+    <div class="mgmt-tabs">
+        <a class="mgmt-tab {{ currentTab == 'animaux' ? 'active' : '' }}" href="{{ path('animal_management_index', {mode: mode, tab: 'animaux'}) }}">Animaux</a>
+        <a class="mgmt-tab {{ currentTab == 'dossiers' ? 'active' : '' }}" href="{{ path('animal_management_index', {mode: mode, tab: 'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0}) }}">Dossiers de Sante</a>
+        {% if mode == 'admin' %}
+            <a class="mgmt-tab {{ currentTab == 'options' ? 'active' : '' }}" href="{{ path('animal_management_index', {mode: mode, tab: 'options'}) }}">Options</a>
+            <a class="mgmt-tab {{ currentTab == 'analytics' ? 'active' : '' }}" href="{{ path('animal_management_index', {mode: mode, tab: 'analytics'}) }}">Analytics</a>
+        {% endif %}
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="flash flash-success">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="flash flash-error">{{ message }}</div>
+    {% endfor %}
+    {% for errors in app.flashes('errors') %}
+        {% for key, message in errors %}
+            <div class="flash flash-error">{{ key }}: {{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if accessDenied %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-body">
+            <div class="flash flash-error">Not related to your role. Access denied.</div>
+        </div>
+    </div>
+    {% elseif currentTab == 'animaux' %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Ajouter / Modifier un Animal</div>
+                <div class="mgmt-form-subtitle">Les champs obligatoires sont marques avec *</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            {% set editAnimal = null %}
+            {% for a in animals %}
+                {% if a.id == editAnimalId %}{% set editAnimal = a %}{% endif %}
+            {% endfor %}
+            <form method="post" action="{{ editAnimal ? path('animal_update', {id: editAnimal.id}) : path('animal_add') }}" class="mgmt-grid">
+                <input type="hidden" name="mode" value="{{ mode }}">
+                <label>Boucle d'Oreille *</label>
+                <input class="mgmt-input" name="earTag" value="{{ editAnimal ? editAnimal.earTag : '' }}">
+                <label>Type *</label>
+                <select class="mgmt-input" name="type">
+                    <option value="">Selectionner un type</option>
+                    {% for type in types %}
+                        <option value="{{ type }}" {% if editAnimal and editAnimal.type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+                <label>Poids (kg)</label>
+                <input class="mgmt-input" name="weight" value="{{ editAnimal and editAnimal.weight is not null ? editAnimal.weight : '' }}">
+                <label>Date de Naissance</label>
+                <input class="mgmt-input" type="date" name="birthDate" value="{{ editAnimal and editAnimal.birthDate ? editAnimal.birthDate|date('Y-m-d') : '' }}">
+                <label>Date d'Entree</label>
+                <input class="mgmt-input" type="date" name="entryDate" value="{{ editAnimal and editAnimal.entryDate ? editAnimal.entryDate|date('Y-m-d') : '' }}">
+                <label>Origine *</label>
+                <select class="mgmt-input" name="origin">
+                    <option value="">Selectionner une origine</option>
+                    {% for origin in origins %}
+                        <option value="{{ origin }}" {% if editAnimal and editAnimal.origin == origin %}selected{% endif %}>{{ origin }}</option>
+                    {% endfor %}
+                </select>
+                <label>Emplacement *</label>
+                <select class="mgmt-input" name="location">
+                    <option value="">Selectionner un emplacement</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}" {% if editAnimal and editAnimal.location == location %}selected{% endif %}>{{ location }}</option>
+                    {% endfor %}
+                </select>
+                <label>Vaccine</label>
+                <input type="checkbox" name="vaccinated" value="1" {% if editAnimal and editAnimal.vaccinated %}checked{% endif %}>
+                <div class="mgmt-actions">
+                    <button class="mgmt-btn-primary" type="submit">{{ editAnimal ? 'Modifier' : 'Ajouter' }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mgmt-table-card">
+        <div class="mgmt-table-title">Tous les Animaux</div>
+        <form method="get" class="inline-form" style="margin-bottom:10px;">
+            <input type="hidden" name="mode" value="{{ mode }}">
+            <input type="hidden" name="tab" value="animaux">
+            <select class="mgmt-input" name="animalSearchField">
+                <option value="all" {{ animalSearchField == 'all' ? 'selected' : '' }}>All Fields</option>
+                <option value="id" {{ animalSearchField == 'id' ? 'selected' : '' }}>ID</option>
+                <option value="earTag" {{ animalSearchField == 'earTag' ? 'selected' : '' }}>Ear Tag</option>
+                <option value="type" {{ animalSearchField == 'type' ? 'selected' : '' }}>Type</option>
+                <option value="weight" {{ animalSearchField == 'weight' ? 'selected' : '' }}>Weight</option>
+                <option value="healthStatus" {{ animalSearchField == 'healthStatus' ? 'selected' : '' }}>Health</option>
+                <option value="birthDate" {{ animalSearchField == 'birthDate' ? 'selected' : '' }}>Birth Date</option>
+                <option value="origin" {{ animalSearchField == 'origin' ? 'selected' : '' }}>Origin</option>
+                <option value="location" {{ animalSearchField == 'location' ? 'selected' : '' }}>Location</option>
+            </select>
+            <input class="mgmt-input" type="text" name="animalSearch" value="{{ animalSearch }}" placeholder="Search...">
+            <button class="mgmt-btn-primary" type="submit">Search</button>
+        </form>
+        <table class="mgmt-table">
+            <thead>
+            <tr>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'id', animalDir: (animalSort == 'id' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">ID</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'earTag', animalDir: (animalSort == 'earTag' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Ear Tag</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'type', animalDir: (animalSort == 'type' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Type</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'weight', animalDir: (animalSort == 'weight' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Weight</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'healthStatus', animalDir: (animalSort == 'healthStatus' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Health</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'birthDate', animalDir: (animalSort == 'birthDate' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Birth Date</a></th>
+                <th>Age</th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'origin', animalDir: (animalSort == 'origin' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Origin</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalSort:'location', animalDir: (animalSort == 'location' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Location</a></th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for animal in animals %}
+                <tr>
+                    <td>{{ animal.id }}</td>
+                    <td>{{ animal.earTag }}</td>
+                    <td>{{ animal.type }}</td>
+                    <td>{{ animal.weight is not null ? animal.weight ~ ' kg' : '-' }}</td>
+                    <td>{{ animal.healthStatus ?: '-' }}</td>
+                    <td>{{ animal.birthDate ? animal.birthDate|date('Y-m-d') : '-' }}</td>
+                    <td>{{ animal.age is not null ? animal.age ~ ' yr' : '-' }}</td>
+                    <td>{{ animal.origin ?: '-' }}</td>
+                    <td>{{ animal.location ?: '-' }}</td>
+                    <td class="row-actions">
+                        <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab: 'animaux', editAnimalId: animal.id, animalId: animal.id, animalPage: animalPage}) }}">Modifier</a>
+                        <form method="post" action="{{ path('animal_delete', {id: animal.id}) }}">
+                            <input type="hidden" name="mode" value="{{ mode }}">
+                            <button class="mgmt-btn-danger" type="submit">Supprimer</button>
+                        </form>
+                        <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab: 'dossiers', animalId: animal.id}) }}">+ Dossier</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="pagination">
+            {% if animalPage > 1 %}
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalPage: animalPage - 1, animalSort: animalSort, animalDir: animalDir, animalSearchField: animalSearchField, animalSearch: animalSearch}) }}">Prev</a>
+            {% endif %}
+            <span>Page {{ animalPage }} / {{ animalTotalPages }}</span>
+            {% if animalPage < animalTotalPages %}
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab:'animaux', animalPage: animalPage + 1, animalSort: animalSort, animalDir: animalDir, animalSearchField: animalSearchField, animalSearch: animalSearch}) }}">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if currentTab == 'dossiers' %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Ajouter / Modifier un Dossier de Sante</div>
+                <div class="mgmt-form-subtitle">Aucun champ n'est obligatoire sauf la date et la condition</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            {% set editRecord = null %}
+            {% for r in records %}
+                {% if r.id == editRecordId %}{% set editRecord = r %}{% endif %}
+            {% endfor %}
+            <form method="post" action="{{ editRecord ? path('record_update', {id: editRecord.id}) : path('record_add') }}" class="mgmt-grid">
+                <input type="hidden" name="mode" value="{{ mode }}">
+                <label>Animal</label>
+                <select class="mgmt-input" name="animalId" onchange="window.location.href='{{ path('animal_management_index', {mode: mode, tab: 'dossiers', recordSort: recordSort, recordDir: recordDir, recordSearchField: recordSearchField, recordSearch: recordSearch}) }}&animalId='+this.value;">
+                    <option value="">Choisir un animal</option>
+                    {% for animal in animals %}
+                        <option value="{{ animal.id }}" {% if selectedAnimal and selectedAnimal.id == animal.id %}selected{% endif %}>ID {{ animal.id }} - Ear {{ animal.earTag }} ({{ animal.type }})</option>
+                    {% endfor %}
+                </select>
+                <label>Date du Dossier</label>
+                <input class="mgmt-input" type="date" name="recordDate" value="{{ editRecord and editRecord.recordDate ? editRecord.recordDate|date('Y-m-d') : 'now'|date('Y-m-d') }}">
+                <label>Poids (kg)</label>
+                <input class="mgmt-input" name="weight" value="{{ editRecord and editRecord.weight is not null ? editRecord.weight : '' }}">
+                <label>Appetit</label>
+                <select class="mgmt-input" name="appetite">
+                    <option value="">Selectionner</option>
+                    {% for appetite in appetites %}
+                        <option value="{{ appetite }}" {% if editRecord and editRecord.appetite == appetite %}selected{% endif %}>{{ appetite }}</option>
+                    {% endfor %}
+                </select>
+                <label>Condition</label>
+                <select class="mgmt-input" name="conditionStatus">
+                    <option value="">Selectionner</option>
+                    {% for condition in conditions %}
+                        <option value="{{ condition }}" {% if editRecord and editRecord.conditionStatus == condition %}selected{% endif %}>{{ condition }}</option>
+                    {% endfor %}
+                </select>
+                <label>Production</label>
+                <input class="mgmt-input" name="production" value="{{ editRecord ? (editRecord.milkYield ?? editRecord.eggCount ?? editRecord.woolLength ?? '') : '' }}">
+                <label>Notes</label>
+                <input class="mgmt-input" name="notes" value="{{ editRecord ? editRecord.notes : '' }}">
+                <div class="mgmt-actions">
+                    <button class="mgmt-btn-primary" type="submit">{{ editRecord ? 'Modifier' : 'Ajouter' }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mgmt-table-card">
+        <div class="mgmt-table-title">Dossiers de Sante</div>
+        <form method="get" class="inline-form" style="margin-bottom:10px;">
+            <input type="hidden" name="mode" value="{{ mode }}">
+            <input type="hidden" name="tab" value="dossiers">
+            <input type="hidden" name="animalId" value="{{ selectedAnimal ? selectedAnimal.id : 0 }}">
+            <select class="mgmt-input" name="recordSearchField">
+                <option value="all" {{ recordSearchField == 'all' ? 'selected' : '' }}>All Fields</option>
+                <option value="id" {{ recordSearchField == 'id' ? 'selected' : '' }}>ID</option>
+                <option value="recordDate" {{ recordSearchField == 'recordDate' ? 'selected' : '' }}>Date</option>
+                <option value="weight" {{ recordSearchField == 'weight' ? 'selected' : '' }}>Weight</option>
+                <option value="appetite" {{ recordSearchField == 'appetite' ? 'selected' : '' }}>Appetite</option>
+                <option value="conditionStatus" {{ recordSearchField == 'conditionStatus' ? 'selected' : '' }}>Condition</option>
+                <option value="production" {{ recordSearchField == 'production' ? 'selected' : '' }}>Production</option>
+                <option value="notes" {{ recordSearchField == 'notes' ? 'selected' : '' }}>Notes</option>
+            </select>
+            <input class="mgmt-input" type="text" name="recordSearch" value="{{ recordSearch }}" placeholder="Search...">
+            <button class="mgmt-btn-primary" type="submit">Search</button>
+        </form>
+        <table class="mgmt-table">
+            <thead>
+            <tr>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'id', recordDir: (recordSort == 'id' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">ID</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'recordDate', recordDir: (recordSort == 'recordDate' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">Date</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'weight', recordDir: (recordSort == 'weight' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">Weight</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'appetite', recordDir: (recordSort == 'appetite' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">Appetite</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'conditionStatus', recordDir: (recordSort == 'conditionStatus' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">Condition</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'production', recordDir: (recordSort == 'production' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">Production</a></th>
+                <th><a class="sort-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'notes', recordDir: (recordSort == 'notes' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}) }}">Notes</a></th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for record in records %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.recordDate ? record.recordDate|date('Y-m-d') : '-' }}</td>
+                    <td>{{ record.weight is not null ? record.weight ~ ' kg' : '-' }}</td>
+                    <td>{{ record.appetite ?: '-' }}</td>
+                    <td>{{ record.conditionStatus ?: '-' }}</td>
+                    <td>{{ record.milkYield ?? record.eggCount ?? record.woolLength ?? '-' }}</td>
+                    <td>{{ record.notes ?: '-' }}</td>
+                    <td class="row-actions">
+                        <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab: 'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, editRecordId: record.id, recordPage: recordPage}) }}">Modifier</a>
+                        <form method="post" action="{{ path('record_delete', {id: record.id}) }}">
+                            <input type="hidden" name="mode" value="{{ mode }}">
+                            <button class="mgmt-btn-danger" type="submit">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="pagination">
+            {% if recordPage > 1 %}
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordPage: recordPage - 1, recordSort: recordSort, recordDir: recordDir, recordSearchField: recordSearchField, recordSearch: recordSearch}) }}">Prev</a>
+            {% endif %}
+            <span>Page {{ recordPage }} / {{ recordTotalPages }}</span>
+            {% if recordPage < recordTotalPages %}
+                <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {mode: mode, tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordPage: recordPage + 1, recordSort: recordSort, recordDir: recordDir, recordSearchField: recordSearchField, recordSearch: recordSearch}) }}">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if currentTab == 'options' and mode == 'admin' %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div class="mgmt-form-title">Types et Emplacements</div>
+        </div>
+        <div class="mgmt-form-body options-grid">
+            <div>
+                <div class="mgmt-table-title">Animal Types</div>
+                <ul class="mgmt-list">
+                    {% for type in types %}
+                        <li class="mgmt-list-row">
+                            <span>{{ type }}</span>
+                            <form method="post" action="{{ path('option_type_delete') }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="value" value="{{ type }}">
+                                <button class="mgmt-btn-danger" type="submit">Delete</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <form method="post" action="{{ path('option_type_add') }}" class="inline-form">
+                    <input type="hidden" name="mode" value="{{ mode }}">
+                    <input class="mgmt-input" name="value" placeholder="New type name...">
+                    <button class="mgmt-btn-primary" type="submit">Add</button>
+                </form>
+            </div>
+            <div>
+                <div class="mgmt-table-title">Pen Locations</div>
+                <ul class="mgmt-list">
+                    {% for location in locations %}
+                        <li class="mgmt-list-row">
+                            <span>{{ location }}</span>
+                            <form method="post" action="{{ path('option_location_delete') }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="value" value="{{ location }}">
+                                <button class="mgmt-btn-danger" type="submit">Delete</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <form method="post" action="{{ path('option_location_add') }}" class="inline-form">
+                    <input type="hidden" name="mode" value="{{ mode }}">
+                    <input class="mgmt-input" name="value" placeholder="New location name...">
+                    <button class="mgmt-btn-primary" type="submit">Add</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if currentTab == 'analytics' and mode == 'admin' %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div class="mgmt-form-title">Analytics</div>
+        </div>
+        <div class="mgmt-form-body">
+            <div class="mgmt-form-subtitle">Empty preview tab.</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
