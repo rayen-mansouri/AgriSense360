@@ -148,7 +148,7 @@ class HealthRecordController extends AbstractController
 
     private function hydrateRecord(AnimalHealthRecord $record, Request $request, ?string $animalType): void
     {
-        $record->setRecordDate(new \DateTimeImmutable((string) $request->request->get('recordDate')));
+        $record->setRecordDate(new \DateTime((string) $request->request->get('recordDate')));
         $weight = trim((string) $request->request->get('weight'));
         $record->setWeight($weight === '' ? null : (float) $weight);
         $appetite = trim((string) $request->request->get('appetite'));

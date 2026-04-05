@@ -74,8 +74,8 @@ class AnimalCrudController extends AbstractController
         $animal->setWeight($weight === '' ? null : (float) $weight);
         $birthDate = trim((string) $request->request->get('birthDate'));
         $entryDate = trim((string) $request->request->get('entryDate'));
-        $animal->setBirthDate($birthDate === '' ? null : new \DateTimeImmutable($birthDate));
-        $animal->setEntryDate($entryDate === '' ? null : new \DateTimeImmutable($entryDate));
+        $animal->setBirthDate($birthDate === '' ? null : new \DateTime($birthDate));
+        $animal->setEntryDate($entryDate === '' ? null : new \DateTime($entryDate));
         $animal->setOrigin((string) $request->request->get('origin'));
         $animal->setVaccinated($request->request->getBoolean('vaccinated'));
         $animal->setLocation(strtolower((string) $request->request->get('location')));
