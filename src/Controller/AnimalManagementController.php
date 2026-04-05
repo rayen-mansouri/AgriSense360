@@ -297,4 +297,119 @@ class AnimalManagementController extends AbstractController
             $this->addFlash('success', 'Health record deleted.');
         }
         return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers', 'animalId' => $animalId]);
-  
+    }
+
+    #[Route('/options/type/add', name: 'option_type_add', methods: ['POST'])]
+    public function addType(Request $request, EnumOptionService $enumOptionService): RedirectResponse
+    {
+        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
+        if ($mode !== 'admin') {
+            $this->addFlash('error', 'Access denied.');
+            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        }
+        try {
+            $enumOptionService->addType((string) $request->request->get('value'));
+            $this->addFlash('success', 'Type added.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+    }
+
+    #[Route('/options/type/delete', name: 'option_type_delete', methods: ['POST'])]
+    public function deleteType(Request $request, EnumOptionService $enumOptionService): RedirectResponse
+    {
+        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
+        if ($mode !== 'admin') {
+            $this->addFlash('error', 'Access denied.');
+            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        }
+        try {
+            $enumOptionService->deleteType((string) $request->request->get('value'));
+            $this->addFlash('success', 'Type removed.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+    }
+
+    #[Route('/options/location/add', name: 'option_location_add', methods: ['POST'])]
+    public function addLocation(Request $request, EnumOptionService $enumOptionService): RedirectResponse
+    {
+        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
+        if ($mode !== 'admin') {
+            $this->addFlash('error', 'Access denied.');
+            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        }
+        try {
+            $enumOptionService->addLocation((string) $request->request->get('value'));
+            $this->addFlash('success', 'Location added.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+    }
+
+    #[Route('/options/location/delete', name: 'option_location_delete', methods: ['POST'])]
+    public function deleteLocation(Request $request, EnumOptionService $enumOptionService): RedirectResponse
+    {
+        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
+        if ($mode !== 'admin') {
+            $this->addFlash('error', 'Access denied.');
+            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        }
+        try {
+            $enumOptionService->deleteLocation((string) $request->request->get('value'));
+            $this->addFlash('success', 'Location removed.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+    }
+
+    private function normalizeMode(string $mode): string
+    {
+        return in_array($mode, ['admin', 'worker', 'other_worker'], true) ? $mode : 'admin';
+    }
+
+    private function hydrateAnimal(Animal $animal, Request $request): void
+    {
+        $animal->setEarTag((int) $request->request->get('earTag'));
+        $animal->setType(strtolower((string) $request->request->get('type')));
+        $weight = trim((string) $request->request->get('weight'));
+        $animal->setWeight($weight === '' ? null : (float) $weight);
+        $birthDate = trim((string) $request->request->get('birthDate'));
+        $entryDate = trim((string) $request->request->get('entryDate'));
+        $animal->setBirthDate($birthDate === '' ? null : new \DateTimeImmutable($birthDate));
+        $animal->setEntryDate($entryDate === '' ? null : new \DateTimeImmutable($entryDate));
+        $animal->setOrigin((string) $request->request->get('origin'));
+        $animal->setVaccinated($request->request->getBoolean('vaccinated'));
+        $animal->setLocation(strtolower((string) $request->request->get('location')));
+    }
+
+    private function hydrateRecord(AnimalHealthRecord $record, Request $request, ?string $animalType): void
+    {
+        $record->setRecordDate(new \DateTimeImmutable((string) $request->request->get('recordDate')));
+        $weight = trim((string) $request->request->get('weight'));
+        $record->setWeight($weight === '' ? null : (float) $weight);
+        $appetite = trim((string) $request->request->get('appetite'));
+        $record->setAppetite($appetite === '' ? null : $appetite);
+        $record->setConditionStatus((string) $request->request->get('conditionStatus'));
+        $record->setMilkYield(null);
+        $record->setEggCount(null);
+        $record->setWoolLength(null);
+        $production = trim((string) $request->request->get('production'));
+        $type = strtolower((string) $animalType);
+        if ($production !== '') {
+            if (in_array($type, ['cow', 'goat'], true)) {
+                $record->setMilkYield((float) $production);
+            } elseif ($type === 'chicken') {
+                $record->setEggCount((int) $production);
+            } elseif ($type === 'sheep') {
+                $record->setWoolLength((float) $production);
+            }
+        }
+        $notes = trim((string) $request->request->get('notes'));
+        $record->setNotes($notes === '' ? null : $notes);
+    }
+}
