@@ -11,6 +11,37 @@
 </head>
 <body class="sidebar-collapsed">
 
+    <section class="plant-intro-overlay" id="plant-intro-overlay" aria-label="AgriSense intro animation">
+        <canvas id="plant-intro-canvas" aria-hidden="true"></canvas>
+        <div class="plant-intro-overlay__layer"></div>
+        <div class="plant-intro-overlay__content">
+            <h2 class="plant-intro-title" id="plant-intro-title">AgriSense 360</h2>
+            <p class="plant-intro-sub" id="plant-intro-sub">Smart AI Companion for Farms</p>
+
+            <aside class="plant-intro-panel left" id="plant-panel-left">
+                <h3>Turn every field signal into a confident decision.</h3>
+                <p>AgriSense watches your farm in real time and guides your team with total clarity.</p>
+            </aside>
+
+            <aside class="plant-intro-panel right top" id="plant-panel-right-a">
+                <span class="side-label">Yield Insight</span>
+                <strong>98%</strong>
+                <span class="side-sub">Above seasonal average</span>
+            </aside>
+
+            <aside class="plant-intro-panel right bottom" id="plant-panel-right-b">
+                <span class="side-label">Active Sensors</span>
+                <strong>148</strong>
+                <span class="side-sub">Field health at 92%</span>
+            </aside>
+
+            <div class="plant-intro-progress">
+                <div class="plant-intro-progress__track"><div class="plant-intro-progress__fill" id="plant-intro-fill"></div></div>
+                <span id="plant-intro-text">scroll to grow</span>
+            </div>
+        </div>
+    </section>
+
     <div class="page">
         <div class="ambient" aria-hidden="true">
             <div class="ambient-leaf">
@@ -316,6 +347,8 @@
             </footer>
         </main>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{{ asset('assets/scripts/home-plant-overlay.js') }}"></script>
     <script>
         const toggle = document.querySelector('.sidebar-toggle');
         const body = document.body;
