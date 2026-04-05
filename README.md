@@ -16,25 +16,94 @@ This project presents a clean, responsive interface for agricultural operations 
 
 ## Tech Stack
 
-- Symfony
-- Twig
-- PHP
-- HTML
-- CSS
+- Backend Framework: Symfony (PHP)
+- Template Engine: Twig
+- Language: PHP 8+
+- Frontend: HTML5, CSS3, vanilla JavaScript
+- Dependency Management: Composer
+- Dev Server: PHP built-in server / Symfony local server workflow
+- Data Layer: Doctrine-style project structure (Entity/Repository pattern)
+
+## Technology Details
+
+- Symfony handles routing, controller flow, and dependency injection.
+- Twig renders server-side views with reusable templates and partials.
+- CSS is organized by page/feature under the public assets folder.
+- Controllers map management pages to route names used directly in Twig navigation.
+- Entities and repositories define domain models and database-access responsibilities.
 
 ## Getting Started
 
-1. Install dependencies with Composer.
-2. Start the Symfony development server.
-3. Open the app in your browser and explore the management sections.
+1. Install dependencies:
+	 `composer install`
+2. If your app dependencies are inside `app/`, install there too:
+	 `cd app && composer install`
+3. Run the project from the workspace root with the document root pointing to `app/public`:
+	 `php -S 127.0.0.1:8000 -t app/public`
+4. Open:
+	 `http://127.0.0.1:8000`
 
 ## Project Structure
 
-- `app/templates` for Twig views
-- `app/public/assets/styles` for UI styling
-- `src/Controller` for route controllers
-- `src/Entity` for domain models
-- `src/Repository` for data access
+- `app/`
+	Main Symfony application directory.
+- `app/src/Controller/`
+	HTTP controllers for pages and management sections.
+- `app/src/Entity/`
+	Domain entities such as equipment and maintenance models.
+- `app/src/Repository/`
+	Query/data-access classes tied to entities.
+- `app/src/Form/`
+	Form definitions and validation bindings.
+- `app/config/`
+	Framework, routing, services, and package configuration.
+- `app/templates/`
+	Twig view layer.
+	- `home/` for landing dashboard pages
+	- `management/` for management modules
+	- `equipment/` for equipment CRUD pages
+- `app/public/`
+	Web root.
+	- `index.php` front controller
+	- `assets/styles/` CSS files by feature/page
+	- `assets/images/` static images and brand assets
+- `app/migrations/`
+	Database migration files.
+
+## Navigation Map
+
+Primary sidebar navigation is organized by management modules:
+
+- Animals Management
+- Equipments Management
+- Stock Management
+- Culture Management
+- User Management
+- Workers Management
+
+These links are rendered in the home template and connected to Symfony route names, including:
+
+- `management_animals`
+- `management_equipments`
+- `management_stock`
+- `management_culture`
+- `management_users`
+- `management_workers`
+
+## UI and Interaction Notes
+
+- Sidebar supports collapsed/expanded interaction states.
+- Hover and button interactions are tuned with smooth easing curves.
+- Home dashboard uses visual cards, metrics, and ambient decorative elements.
+- Layout adapts for desktop, tablet, and mobile breakpoints.
+
+## Architecture Summary
+
+- Routing layer: Symfony routes to controller actions.
+- Controller layer: builds page view models and coordinates services.
+- Domain layer: entities represent business data.
+- Data access layer: repositories encapsulate persistence logic.
+- Presentation layer: Twig templates + CSS assets.
 
 ## Notes
 

@@ -2,11 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\Equipment;
-use App\Entity\Maintenance;
-use App\Repository\EquipmentRepository;
-use App\Repository\MaintenanceRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\OracleSqlPlusCrudService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,30 +19,39 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/management/equipments', name: 'management_equipments')]
-    public function equipments(Request $request, EquipmentRepository $equipmentRepository, MaintenanceRepository $maintenanceRepository, EntityManagerInterface $entityManager): Response
+    public function equipments(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $this->configureOracleSession($entityManager);
-        $equipment = new Equipment();
-        $maintenance = new Maintenance();
+        $equipment = [
+            'name' => null,
+            'type' => null,
+            'status' => 'Ready',
+            'purchaseDate' => null,
+        ];
+        $maintenance = [
+            'equipment' => null,
+            'maintenanceDate' => null,
+            'maintenanceType' => null,
+            'cost' => null,
+        ];
 
         if ($request->isMethod('POST')) {
             $formType = (string) $request->request->get('form_type', 'equipment');
 
-            if ($formType === 'maintenance') {
-                $this->hydrateMaintenanceFromRequest($maintenance, $request, $equipmentRepository);
-                $entityManager->persist($maintenance);
-                $entityManager->flush();
-            } else {
-                $this->hydrateEquipmentFromRequest($equipment, $request);
-                $entityManager->persist($equipment);
-                $entityManager->flush();
+            try {
+                if ($formType === 'maintenance') {
+                    $oracleCrud->createMaintenance($this->maintenanceDataFromRequest($request));
+                } else {
+                    $oracleCrud->createEquipment($this->equipmentDataFromRequest($request));
+                }
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
             }
 
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $equipmentRepository->findBy([], ['id' => 'DESC']);
-        $maintenances = $maintenanceRepository->findBy([], ['id' => 'DESC']);
+        $equipments = $oracleCrud->listEquipments();
+        $maintenances = $oracleCrud->listMaintenances();
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -60,25 +65,32 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/management/equipments/{id}/edit', name: 'management_equipments_edit', methods: ['GET', 'POST'])]
-    public function editEquipment(int $id, Request $request, EquipmentRepository $equipmentRepository, MaintenanceRepository $maintenanceRepository, EntityManagerInterface $entityManager): Response
+    public function editEquipment(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $this->configureOracleSession($entityManager);
-        $equipment = $equipmentRepository->find($id);
+        $equipment = $oracleCrud->findEquipment($id);
 
         if (!$equipment) {
             throw $this->createNotFoundException('Equipment not found.');
         }
 
         if ($request->isMethod('POST')) {
-            $this->hydrateEquipmentFromRequest($equipment, $request);
-            $entityManager->flush();
+            try {
+                $oracleCrud->updateEquipment($id, $this->equipmentDataFromRequest($request));
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to update equipment: ' . $e->getMessage());
+            }
 
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $equipmentRepository->findBy([], ['id' => 'DESC']);
-        $maintenance = new Maintenance();
-        $maintenances = $maintenanceRepository->findBy([], ['id' => 'DESC']);
+        $equipments = $oracleCrud->listEquipments();
+        $maintenance = [
+            'equipment' => null,
+            'maintenanceDate' => null,
+            'maintenanceType' => null,
+            'cost' => null,
+        ];
+        $maintenances = $oracleCrud->listMaintenances();
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -92,38 +104,48 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/management/equipments/{id}/delete', name: 'management_equipments_delete', methods: ['POST'])]
-    public function deleteEquipment(int $id, EquipmentRepository $equipmentRepository, EntityManagerInterface $entityManager): Response
+    public function deleteEquipment(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $equipment = $equipmentRepository->find($id);
+        if (!$this->isCsrfTokenValid('delete_equipment_' . $id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
 
-        if ($equipment) {
-            $entityManager->remove($equipment);
-            $entityManager->flush();
+        try {
+            $oracleCrud->deleteEquipment($id);
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete equipment: ' . $e->getMessage());
         }
 
         return $this->redirectToRoute('management_equipments');
     }
 
     #[Route('/management/equipments/maintenance/{id}/edit', name: 'management_maintenance_edit', methods: ['GET', 'POST'])]
-    public function editMaintenance(int $id, Request $request, MaintenanceRepository $maintenanceRepository, EquipmentRepository $equipmentRepository, EntityManagerInterface $entityManager): Response
+    public function editMaintenance(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $this->configureOracleSession($entityManager);
-        $maintenance = $maintenanceRepository->find($id);
+        $maintenance = $oracleCrud->findMaintenance($id);
 
         if (!$maintenance) {
             throw $this->createNotFoundException('Maintenance not found.');
         }
 
         if ($request->isMethod('POST')) {
-            $this->hydrateMaintenanceFromRequest($maintenance, $request, $equipmentRepository);
-            $entityManager->flush();
+            try {
+                $oracleCrud->updateMaintenance($id, $this->maintenanceDataFromRequest($request));
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to update maintenance: ' . $e->getMessage());
+            }
 
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $equipmentRepository->findBy([], ['id' => 'DESC']);
-        $maintenances = $maintenanceRepository->findBy([], ['id' => 'DESC']);
-        $equipment = new Equipment();
+        $equipments = $oracleCrud->listEquipments();
+        $maintenances = $oracleCrud->listMaintenances();
+        $equipment = [
+            'name' => null,
+            'type' => null,
+            'status' => 'Ready',
+            'purchaseDate' => null,
+        ];
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -137,13 +159,16 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/management/equipments/maintenance/{id}/delete', name: 'management_maintenance_delete', methods: ['POST'])]
-    public function deleteMaintenance(int $id, MaintenanceRepository $maintenanceRepository, EntityManagerInterface $entityManager): Response
+    public function deleteMaintenance(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $maintenance = $maintenanceRepository->find($id);
+        if (!$this->isCsrfTokenValid('delete_maintenance_' . $id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
 
-        if ($maintenance) {
-            $entityManager->remove($maintenance);
-            $entityManager->flush();
+        try {
+            $oracleCrud->deleteMaintenance($id);
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete maintenance: ' . $e->getMessage());
         }
 
         return $this->redirectToRoute('management_equipments');
@@ -181,55 +206,39 @@ final class ManagementController extends AbstractController
         ]);
     }
 
-    private function hydrateEquipmentFromRequest(Equipment $equipment, Request $request): void
+    /**
+     * @return array{name:?string,type:?string,status:?string,purchaseDate:?string}
+     */
+    private function equipmentDataFromRequest(Request $request): array
     {
         $name = trim((string) $request->request->get('name'));
         $type = trim((string) $request->request->get('type'));
         $status = trim((string) $request->request->get('status'));
-        $purchaseDate = $request->request->get('purchase_date');
+        $purchaseDate = trim((string) $request->request->get('purchase_date'));
 
-        $equipment->setName($name !== '' ? $name : null);
-        $equipment->setType($type !== '' ? $type : null);
-        $equipment->setStatus($status !== '' ? $status : 'Ready');
-
-        $date = null;
-        if (is_string($purchaseDate) && $purchaseDate !== '') {
-            $date = \DateTime::createFromFormat('Y-m-d', $purchaseDate) ?: null;
-        }
-
-        $equipment->setPurchaseDate($date);
+        return [
+            'name' => $name !== '' ? $name : null,
+            'type' => $type !== '' ? $type : null,
+            'status' => $status !== '' ? $status : 'Ready',
+            'purchaseDate' => $purchaseDate !== '' ? $purchaseDate : null,
+        ];
     }
 
-    private function hydrateMaintenanceFromRequest(Maintenance $maintenance, Request $request, EquipmentRepository $equipmentRepository): void
+    /**
+     * @return array{equipmentId:int,maintenanceDate:?string,maintenanceType:?string,cost:?string}
+     */
+    private function maintenanceDataFromRequest(Request $request): array
     {
-        $equipmentId = $request->request->get('equipment_id');
-        $maintenanceDate = $request->request->get('maintenance_date');
+        $equipmentId = (int) $request->request->get('equipment_id');
+        $maintenanceDate = trim((string) $request->request->get('maintenance_date'));
         $maintenanceType = trim((string) $request->request->get('maintenance_type'));
         $cost = trim((string) $request->request->get('cost'));
 
-        $equipment = null;
-        if (is_string($equipmentId) && $equipmentId !== '') {
-            $equipment = $equipmentRepository->find((int) $equipmentId);
-        }
-
-        if (!$equipment) {
-            throw $this->createNotFoundException('Equipment not found for maintenance.');
-        }
-
-        $date = null;
-        if (is_string($maintenanceDate) && $maintenanceDate !== '') {
-            $date = \DateTime::createFromFormat('Y-m-d', $maintenanceDate) ?: null;
-        }
-
-        $maintenance->setEquipment($equipment);
-        $maintenance->setMaintenanceDate($date);
-        $maintenance->setMaintenanceType($maintenanceType !== '' ? $maintenanceType : 'Inspection');
-        $maintenance->setCost($cost !== '' ? $cost : '0');
-    }
-
-    private function configureOracleSession(EntityManagerInterface $entityManager): void
-    {
-        $sql = "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS' NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS'";
-        $entityManager->getConnection()->executeStatement($sql);
+        return [
+            'equipmentId' => $equipmentId,
+            'maintenanceDate' => $maintenanceDate !== '' ? $maintenanceDate : null,
+            'maintenanceType' => $maintenanceType !== '' ? $maintenanceType : 'Inspection',
+            'cost' => $cost !== '' ? $cost : '0',
+        ];
     }
 }

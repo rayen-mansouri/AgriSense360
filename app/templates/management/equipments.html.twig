@@ -1,4 +1,4 @@
-{% extends 'management/layout.html.twig' %}
+﻿{% extends 'management/layout.html.twig' %}
 
 {% block title %}Equipments Management{% endblock %}
 {% block eyebrow %}Equipments Management{% endblock %}
@@ -10,6 +10,7 @@
 {% set formAction = isEditing ? path('management_equipments_edit', { id: equipment.id }) : path('management_equipments') %}
 {% set isMaintenanceEditing = maintenanceEditing ?? false %}
 {% set maintenanceAction = isMaintenanceEditing ? path('management_maintenance_edit', { id: maintenance.id }) : path('management_equipments') %}
+
 <section class="crud-section">
     <div class="crud-card">
         <div class="crud-head">
@@ -22,12 +23,14 @@
                 <button class="primary" type="button" onclick="location.href='#equipment-form'">Add equipement</button>
             </div>
         </div>
+
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search equipements">
+                    <input class="input" id="equipment-search" type="search" placeholder="Search equipements" autocomplete="off">
                     <span class="pill">{{ equipments|length }} records</span>
                 </div>
+
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -39,7 +42,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="equipment-table-body">
                         {% for row in equipments %}
                             <tr>
                                 <td>#EQ-{{ '%02d'|format(row.id) }}</td>
@@ -56,8 +59,9 @@
                                 </td>
                                 <td>{{ row.purchaseDate ? row.purchaseDate|date('Y-m-d') : '' }}</td>
                                 <td>
-                                    <button class="link" type="button" onclick="location.href='{{ path('management_equipments_edit', { id: row.id }) }}'">Edit</button>
-                                    <form action="{{ path('management_equipments_delete', { id: row.id }) }}" method="post" style="display:inline">
+                                    <button class="link js-edit-equipment" type="button" data-edit-url="{{ path('management_equipments_edit', { id: row.id }) }}">Edit</button>
+                                    <form action="{{ path('management_equipments_delete', { id: row.id }) }}" method="post" style="display:inline" data-ajax-form="1">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_equipment_' ~ row.id) }}">
                                         <button class="link danger" type="submit">Delete</button>
                                     </form>
                                 </td>
@@ -70,9 +74,10 @@
                     </tbody>
                 </table>
             </div>
+
             <div class="crud-form" id="equipment-form">
                 <h3>Create / Edit equipement</h3>
-                <form method="post" action="{{ formAction }}">
+                <form method="post" action="{{ formAction }}" data-ajax-form="1">
                     <input type="hidden" name="form_type" value="equipment">
                     <div class="form-grid">
                         <label class="field">
@@ -117,47 +122,53 @@
                 <button class="primary" type="button" onclick="location.href='#maintenance-form'">Add maintenance</button>
             </div>
         </div>
+
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search maintenance">
+                    <input class="input" id="maintenance-search" type="search" placeholder="Search maintenance" autocomplete="off">
                     <span class="pill">{{ maintenances|length }} records</span>
                 </div>
+
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Id</th>
+                            <th>Equipement</th>
                             <th>DateMaintenance</th>
                             <th>TypeMaintenance</th>
                             <th>Cout</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="maintenance-table-body">
                         {% for row in maintenances %}
                             <tr>
                                 <td>#MT-{{ '%02d'|format(row.id) }}</td>
+                                <td>{{ row.equipment ? row.equipment.name : '-' }}</td>
                                 <td>{{ row.maintenanceDate ? row.maintenanceDate|date('Y-m-d') : '' }}</td>
                                 <td>{{ row.maintenanceType }}</td>
                                 <td>{{ row.cost }}</td>
                                 <td>
-                                    <button class="link" type="button" onclick="location.href='{{ path('management_maintenance_edit', { id: row.id }) }}'">Edit</button>
-                                    <form action="{{ path('management_maintenance_delete', { id: row.id }) }}" method="post" style="display:inline">
+                                    <button class="link js-edit-maintenance" type="button" data-edit-url="{{ path('management_maintenance_edit', { id: row.id }) }}">Edit</button>
+                                    <form action="{{ path('management_maintenance_delete', { id: row.id }) }}" method="post" style="display:inline" data-ajax-form="1">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_maintenance_' ~ row.id) }}">
                                         <button class="link danger" type="submit">Delete</button>
                                     </form>
                                 </td>
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="5">No maintenance found yet.</td>
+                                <td colspan="6">No maintenance found yet.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
             <div class="crud-form" id="maintenance-form">
                 <h3>Create / Edit maintenance</h3>
-                <form method="post" action="{{ maintenanceAction }}">
+                <form method="post" action="{{ maintenanceAction }}" data-ajax-form="1">
                     <input type="hidden" name="form_type" value="maintenance">
                     <div class="form-grid">
                         <label class="field">
@@ -195,4 +206,156 @@
         </div>
     </div>
 </section>
+
+<script>
+(() => {
+    let isUpdatingSection = false;
+
+    async function fetchHtml(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            ...options,
+        });
+
+        if (!response.ok) {
+            throw new Error('Request failed with status ' + response.status);
+        }
+
+        return response.text();
+    }
+
+    function applySearchFilter(inputSelector, tbodySelector) {
+        const input = document.querySelector(inputSelector);
+        const tbody = document.querySelector(tbodySelector);
+        if (!input || !tbody) {
+            return;
+        }
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const query = input.value.trim().toLowerCase();
+
+        rows.forEach((row) => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    function wireSearchInputs() {
+        const equipmentSearch = document.querySelector('#equipment-search');
+        const maintenanceSearch = document.querySelector('#maintenance-search');
+
+        if (equipmentSearch) {
+            equipmentSearch.addEventListener('input', () => {
+                applySearchFilter('#equipment-search', '#equipment-table-body');
+            });
+        }
+
+        if (maintenanceSearch) {
+            maintenanceSearch.addEventListener('input', () => {
+                applySearchFilter('#maintenance-search', '#maintenance-table-body');
+            });
+        }
+    }
+
+    function updateCrudSectionFromHtml(html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newSection = doc.querySelector('.crud-section');
+        const currentSection = document.querySelector('.crud-section');
+
+        if (!newSection || !currentSection) {
+            throw new Error('Unable to refresh CRUD section.');
+        }
+
+        currentSection.replaceWith(newSection);
+        wireSearchInputs();
+    }
+
+    async function submitAjaxForm(form) {
+        if (isUpdatingSection) {
+            return;
+        }
+
+        isUpdatingSection = true;
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalText = submitButton ? submitButton.textContent : '';
+
+        try {
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Saving...';
+            }
+
+            const body = new URLSearchParams(new FormData(form));
+            const html = await fetchHtml(form.action, {
+                method: form.method || 'POST',
+                body,
+            });
+
+            updateCrudSectionFromHtml(html);
+        } catch (error) {
+            console.error(error);
+            alert('Operation failed. Please try again.');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+
+            isUpdatingSection = false;
+        }
+    }
+
+    async function openEditForm(url) {
+        if (isUpdatingSection) {
+            return;
+        }
+
+        isUpdatingSection = true;
+
+        try {
+            const html = await fetchHtml(url, { method: 'GET' });
+            updateCrudSectionFromHtml(html);
+            const formSection = document.querySelector('#equipment-form, #maintenance-form');
+            if (formSection) {
+                formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Unable to open edit form.');
+        } finally {
+            isUpdatingSection = false;
+        }
+    }
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target.closest('form[data-ajax-form="1"]');
+        if (!form) {
+            return;
+        }
+
+        event.preventDefault();
+        submitAjaxForm(form);
+    });
+
+    document.addEventListener('click', (event) => {
+        const equipmentEditButton = event.target.closest('.js-edit-equipment');
+        if (equipmentEditButton) {
+            event.preventDefault();
+            openEditForm(equipmentEditButton.dataset.editUrl);
+            return;
+        }
+
+        const maintenanceEditButton = event.target.closest('.js-edit-maintenance');
+        if (maintenanceEditButton) {
+            event.preventDefault();
+            openEditForm(maintenanceEditButton.dataset.editUrl);
+        }
+    });
+
+    wireSearchInputs();
+})();
+</script>
 {% endblock %}
