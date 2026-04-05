@@ -34,7 +34,6 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Id</th>
                             <th>Nom</th>
                             <th>Type</th>
                             <th>Etat</th>
@@ -45,7 +44,6 @@
                     <tbody id="equipment-table-body">
                         {% for row in equipments %}
                             <tr>
-                                <td>#EQ-{{ '%02d'|format(row.id) }}</td>
                                 <td>{{ row.name }}</td>
                                 <td>{{ row.type }}</td>
                                 <td>
@@ -68,7 +66,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6">No equipment found yet.</td>
+                                <td colspan="5">No equipment found yet.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -133,7 +131,6 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Id</th>
                             <th>Equipement</th>
                             <th>DateMaintenance</th>
                             <th>TypeMaintenance</th>
@@ -144,7 +141,6 @@
                     <tbody id="maintenance-table-body">
                         {% for row in maintenances %}
                             <tr>
-                                <td>#MT-{{ '%02d'|format(row.id) }}</td>
                                 <td>{{ row.equipment ? row.equipment.name : '-' }}</td>
                                 <td>{{ row.maintenanceDate ? row.maintenanceDate|date('Y-m-d') : '' }}</td>
                                 <td>{{ row.maintenanceType }}</td>
@@ -159,7 +155,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6">No maintenance found yet.</td>
+                                <td colspan="5">No maintenance found yet.</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -174,15 +170,36 @@
                         <label class="field">
                             <span>Equipement</span>
                             {% set currentEquipmentId = maintenance.equipment ? maintenance.equipment.id : null %}
-                            <select class="input" name="equipment_id" required {% if equipments is empty %}disabled{% endif %}>
-                                {% if equipments is empty %}
-                                    <option value="">Add equipment first</option>
-                                {% else %}
-                                    {% for eq in equipments %}
-                                        <option value="{{ eq.id }}" {% if currentEquipmentId == eq.id %}selected{% endif %}>#EQ-{{ '%02d'|format(eq.id) }} - {{ eq.name }}</option>
-                                    {% endfor %}
-                                {% endif %}
-                            </select>
+                            <input type="hidden" name="equipment_id" id="maintenance-equipment-id" value="{{ currentEquipmentId ?? '' }}" required>
+                            <button class="input" type="button" id="equipment-picker-toggle" style="text-align:left;" {% if equipments is empty %}disabled{% endif %}>
+                                <span id="equipment-picker-label">
+                                    {% if maintenance.equipment %}
+                                        {{ maintenance.equipment.name }}
+                                    {% else %}
+                                        Select equipment
+                                    {% endif %}
+                                </span>
+                            </button>
+                            <div id="equipment-picker-panel" style="display:none; border:1px solid var(--stroke); border-radius:12px; padding:10px; background:#fff; margin-top:8px;">
+                                <input class="input" type="search" id="equipment-picker-search" placeholder="Search equipment" autocomplete="off" {% if equipments is empty %}disabled{% endif %}>
+                                <div id="equipment-picker-list" style="margin-top:8px; max-height:180px; overflow:auto; display:grid; gap:6px;">
+                                    {% if equipments is empty %}
+                                        <span class="pill">Add equipment first</span>
+                                    {% else %}
+                                        {% for eq in equipments %}
+                                            <button
+                                                class="ghost js-pick-equipment"
+                                                type="button"
+                                                data-equipment-id="{{ eq.id }}"
+                                                data-equipment-name="{{ eq.name }}"
+                                                style="justify-content:flex-start; text-align:left;"
+                                            >
+                                                {{ eq.name }}
+                                            </button>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
                         </label>
                         <label class="field">
                             <span>Date maintenance</span>
@@ -259,6 +276,37 @@
         }
     }
 
+    function wireEquipmentPicker() {
+        const toggle = document.querySelector('#equipment-picker-toggle');
+        const panel = document.querySelector('#equipment-picker-panel');
+        const search = document.querySelector('#equipment-picker-search');
+
+        if (!toggle || !panel) {
+            return;
+        }
+
+        toggle.addEventListener('click', () => {
+            const isOpen = panel.style.display === 'block';
+            panel.style.display = isOpen ? 'none' : 'block';
+
+            if (!isOpen && search) {
+                search.focus();
+            }
+        });
+
+        if (search) {
+            search.addEventListener('input', () => {
+                const query = search.value.trim().toLowerCase();
+                const options = Array.from(document.querySelectorAll('.js-pick-equipment'));
+
+                options.forEach((option) => {
+                    const name = (option.dataset.equipmentName || '').toLowerCase();
+                    option.style.display = name.includes(query) ? '' : 'none';
+                });
+            });
+        }
+    }
+
     function updateCrudSectionFromHtml(html) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -271,6 +319,7 @@
 
         currentSection.replaceWith(newSection);
         wireSearchInputs();
+        wireEquipmentPicker();
     }
 
     async function submitAjaxForm(form) {
@@ -352,10 +401,33 @@
         if (maintenanceEditButton) {
             event.preventDefault();
             openEditForm(maintenanceEditButton.dataset.editUrl);
+            return;
+        }
+
+        const pickEquipmentButton = event.target.closest('.js-pick-equipment');
+        if (pickEquipmentButton) {
+            event.preventDefault();
+
+            const idInput = document.querySelector('#maintenance-equipment-id');
+            const label = document.querySelector('#equipment-picker-label');
+            const panel = document.querySelector('#equipment-picker-panel');
+
+            if (idInput) {
+                idInput.value = pickEquipmentButton.dataset.equipmentId || '';
+            }
+
+            if (label) {
+                label.textContent = pickEquipmentButton.dataset.equipmentName || 'Select equipment';
+            }
+
+            if (panel) {
+                panel.style.display = 'none';
+            }
         }
     });
 
     wireSearchInputs();
+    wireEquipmentPicker();
 })();
 </script>
 {% endblock %}
