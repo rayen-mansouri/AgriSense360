@@ -4,9 +4,14 @@
     const body = document.body;
     const title = document.getElementById('plant-intro-title');
     const subtitle = document.getElementById('plant-intro-sub');
-    const leftPanel = document.getElementById('plant-panel-left');
-    const rightPanelA = document.getElementById('plant-panel-right-a');
-    const rightPanelB = document.getElementById('plant-panel-right-b');
+    const panelConfigs = [
+        { element: document.getElementById('plant-panel-left-a'), start: 0.26, end: 0.4, phase: 0.4, side: -1 },
+        { element: document.getElementById('plant-panel-left-b'), start: 0.34, end: 0.48, phase: 1.1, side: -1 },
+        { element: document.getElementById('plant-panel-left-c'), start: 0.42, end: 0.56, phase: 1.8, side: -1 },
+        { element: document.getElementById('plant-panel-right-a'), start: 0.3, end: 0.44, phase: 0.7, side: 1 },
+        { element: document.getElementById('plant-panel-right-b'), start: 0.38, end: 0.52, phase: 1.45, side: 1 },
+        { element: document.getElementById('plant-panel-right-c'), start: 0.46, end: 0.6, phase: 2.15, side: 1 },
+    ].filter(function (item) { return !!item.element; });
     const progressFill = document.getElementById('plant-intro-fill');
     const progressText = document.getElementById('plant-intro-text');
 
@@ -164,23 +169,31 @@
             subtitle.style.opacity = String(subtitleReveal * logoFade * 0.9);
         }
 
-        if (leftPanel) {
-            leftPanel.style.opacity = String(band(progress, 0.34, 0.62));
-            leftPanel.style.transform = 'translateY(' + (10 - band(progress, 0.34, 0.62) * 10) + 'px)';
-        }
-
-        if (rightPanelA) {
-            rightPanelA.style.opacity = String(band(progress, 0.46, 0.76));
-            rightPanelA.style.transform = 'translateY(' + (10 - band(progress, 0.46, 0.76) * 10) + 'px)';
-        }
-
-        if (rightPanelB) {
-            rightPanelB.style.opacity = String(band(progress, 0.6, 0.92));
-            rightPanelB.style.transform = 'translateY(' + (10 - band(progress, 0.6, 0.92) * 10) + 'px)';
-        }
-
         if (progress >= 0.995) {
             completeIntro();
+        }
+    }
+
+    function updatePanelMotion(elapsed) {
+        for (let i = 0; i < panelConfigs.length; i += 1) {
+            const config = panelConfigs[i];
+            const panel = config.element;
+            const reveal = band(progress, config.start, config.end);
+            const floatY = Math.sin(elapsed * 1.6 + config.phase) * 4;
+            const driftX = Math.cos(elapsed * 1.25 + config.phase) * 3 * config.side;
+            const rotate = Math.sin(elapsed * 1.35 + config.phase) * 0.8;
+            const offsetY = 10 - reveal * 10;
+            const middleBase = panel.classList.contains('middle') ? -50 : 0;
+
+            panel.style.opacity = String(reveal);
+            panel.style.transform =
+                'translate3d(' + (driftX * reveal) + 'px, calc(' + middleBase + '% + ' + (offsetY + floatY * reveal) + 'px), 0) rotate(' + (rotate * reveal) + 'deg)';
+
+            if (reveal > 0.12) {
+                panel.classList.add('is-visible');
+            } else {
+                panel.classList.remove('is-visible');
+            }
         }
     }
 
@@ -305,16 +318,97 @@
         };
     }
 
-    const plants = [
-        makePlant(0.0, 0.0, 1.0, 0.0),
-        makePlant(-0.55, 0.2, 0.9, 1.2),
-        makePlant(0.58, 0.16, 0.92, 2.4),
-        makePlant(-0.3, -0.46, 0.84, 3.4),
-        makePlant(0.35, -0.44, 0.86, 4.8),
+    function makeBackdropLeaf(width, height, color, opacity, offsetX, offsetY, offsetZ, rotationZ) {
+        const geometry = new THREE.PlaneGeometry(width, height, 4, 10);
+        const position = geometry.attributes.position;
+
+        for (let i = 0; i < position.count; i += 1) {
+            const y = position.getY(i);
+            const curve = Math.sin((y / height) * Math.PI) * 0.12;
+            const x = position.getX(i);
+            position.setZ(i, curve + Math.abs(x) * 0.03);
+        }
+
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            side: THREE.DoubleSide,
+            roughness: 0.82,
+            metalness: 0,
+            transparent: true,
+            opacity: opacity,
+            depthWrite: false,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(offsetX, offsetY, offsetZ);
+        mesh.rotation.z = rotationZ;
+        mesh.userData.baseOpacity = opacity;
+        mesh.userData.baseX = offsetX;
+        mesh.userData.baseY = offsetY;
+        mesh.userData.baseZ = offsetZ;
+        mesh.userData.baseRotationZ = rotationZ;
+        mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+        return mesh;
+    }
+
+    const plantSeeds = [
+        [0.0, 0.0, 1.0, 0.0],
+        [-0.55, 0.2, 0.9, 1.2],
+        [0.58, 0.16, 0.92, 2.4],
+        [-0.3, -0.46, 0.84, 3.4],
+        [0.35, -0.44, 0.86, 4.8],
+        [-0.95, -0.08, 0.72, 5.3],
+        [0.96, -0.04, 0.74, 5.9],
+        [-1.22, 0.34, 0.62, 0.8],
+        [1.2, 0.3, 0.64, 1.6],
+        [-0.78, -0.78, 0.58, 2.7],
+        [0.76, -0.76, 0.6, 3.5],
+        [0.02, -0.92, 0.56, 4.2],
     ];
 
+    const miniPlantSeeds = [
+        [-1.42, 0.56, 0.36, 0.35],
+        [1.46, 0.52, 0.34, 0.92],
+        [-1.56, -0.12, 0.32, 1.58],
+        [1.58, -0.16, 0.33, 2.24],
+        [-1.3, -0.66, 0.3, 3.02],
+        [1.28, -0.7, 0.31, 3.68],
+        [-0.08, -1.18, 0.28, 4.34],
+        [0.14, 0.72, 0.29, 5.06],
+    ];
+
+    const allPlantSeeds = plantSeeds.concat(miniPlantSeeds);
+
+    const plants = allPlantSeeds.map(function (seed) {
+        return makePlant(seed[0], seed[1], seed[2], seed[3]);
+    });
+
+    const backdropLeafSeeds = [
+        [-4.9, 1.9, -8.8, -0.42, 1.45, 2.2, 0.14],
+        [4.8, 1.8, -8.7, 0.38, 1.36, 2.1, 0.13],
+        [-4.3, 0.95, -8.9, -0.18, 1.22, 1.9, 0.12],
+        [4.2, 1.05, -8.65, 0.16, 1.18, 1.85, 0.11],
+        [-5.05, -0.25, -8.82, 0.22, 1.28, 2.0, 0.12],
+        [4.95, -0.28, -8.78, -0.2, 1.25, 1.96, 0.11],
+        [-4.1, -1.15, -8.9, -0.14, 1.5, 2.3, 0.1],
+        [4.15, -1.08, -8.84, 0.1, 1.46, 2.26, 0.1],
+        [-2.8, 1.7, -8.55, -0.34, 1.08, 1.72, 0.09],
+        [2.9, 1.62, -8.5, 0.32, 1.1, 1.74, 0.09],
+        [-3.0, -1.55, -8.66, 0.28, 1.06, 1.7, 0.08],
+        [3.1, -1.48, -8.62, -0.26, 1.04, 1.68, 0.08],
+    ];
+
+    const backdropLeaves = backdropLeafSeeds.map(function (seed, index) {
+        const palette = [0x3f8619, 0x4f9720, 0x5aa524, 0x6bb22c];
+        const leaf = makeBackdropLeaf(seed[4], seed[5], palette[index % palette.length], seed[6], seed[0], seed[1], seed[2], seed[3]);
+        leaf.material.opacity = seed[6];
+        return leaf;
+    });
+
     const grasses = [];
-    for (let i = 0; i < 70; i += 1) {
+    for (let i = 0; i < 110; i += 1) {
         const mat = new THREE.MeshStandardMaterial({ color: 0x4a8820, roughness: 0.8, metalness: 0 });
         const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.005, 0.45 + Math.random() * 0.35, 5), mat);
         const angle = Math.random() * Math.PI * 2;
@@ -343,6 +437,7 @@
         const windZ = Math.cos(elapsed * 0.84) * 0.01;
 
         updateOverlayUi();
+        updatePanelMotion(elapsed);
 
         const soilReveal = band(progress, 0.06, 0.2);
         const topSoilReveal = band(progress, 0.09, 0.24);
@@ -358,9 +453,20 @@
             blade.rotation.z = Math.cos(elapsed * blade.userData.speed * 0.7 + blade.userData.phase) * 0.06 + windZ;
         }
 
+        for (let i = 0; i < backdropLeaves.length; i += 1) {
+            const leaf = backdropLeaves[i];
+            const leafMotion = Math.sin(elapsed * 0.22 + leaf.userData.floatPhase) * 0.02;
+            const reveal = band(progress, 0.02, 0.18);
+
+            leaf.rotation.z = leaf.userData.baseRotationZ + leafMotion * 0.14;
+            leaf.position.y = leaf.userData.baseY + leafMotion * 0.22;
+            leaf.position.x = leaf.userData.baseX + Math.cos(elapsed * 0.16 + leaf.userData.floatPhase) * 0.04;
+            leaf.material.opacity = leaf.userData.baseOpacity * reveal;
+        }
+
         for (let i = 0; i < plants.length; i += 1) {
             const plant = plants[i];
-            const delay = i * 0.05;
+            const delay = i * 0.018;
 
             plant.group.scale.setScalar(band(progress, 0.04 + delay, 0.38 + delay));
             plant.group.rotation.z = Math.sin(elapsed * 0.3 + plant.phase) * 0.015;

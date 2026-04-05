@@ -100,47 +100,134 @@ body.intro-locked {
 
 .plant-intro-panel {
     position: absolute;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(90, 152, 20, 0.2);
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 2px 20px rgba(34, 48, 27, 0.08);
+    border-radius: 16px;
+    padding: 22px 24px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transition: opacity 0.32s ease, transform 0.32s ease;
+    width: clamp(360px, 30vw, 440px);
+    min-height: 196px;
+    color: #000;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.72);
+    background: transparent;
+    backdrop-filter: none;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    gap: 10px;
+}
+
+.plant-intro-panel::before,
+.plant-intro-panel::after {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    z-index: 0;
+    display: none;
+}
+
+.plant-intro-panel::before {
+    background: none;
+}
+
+.plant-intro-panel::after {
+    background: none;
+    mix-blend-mode: normal;
+    animation: none;
+}
+
+.plant-intro-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
+.plant-intro-panel::selection {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.plant-intro-panel.left.top,
+.plant-intro-panel.right.bottom {
+    border-radius: 16px;
+}
+
+.plant-intro-panel.left.middle,
+.plant-intro-panel.right.middle {
+    border-radius: 16px;
+}
+
+.plant-intro-panel.left.bottom,
+.plant-intro-panel.right.top {
+    border-radius: 16px;
+}
+
+.plant-intro-panel .side-label {
+    font-size: 11px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.78);
+}
+
+.plant-intro-panel strong {
+    font-family: "Fraunces", "Georgia", serif;
+    font-size: 26px;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    color: #000;
+}
+
+.plant-intro-panel .side-sub {
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(0, 0, 0, 0.7);
+    display: -webkit-box;
+    line-clamp: 4;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .plant-intro-panel.left {
-    top: 74px;
-    left: 22px;
-    max-width: 240px;
+    left: 14px;
 }
 
-.plant-intro-panel.left h3 {
-    font-family: "Fraunces", "Georgia", serif;
-    font-size: 17px;
-    margin-bottom: 6px;
-    color: var(--earth);
-}
-
-.plant-intro-panel.left p {
-    font-size: 11px;
-    line-height: 1.55;
-    color: rgba(34, 48, 27, 0.74);
+.plant-intro-panel.left::before {
+    filter: none;
 }
 
 .plant-intro-panel.right {
-    width: 145px;
-    right: 20px;
+    right: 14px;
+}
+
+.plant-intro-panel.right::before {
+    filter: none;
 }
 
 .plant-intro-panel.right.top {
-    top: 78px;
+    top: 64px;
+}
+
+.plant-intro-panel.right.middle {
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .plant-intro-panel.right.bottom {
-    bottom: 96px;
+    bottom: 72px;
+}
+
+.plant-intro-panel.left.top {
+    top: 64px;
+}
+
+.plant-intro-panel.left.middle {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.plant-intro-panel.left.bottom {
+    bottom: 72px;
 }
 
 .plant-intro-progress {
@@ -175,6 +262,46 @@ body.intro-locked {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: rgba(34, 48, 27, 0.46);
+}
+
+.plant-intro-panel.is-visible {
+    animation: panelFloat 4.2s ease-in-out infinite;
+}
+
+@keyframes panelFloat {
+    0% {
+        filter: drop-shadow(0 6px 16px rgba(24, 46, 23, 0.08));
+    }
+    50% {
+        filter: drop-shadow(0 10px 20px rgba(24, 46, 23, 0.15));
+    }
+    100% {
+        filter: drop-shadow(0 6px 16px rgba(24, 46, 23, 0.08));
+    }
+}
+
+@keyframes liquidWave {
+    0% {
+        transform: translate3d(-2%, -1%, 0) scale(1.02);
+    }
+    50% {
+        transform: translate3d(2%, 2%, 0) scale(1.08);
+    }
+    100% {
+        transform: translate3d(-1%, -2%, 0) scale(1.02);
+    }
+}
+
+@keyframes liquidPulse {
+    0% {
+        opacity: 0.56;
+    }
+    50% {
+        opacity: 0.88;
+    }
+    100% {
+        opacity: 0.56;
+    }
 }
 
 .ambient {
@@ -262,6 +389,7 @@ body.intro-locked {
     display: grid;
     grid-template-columns: minmax(240px, 300px) 1fr;
     min-height: 100vh;
+    align-items: start;
     transition: grid-template-columns 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -336,10 +464,22 @@ body.intro-locked {
     display: flex;
     flex-direction: column;
     gap: 36px;
-    position: relative;
-    overflow: hidden;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     z-index: 2;
     transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), padding 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .sidebar::before {
@@ -411,6 +551,9 @@ body.intro-locked {
 .managements {
     position: relative;
     z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .nav-title {
@@ -426,6 +569,8 @@ body.intro-locked {
     list-style: none;
     display: grid;
     gap: 12px;
+    flex: 1;
+    align-content: stretch;
 }
 
 .managements li {
@@ -433,6 +578,13 @@ body.intro-locked {
     font-size: 15px;
     letter-spacing: 0.2px;
     transition: justify-content 0.3s ease;
+}
+
+.sidebar:not(.sidebar-collapsed) .managements ul {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0;
 }
 
 .managements .nav-link {
@@ -1184,6 +1336,17 @@ button > * {
     padding: 0;
 }
 
+.sidebar-collapsed .managements ul {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0;
+}
+
+.sidebar-collapsed .managements {
+    justify-content: space-between;
+}
+
 .sidebar-collapsed .nav-link {
     width: 56px;
     height: 56px;
@@ -1213,6 +1376,11 @@ button > * {
 
     .sidebar {
         position: relative;
+        top: auto;
+        align-self: auto;
+        height: auto;
+        max-height: none;
+        overflow: visible;
         flex-direction: row;
         flex-wrap: wrap;
     }
@@ -1237,11 +1405,21 @@ button > * {
 
 @media (max-width: 820px) {
     .plant-intro-panel.left {
-        max-width: 190px;
+        left: 14px;
     }
 
     .plant-intro-panel.right {
-        width: 132px;
+        right: 14px;
+    }
+
+    .plant-intro-panel {
+        width: 240px;
+        min-height: 172px;
+        padding: 16px 18px;
+    }
+
+    .plant-intro-panel strong {
+        font-size: 22px;
     }
 
     .hero-banner,
