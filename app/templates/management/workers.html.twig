@@ -355,7 +355,19 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- Affectations List -->
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search affectations" id="affectation-search">
+                    <!-- Search Form -->
+                    <form method="get" action="{{ adminMode ? path('admin_management_workers') : path('management_workers') }}" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; width:100%;">
+                        {% if adminMode %}
+                            <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                            <input class="input" type="text" name="search_id" placeholder="🔍 Search by affectation ID..." value="{{ searchId|default('') }}" style="max-width:250px;">
+                        {% else %}
+                            <input class="input" type="text" name="search_type" placeholder="🔍 Search by type (e.g., Labourage, Irrigation)..." value="{{ searchType|default('') }}" style="max-width:350px;">
+                        {% endif %}
+                        <button type="submit" class="primary" style="padding:8px 16px;">Search</button>
+                        {% if (adminMode and searchId) or (!adminMode and searchType) %}
+                            <a href="{{ adminMode ? path('admin_management_workers', {user_id: selectedUserId}) : path('management_workers') }}" class="link" style="color:#999;">Clear search</a>
+                        {% endif %}
+                    </form>
                     <span class="pill">{{ affectations|length }} records</span>
                 </div>
                 <table class="data-table">
@@ -401,7 +413,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="{% if adminMode %}7{% else %}6{% endif %}" style="text-align:center; padding:20px">No affectations found</td>
+                                <td colspan="{% if adminMode %}7{% else %}6{% endif %}" style="text-align:center; padding:20px">
+                                    {% if adminMode and searchId %}
+                                        No affectations found with ID "{{ searchId }}"
+                                    {% elseif !adminMode and searchType %}
+                                        No affectations found with type "{{ searchType }}"
+                                    {% else %}
+                                        No affectations found
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endif %}
                     </tbody>

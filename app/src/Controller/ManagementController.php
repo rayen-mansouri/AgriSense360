@@ -774,6 +774,9 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('auth_login', ['mode' => 'user']);
         }
 
+        // Get search parameter for type_travail
+        $searchType = (string) $request->query->get('search_type', '');
+
         $affectation = [
             'typeTravail' => null,
             'dateDebut' => null,
@@ -823,6 +826,13 @@ final class ManagementController extends AbstractController
         $affectations = $crudService->listAffectations();
         $evaluations = $crudService->listEvaluations();
 
+        // Filter affectations by type_travail if search is provided
+        if (!empty($searchType)) {
+            $affectations = array_filter($affectations, function (array $aff) use ($searchType) {
+                return stripos((string) ($aff['typeTravail'] ?? ''), $searchType) !== false;
+            });
+        }
+
         return $this->render('management/workers.html.twig', [
             'active' => 'workers',
             'adminMode' => false,
@@ -832,6 +842,7 @@ final class ManagementController extends AbstractController
             'evaluations' => $evaluations,
             'evaluation' => $evaluation,
             'evaluationEditing' => false,
+            'searchType' => $searchType,
         ]);
     }
 
@@ -1039,6 +1050,9 @@ final class ManagementController extends AbstractController
         $availableUsers = $crudService->listUsers();
         $selectedUserId = (int) $request->query->get('user_id', $currentAdminId);
 
+        // Get search parameter for ID
+        $searchId = (string) $request->query->get('search_id', '');
+
         $affectation = [
             'typeTravail' => null,
             'dateDebut' => null,
@@ -1074,6 +1088,14 @@ final class ManagementController extends AbstractController
         $affectations = $crudService->listAffectations();
         $evaluations = $crudService->listEvaluations();
 
+        // Filter affectations by ID if search is provided
+        if (!empty($searchId)) {
+            $searchIdInt = (int) $searchId;
+            $affectations = array_filter($affectations, function (array $aff) use ($searchIdInt) {
+                return (int) ($aff['id'] ?? 0) === $searchIdInt;
+            });
+        }
+
         // Calculate statistics for admin dashboard
         $stats = $this->calculateWorkerStats($affectations, $evaluations);
 
@@ -1089,6 +1111,7 @@ final class ManagementController extends AbstractController
             'stats' => $stats,
             'availableUsers' => $availableUsers,
             'selectedUserId' => $selectedUserId,
+            'searchId' => $searchId,
         ]);
     }
 
