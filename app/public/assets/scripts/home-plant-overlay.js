@@ -28,6 +28,7 @@
     const progressFill = document.getElementById('plant-intro-fill');
     const progressText = document.getElementById('plant-intro-text');
     const diveButton = document.getElementById('plant-intro-dive');
+    const actionButtons = Array.from(document.querySelectorAll('.plant-intro-action'));
 
     if (!overlay || !canvas) {
         return;
@@ -74,6 +75,13 @@
 
     function updateDiveButtonVisibility() {
         if (!diveButton) {
+            actionButtons.forEach(function (btn) {
+                if (progress >= 0.992) {
+                    btn.classList.add('is-visible');
+                } else {
+                    btn.classList.remove('is-visible');
+                }
+            });
             return;
         }
 
@@ -230,7 +238,7 @@
 
         updateDiveButtonVisibility();
 
-        if (!diveButton && progress >= 0.995) {
+        if (!diveButton && actionButtons.length === 0 && progress >= 0.995) {
             completeIntro();
         }
     }
@@ -763,6 +771,16 @@
     if (diveButton) {
         diveButton.addEventListener('click', function () {
             completeIntro();
+        });
+    }
+
+    if (actionButtons.length > 0) {
+        actionButtons.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                if (progress < 0.992) {
+                    event.preventDefault();
+                }
+            });
         });
     }
 

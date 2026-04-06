@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AgriSense 360 Intro</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/home.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="intro-page intro-pending intro-locked {% if mode == 'admin' %}admin-mode{% endif %}" data-collapsed="true">
+    <a class="mode-switch" href="{{ path('intro', { mode: switchTargetMode }) }}">{{ switchLabel }}</a>
+
+    <section class="plant-intro-overlay" id="plant-intro-overlay" aria-label="AgriSense intro animation">
+        <canvas id="plant-intro-canvas" aria-hidden="true"></canvas>
+        <div class="plant-intro-overlay__layer"></div>
+        <div class="plant-intro-overlay__content">
+            <h2 class="plant-intro-title" id="plant-intro-title">AgriSense 360</h2>
+            <p class="plant-intro-sub" id="plant-intro-sub">{% if mode == 'admin' %}Administrative Intelligence Layer{% else %}Smart AI Companion for Farms{% endif %}</p>
+
+            <aside class="plant-intro-panel left top" id="plant-panel-left-a">
+                <span class="side-label">Unified View</span>
+                <strong>One Dashboard</strong>
+                <span class="side-sub">Animals, crops, stock, workers, and equipment in one place, with a calm layout that keeps every signal easy to read.</span>
+            </aside>
+
+            <aside class="plant-intro-panel left middle" id="plant-panel-left-b">
+                <span class="side-label">Smart Alerts</span>
+                <strong>Early Signals</strong>
+                <span class="side-sub">Catch maintenance, weather, and health risks before loss happens, so your team can move early and stay ahead.</span>
+            </aside>
+
+            <aside class="plant-intro-panel left bottom" id="plant-panel-left-c">
+                <span class="side-label">Daily Clarity</span>
+                <strong>Actionable Tasks</strong>
+                <span class="side-sub">Your team gets precise priorities for every shift, with focused updates that keep work organized and smooth.</span>
+            </aside>
+
+            <aside class="plant-intro-panel right top" id="plant-panel-right-a">
+                <span class="side-label">Yield Insight</span>
+                <strong>98%</strong>
+                <span class="side-sub">Above seasonal average, showing the platform's clear visibility into farm performance and progress.</span>
+            </aside>
+
+            <aside class="plant-intro-panel right middle" id="plant-panel-right-b">
+                <span class="side-label">Active Sensors</span>
+                <strong>148</strong>
+                <span class="side-sub">Live field monitoring at every zone, helping you spot changes quickly without overwhelming the screen.</span>
+            </aside>
+
+            <aside class="plant-intro-panel right bottom" id="plant-panel-right-c">
+                <span class="side-label">Decision Speed</span>
+                <strong>4.8x</strong>
+                <span class="side-sub">Faster intervention when anomalies appear, making day-to-day farm decisions feel steadier and more confident.</span>
+            </aside>
+
+            <div class="plant-intro-progress">
+                <div class="plant-intro-progress__track"><div class="plant-intro-progress__fill" id="plant-intro-fill"></div></div>
+                <span id="plant-intro-text">scroll to grow</span>
+            </div>
+
+            <div class="plant-intro-actions" id="plant-intro-actions">
+                <a class="plant-intro-action" href="{{ path('auth_login', { mode: mode }) }}">Log In</a>
+                <a class="plant-intro-action" href="{{ path('auth_signup', { mode: mode }) }}">Sign Up</a>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{{ asset('assets/scripts/home-plant-overlay.js') }}"></script>
+</body>
+</html>

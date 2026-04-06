@@ -14,24 +14,32 @@ class OracleSqlPlusCrudService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function listEquipments(): array
+    public function listEquipments(?int $ownerUserId = null): array
     {
+        $whereClause = '';
+        if ($ownerUserId !== null) {
+            $whereClause = 'WHERE USER_ID = ' . (int) $ownerUserId;
+        }
+
         $sql = <<<SQL
 SELECT
     ID,
+    USER_ID,
     NAME,
     TYPE,
     STATUS,
     TO_CHAR(PURCHASE_DATE, 'YYYY-MM-DD') AS PURCHASE_DATE
 FROM EQUIPMENTS
+{$whereClause}
 ORDER BY ID DESC
 SQL;
 
-        $rows = $this->query($sql, ['ID', 'NAME', 'TYPE', 'STATUS', 'PURCHASE_DATE']);
+        $rows = $this->query($sql, ['ID', 'USER_ID', 'NAME', 'TYPE', 'STATUS', 'PURCHASE_DATE']);
 
         return array_map(function (array $row): array {
             return [
                 'id' => (int) $row['ID'],
+                'userId' => (int) $row['USER_ID'],
                 'name' => $row['NAME'],
                 'type' => $row['TYPE'],
                 'status' => $row['STATUS'],
@@ -43,11 +51,17 @@ SQL;
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function listMaintenances(): array
+    public function listMaintenances(?int $ownerUserId = null): array
     {
+        $whereClause = '';
+        if ($ownerUserId !== null) {
+            $whereClause = 'WHERE m.USER_ID = ' . (int) $ownerUserId;
+        }
+
         $sql = <<<SQL
 SELECT
     m.ID,
+    m.USER_ID,
     m.EQUIPMENT_ID,
     NVL(e.NAME, '') AS EQUIPMENT_NAME,
     TO_CHAR(m.MAINTENANCE_DATE, 'YYYY-MM-DD') AS MAINTENANCE_DATE,
@@ -55,14 +69,16 @@ SELECT
     TO_CHAR(m.COST) AS COST
 FROM MAINTENANCE m
 LEFT JOIN EQUIPMENTS e ON e.ID = m.EQUIPMENT_ID
+{$whereClause}
 ORDER BY m.ID DESC
 SQL;
 
-        $rows = $this->query($sql, ['ID', 'EQUIPMENT_ID', 'EQUIPMENT_NAME', 'MAINTENANCE_DATE', 'MAINTENANCE_TYPE', 'COST']);
+        $rows = $this->query($sql, ['ID', 'USER_ID', 'EQUIPMENT_ID', 'EQUIPMENT_NAME', 'MAINTENANCE_DATE', 'MAINTENANCE_TYPE', 'COST']);
 
         return array_map(function (array $row): array {
             return [
                 'id' => (int) $row['ID'],
+                'userId' => (int) $row['USER_ID'],
                 'equipment' => [
                     'id' => (int) $row['EQUIPMENT_ID'],
                     'name' => $row['EQUIPMENT_NAME'],
@@ -77,20 +93,23 @@ SQL;
     /**
      * @return array<string, mixed>|null
      */
-    public function findEquipment(int $id): ?array
+    public function findEquipment(int $id, ?int $ownerUserId = null): ?array
     {
+        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
+
         $sql = <<<SQL
 SELECT
     ID,
+    USER_ID,
     NAME,
     TYPE,
     STATUS,
     TO_CHAR(PURCHASE_DATE, 'YYYY-MM-DD') AS PURCHASE_DATE
 FROM EQUIPMENTS
-WHERE ID = {$id}
+WHERE ID = {$id}{$ownerCondition}
 SQL;
 
-        $rows = $this->query($sql, ['ID', 'NAME', 'TYPE', 'STATUS', 'PURCHASE_DATE']);
+        $rows = $this->query($sql, ['ID', 'USER_ID', 'NAME', 'TYPE', 'STATUS', 'PURCHASE_DATE']);
         if ($rows === []) {
             return null;
         }
@@ -99,6 +118,7 @@ SQL;
 
         return [
             'id' => (int) $row['ID'],
+            'userId' => (int) $row['USER_ID'],
             'name' => $row['NAME'],
             'type' => $row['TYPE'],
             'status' => $row['STATUS'],
@@ -109,11 +129,14 @@ SQL;
     /**
      * @return array<string, mixed>|null
      */
-    public function findMaintenance(int $id): ?array
+    public function findMaintenance(int $id, ?int $ownerUserId = null): ?array
     {
+        $ownerCondition = $ownerUserId !== null ? ' AND m.USER_ID = ' . (int) $ownerUserId : '';
+
         $sql = <<<SQL
 SELECT
     m.ID,
+    m.USER_ID,
     m.EQUIPMENT_ID,
     NVL(e.NAME, '') AS EQUIPMENT_NAME,
     TO_CHAR(m.MAINTENANCE_DATE, 'YYYY-MM-DD') AS MAINTENANCE_DATE,
@@ -121,10 +144,10 @@ SELECT
     TO_CHAR(m.COST) AS COST
 FROM MAINTENANCE m
 LEFT JOIN EQUIPMENTS e ON e.ID = m.EQUIPMENT_ID
-WHERE m.ID = {$id}
+WHERE m.ID = {$id}{$ownerCondition}
 SQL;
 
-        $rows = $this->query($sql, ['ID', 'EQUIPMENT_ID', 'EQUIPMENT_NAME', 'MAINTENANCE_DATE', 'MAINTENANCE_TYPE', 'COST']);
+        $rows = $this->query($sql, ['ID', 'USER_ID', 'EQUIPMENT_ID', 'EQUIPMENT_NAME', 'MAINTENANCE_DATE', 'MAINTENANCE_TYPE', 'COST']);
         if ($rows === []) {
             return null;
         }
@@ -133,6 +156,7 @@ SQL;
 
         return [
             'id' => (int) $row['ID'],
+            'userId' => (int) $row['USER_ID'],
             'equipment' => [
                 'id' => (int) $row['EQUIPMENT_ID'],
                 'name' => $row['EQUIPMENT_NAME'],
@@ -146,16 +170,17 @@ SQL;
     /**
      * @param array{name:?string,type:?string,status:?string,purchaseDate:?string} $data
      */
-    public function createEquipment(array $data): void
+    public function createEquipment(array $data, int $ownerUserId): void
     {
         $name = $this->quoteOrNull($data['name']);
         $type = $this->quoteOrNull($data['type']);
         $status = $this->quoteOrNull($data['status']);
         $purchaseDate = $this->toDateExpression($data['purchaseDate']);
+        $safeOwnerId = (int) $ownerUserId;
 
         $sql = <<<SQL
-INSERT INTO EQUIPMENTS (ID, NAME, TYPE, STATUS, PURCHASE_DATE)
-VALUES (EQUIPMENT_SEQ.NEXTVAL, {$name}, {$type}, {$status}, {$purchaseDate})
+INSERT INTO EQUIPMENTS (ID, USER_ID, NAME, TYPE, STATUS, PURCHASE_DATE)
+VALUES (EQUIPMENT_SEQ.NEXTVAL, {$safeOwnerId}, {$name}, {$type}, {$status}, {$purchaseDate})
 SQL;
 
         $this->execute($sql);
@@ -164,12 +189,13 @@ SQL;
     /**
      * @param array{name:?string,type:?string,status:?string,purchaseDate:?string} $data
      */
-    public function updateEquipment(int $id, array $data): void
+    public function updateEquipment(int $id, array $data, ?int $ownerUserId = null): void
     {
         $name = $this->quoteOrNull($data['name']);
         $type = $this->quoteOrNull($data['type']);
         $status = $this->quoteOrNull($data['status']);
         $purchaseDate = $this->toDateExpression($data['purchaseDate']);
+        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
 
         $sql = <<<SQL
 UPDATE EQUIPMENTS
@@ -177,32 +203,39 @@ SET NAME = {$name},
     TYPE = {$type},
     STATUS = {$status},
     PURCHASE_DATE = {$purchaseDate}
-WHERE ID = {$id}
+WHERE ID = {$id}{$ownerCondition}
 SQL;
 
         $this->execute($sql);
     }
 
-    public function deleteEquipment(int $id): void
+    public function deleteEquipment(int $id, ?int $ownerUserId = null): void
     {
+        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
         // Keep user/admin behavior consistent by removing dependent maintenance rows first.
-        $this->execute("DELETE FROM MAINTENANCE WHERE EQUIPMENT_ID = {$id}");
-        $this->execute("DELETE FROM EQUIPMENTS WHERE ID = {$id}");
+        $this->execute("DELETE FROM MAINTENANCE WHERE EQUIPMENT_ID = {$id}{$ownerCondition}");
+        $this->execute("DELETE FROM EQUIPMENTS WHERE ID = {$id}{$ownerCondition}");
     }
 
     /**
      * @param array{equipmentId:int,maintenanceDate:?string,maintenanceType:?string,cost:?string} $data
      */
-    public function createMaintenance(array $data): void
+    public function createMaintenance(array $data, int $ownerUserId): void
     {
         $equipmentId = (int) $data['equipmentId'];
         $maintenanceDate = $this->toDateExpression($data['maintenanceDate']);
         $maintenanceType = $this->quoteOrNull($data['maintenanceType']);
         $cost = $this->numericOrZero($data['cost']);
+        $safeOwnerId = (int) $ownerUserId;
+
+        $ownedEquipment = $this->findEquipment($equipmentId, $safeOwnerId);
+        if ($ownedEquipment === null) {
+            throw new \RuntimeException('Selected equipment does not belong to this user.');
+        }
 
         $sql = <<<SQL
-INSERT INTO MAINTENANCE (ID, EQUIPMENT_ID, MAINTENANCE_DATE, MAINTENANCE_TYPE, COST)
-VALUES (MAINTENANCE_SEQ.NEXTVAL, {$equipmentId}, {$maintenanceDate}, {$maintenanceType}, {$cost})
+INSERT INTO MAINTENANCE (ID, USER_ID, EQUIPMENT_ID, MAINTENANCE_DATE, MAINTENANCE_TYPE, COST)
+VALUES (MAINTENANCE_SEQ.NEXTVAL, {$safeOwnerId}, {$equipmentId}, {$maintenanceDate}, {$maintenanceType}, {$cost})
 SQL;
 
         $this->execute($sql);
@@ -211,12 +244,13 @@ SQL;
     /**
      * @param array{equipmentId:int,maintenanceDate:?string,maintenanceType:?string,cost:?string} $data
      */
-    public function updateMaintenance(int $id, array $data): void
+    public function updateMaintenance(int $id, array $data, ?int $ownerUserId = null): void
     {
         $equipmentId = (int) $data['equipmentId'];
         $maintenanceDate = $this->toDateExpression($data['maintenanceDate']);
         $maintenanceType = $this->quoteOrNull($data['maintenanceType']);
         $cost = $this->numericOrZero($data['cost']);
+        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
 
         $sql = <<<SQL
 UPDATE MAINTENANCE
@@ -224,16 +258,181 @@ SET EQUIPMENT_ID = {$equipmentId},
     MAINTENANCE_DATE = {$maintenanceDate},
     MAINTENANCE_TYPE = {$maintenanceType},
     COST = {$cost}
-WHERE ID = {$id}
+WHERE ID = {$id}{$ownerCondition}
 SQL;
 
         $this->execute($sql);
     }
 
-    public function deleteMaintenance(int $id): void
+    public function deleteMaintenance(int $id, ?int $ownerUserId = null): void
     {
-        $sql = "DELETE FROM MAINTENANCE WHERE ID = {$id}";
+        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
+        $sql = "DELETE FROM MAINTENANCE WHERE ID = {$id}{$ownerCondition}";
         $this->execute($sql);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listUsers(): array
+    {
+        $sql = <<<SQL
+SELECT
+    ID,
+    LAST_NAME,
+    FIRST_NAME,
+    EMAIL,
+    PASSWORD_HASH,
+    STATUS,
+    ROLE_NAME,
+    TO_CHAR(CREATED_AT, 'YYYY-MM-DD') AS CREATED_AT
+FROM USERS
+ORDER BY ID DESC
+SQL;
+
+        $rows = $this->query($sql, ['ID', 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'PASSWORD_HASH', 'STATUS', 'ROLE_NAME', 'CREATED_AT']);
+
+        return array_map(function (array $row): array {
+            return [
+                'id' => (int) $row['ID'],
+                'lastName' => $row['LAST_NAME'],
+                'firstName' => $row['FIRST_NAME'],
+                'email' => $row['EMAIL'],
+                'passwordHash' => $row['PASSWORD_HASH'],
+                'status' => $row['STATUS'],
+                'roleName' => $row['ROLE_NAME'],
+                'createdAt' => $this->toDateTime($row['CREATED_AT']),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findUser(int $id): ?array
+    {
+        $sql = <<<SQL
+SELECT
+    ID,
+    LAST_NAME,
+    FIRST_NAME,
+    EMAIL,
+    PASSWORD_HASH,
+    STATUS,
+    ROLE_NAME,
+    TO_CHAR(CREATED_AT, 'YYYY-MM-DD') AS CREATED_AT
+FROM USERS
+WHERE ID = {$id}
+SQL;
+
+        $rows = $this->query($sql, ['ID', 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'PASSWORD_HASH', 'STATUS', 'ROLE_NAME', 'CREATED_AT']);
+        if ($rows === []) {
+            return null;
+        }
+
+        $row = $rows[0];
+
+        return [
+            'id' => (int) $row['ID'],
+            'lastName' => $row['LAST_NAME'],
+            'firstName' => $row['FIRST_NAME'],
+            'email' => $row['EMAIL'],
+            'passwordHash' => $row['PASSWORD_HASH'],
+            'status' => $row['STATUS'],
+            'roleName' => $row['ROLE_NAME'],
+            'createdAt' => $this->toDateTime($row['CREATED_AT']),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findUserByEmail(string $email): ?array
+    {
+        $emailExpr = $this->quoteOrNull($email);
+        $sql = <<<SQL
+SELECT
+    ID,
+    LAST_NAME,
+    FIRST_NAME,
+    EMAIL,
+    PASSWORD_HASH,
+    STATUS,
+    ROLE_NAME,
+    TO_CHAR(CREATED_AT, 'YYYY-MM-DD') AS CREATED_AT
+FROM USERS
+WHERE LOWER(EMAIL) = LOWER({$emailExpr})
+SQL;
+
+        $rows = $this->query($sql, ['ID', 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'PASSWORD_HASH', 'STATUS', 'ROLE_NAME', 'CREATED_AT']);
+        if ($rows === []) {
+            return null;
+        }
+
+        $row = $rows[0];
+
+        return [
+            'id' => (int) $row['ID'],
+            'lastName' => $row['LAST_NAME'],
+            'firstName' => $row['FIRST_NAME'],
+            'email' => $row['EMAIL'],
+            'passwordHash' => $row['PASSWORD_HASH'],
+            'status' => $row['STATUS'],
+            'roleName' => $row['ROLE_NAME'],
+            'createdAt' => $this->toDateTime($row['CREATED_AT']),
+        ];
+    }
+
+    /**
+     * @param array{lastName:?string,firstName:?string,email:?string,passwordHash:?string,status:?string,roleName:?string} $data
+     */
+    public function createUser(array $data): void
+    {
+        $lastName = $this->quoteOrNull($data['lastName']);
+        $firstName = $this->quoteOrNull($data['firstName']);
+        $email = $this->quoteOrNull($data['email']);
+        $passwordHash = $this->quoteOrNull($data['passwordHash']);
+        $status = $this->quoteOrNull($data['status']);
+        $roleName = $this->quoteOrNull($data['roleName']);
+
+        $sql = <<<SQL
+INSERT INTO USERS (ID, LAST_NAME, FIRST_NAME, EMAIL, PASSWORD_HASH, STATUS, ROLE_NAME, CREATED_AT)
+VALUES (USER_SEQ.NEXTVAL, {$lastName}, {$firstName}, {$email}, {$passwordHash}, {$status}, {$roleName}, SYSDATE)
+SQL;
+
+        $this->execute($sql);
+    }
+
+    /**
+     * @param array{lastName:?string,firstName:?string,email:?string,passwordHash:?string,status:?string,roleName:?string} $data
+     */
+    public function updateUser(int $id, array $data): void
+    {
+        $lastName = $this->quoteOrNull($data['lastName']);
+        $firstName = $this->quoteOrNull($data['firstName']);
+        $email = $this->quoteOrNull($data['email']);
+        $status = $this->quoteOrNull($data['status']);
+        $roleName = $this->quoteOrNull($data['roleName']);
+
+        $setClauses = [
+            "LAST_NAME = {$lastName}",
+            "FIRST_NAME = {$firstName}",
+            "EMAIL = {$email}",
+            "STATUS = {$status}",
+            "ROLE_NAME = {$roleName}",
+        ];
+
+        if (($data['passwordHash'] ?? null) !== null && trim((string) $data['passwordHash']) !== '') {
+            $setClauses[] = 'PASSWORD_HASH = ' . $this->quoteOrNull($data['passwordHash']);
+        }
+
+        $sql = "UPDATE USERS SET " . implode(', ', $setClauses) . " WHERE ID = {$id}";
+        $this->execute($sql);
+    }
+
+    public function deleteUser(int $id): void
+    {
+        $this->execute("DELETE FROM USERS WHERE ID = {$id}");
     }
 
     private function buildConnectionString(string $databaseUrl): string

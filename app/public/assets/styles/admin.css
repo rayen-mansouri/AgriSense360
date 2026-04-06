@@ -844,6 +844,108 @@ body.admin-panel {
     line-height: 1.7;
 }
 
+.admin-panel.users-management-view .crud-card {
+    overflow: hidden;
+}
+
+.admin-panel.users-management-view .crud-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.95fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.admin-panel.users-management-view .crud-list,
+.admin-panel.users-management-view .crud-form {
+    min-width: 0;
+}
+
+.admin-panel.users-management-view .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.admin-panel.users-management-view .users-data-table {
+    width: 100%;
+    min-width: 760px;
+    table-layout: fixed;
+}
+
+.admin-panel.users-management-view .users-data-table th,
+.admin-panel.users-management-view .users-data-table td {
+    vertical-align: middle;
+}
+
+.admin-panel.users-management-view .users-data-table th:nth-child(1),
+.admin-panel.users-management-view .users-data-table td:nth-child(1) {
+    width: 88px;
+}
+
+.admin-panel.users-management-view .users-data-table th:nth-child(2),
+.admin-panel.users-management-view .users-data-table td:nth-child(2),
+.admin-panel.users-management-view .users-data-table th:nth-child(3),
+.admin-panel.users-management-view .users-data-table td:nth-child(3) {
+    width: 96px;
+}
+
+.admin-panel.users-management-view .users-data-table th:nth-child(4),
+.admin-panel.users-management-view .users-data-table td:nth-child(4) {
+    min-width: 230px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.admin-panel.users-management-view .users-data-table th:nth-child(7),
+.admin-panel.users-management-view .users-data-table td:nth-child(7) {
+    width: 90px;
+    white-space: nowrap;
+}
+
+.admin-panel.users-management-view .users-data-table .status {
+    white-space: nowrap;
+}
+
+.admin-panel.users-management-view .users-accounts-card .crud-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+}
+
+.admin-panel.users-management-view .users-accounts-card .table-scroll {
+    overflow-x: visible;
+}
+
+.admin-panel.users-management-view .users-accounts-card .users-data-table {
+    min-width: 0;
+    table-layout: fixed;
+}
+
+.admin-panel.users-management-view .users-accounts-card .users-data-table th,
+.admin-panel.users-management-view .users-accounts-card .users-data-table td {
+    padding: 10px 6px;
+    font-size: 12px;
+}
+
+.admin-panel.users-management-view .users-accounts-card .users-data-table th:nth-child(2),
+.admin-panel.users-management-view .users-accounts-card .users-data-table td:nth-child(2),
+.admin-panel.users-management-view .users-accounts-card .users-data-table th:nth-child(3),
+.admin-panel.users-management-view .users-accounts-card .users-data-table td:nth-child(3) {
+    width: 88px;
+}
+
+.admin-panel.users-management-view .users-accounts-card .users-data-table th:nth-child(4),
+.admin-panel.users-management-view .users-accounts-card .users-data-table td:nth-child(4) {
+    width: 30%;
+}
+
+.admin-panel.users-management-view .users-accounts-card .users-data-table th:nth-child(7),
+.admin-panel.users-management-view .users-accounts-card .users-data-table td:nth-child(7) {
+    width: 120px;
+}
+
+.admin-panel.users-management-view .users-accounts-card [data-edit-user] {
+    margin-right: 8px;
+}
+
 @media (max-width: 1080px) {
     .admin-panel .ops-grid {
         grid-template-columns: 1fr;
@@ -851,6 +953,22 @@ body.admin-panel {
 
     .admin-panel .ops-panel-wide {
         grid-column: auto;
+    }
+
+    .admin-panel.users-management-view .crud-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-panel.users-management-view .users-data-table {
+        min-width: 700px;
+    }
+
+    .admin-panel.users-management-view .users-accounts-card .table-scroll {
+        overflow-x: auto;
+    }
+
+    .admin-panel.users-management-view .users-accounts-card .users-data-table {
+        min-width: 700px;
     }
 }
 

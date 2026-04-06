@@ -5,6 +5,26 @@
 {% block subhead %}Database telemetry, maintenance analytics, and operational CRUD for admin-level supervision.{% endblock %}
 
 {% block body %}
+    <section class="telemetry-panel" style="margin-bottom: 18px;">
+        <header>
+            <h3>Selected User Scope</h3>
+            <span class="tag">Admin can switch and manage each account data</span>
+        </header>
+        <form method="get" action="{{ path('admin_management_equipments') }}" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+            <label style="min-width:280px; display:grid; gap:6px;">
+                <span>User</span>
+                <select class="input" name="user_id" required>
+                    {% for user in availableUsers %}
+                        <option value="{{ user.id }}" {% if user.id == selectedUserId %}selected{% endif %}>
+                            #{{ user.id }} - {{ user.firstName }} {{ user.lastName }} ({{ user.roleName }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button class="primary" type="submit">Load User Data</button>
+        </form>
+    </section>
+
     <section class="stats-rail">
         <article class="stat-tile">
             <span class="k">Equipments</span>
@@ -179,8 +199,9 @@
                 <span class="pill">EQUIPMENTS</span>
                 <h2>Create or update equipment</h2>
             </div>
-            <form method="post" action="{{ path('admin_management_equipments') }}" class="crud-form" id="equipment-form" data-create-url="{{ path('admin_management_equipments') }}">
+            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="equipment-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}">
                 <input type="hidden" name="equipment_id" id="equipment_id">
+                <input type="hidden" name="target_user_id" value="{{ selectedUserId }}">
                 <input type="hidden" name="form_type" value="equipment">
                 <label>
                     <span>Equipment Name</span>
@@ -210,8 +231,9 @@
                 <span class="pill">MAINTENANCE</span>
                 <h2>Create or update maintenance</h2>
             </div>
-            <form method="post" action="{{ path('admin_management_equipments') }}" class="crud-form" id="maintenance-form" data-create-url="{{ path('admin_management_equipments') }}">
+            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="maintenance-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}">
                 <input type="hidden" name="maintenance_id" id="maintenance_id">
+                <input type="hidden" name="target_user_id" value="{{ selectedUserId }}">
                 <input type="hidden" name="form_type" value="maintenance">
                 <label>
                     <span>Equipment</span>
@@ -276,10 +298,10 @@
                                         data-type="{{ equipmentRow.type|e('html_attr') }}"
                                         data-status="{{ equipmentRow.status|e('html_attr') }}"
                                         data-purchase-date="{{ equipmentRow.purchaseDate|default('') }}"
-                                        data-edit-url="{{ path('admin_management_equipments_edit', {'id': equipmentRow.id}) }}">
+                                        data-edit-url="{{ path('admin_management_equipments_edit', {'id': equipmentRow.id, 'user_id': selectedUserId}) }}">
                                     Edit
                                 </button>
-                                <form method="post" action="{{ path('admin_management_equipments_delete', {'id': equipmentRow.id}) }}" class="inline-delete js-ajax-delete">
+                                <form method="post" action="{{ path('admin_management_equipments_delete', {'id': equipmentRow.id, 'user_id': selectedUserId}) }}" class="inline-delete js-ajax-delete">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete_equipment_' ~ equipmentRow.id) }}">
                                     <button type="submit" class="danger">Delete</button>
                                 </form>
@@ -329,10 +351,10 @@
                                         data-maintenance-date="{{ maintenanceRow.maintenanceDate|default('') }}"
                                         data-maintenance-type="{{ maintenanceRow.maintenanceType|e('html_attr') }}"
                                         data-cost="{{ maintenanceRow.cost|e('html_attr') }}"
-                                        data-edit-url="{{ path('admin_management_maintenance_edit', {'id': maintenanceRow.id}) }}">
+                                        data-edit-url="{{ path('admin_management_maintenance_edit', {'id': maintenanceRow.id, 'user_id': selectedUserId}) }}">
                                     Edit
                                 </button>
-                                <form method="post" action="{{ path('admin_management_maintenance_delete', {'id': maintenanceRow.id}) }}" class="inline-delete js-ajax-delete">
+                                <form method="post" action="{{ path('admin_management_maintenance_delete', {'id': maintenanceRow.id, 'user_id': selectedUserId}) }}" class="inline-delete js-ajax-delete">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete_maintenance_' ~ maintenanceRow.id) }}">
                                     <button type="submit" class="danger">Delete</button>
                                 </form>

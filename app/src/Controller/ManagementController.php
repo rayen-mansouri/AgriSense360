@@ -30,6 +30,11 @@ final class ManagementController extends AbstractController
     #[Route('/management/equipments', name: 'management_equipments')]
     public function equipments(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
         $equipment = [
             'name' => null,
             'type' => null,
@@ -48,9 +53,9 @@ final class ManagementController extends AbstractController
 
             try {
                 if ($formType === 'maintenance') {
-                    $oracleCrud->createMaintenance($this->maintenanceDataFromRequest($request));
+                    $oracleCrud->createMaintenance($this->maintenanceDataFromRequest($request), $currentUserId);
                 } else {
-                    $oracleCrud->createEquipment($this->equipmentDataFromRequest($request));
+                    $oracleCrud->createEquipment($this->equipmentDataFromRequest($request), $currentUserId);
                 }
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
@@ -59,8 +64,8 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $oracleCrud->listEquipments();
-        $maintenances = $oracleCrud->listMaintenances();
+        $equipments = $oracleCrud->listEquipments($currentUserId);
+        $maintenances = $oracleCrud->listMaintenances($currentUserId);
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -76,7 +81,12 @@ final class ManagementController extends AbstractController
     #[Route('/management/equipments/{id}/edit', name: 'management_equipments_edit', methods: ['GET', 'POST'])]
     public function editEquipment(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $equipment = $oracleCrud->findEquipment($id);
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        $equipment = $oracleCrud->findEquipment($id, $currentUserId);
 
         if (!$equipment) {
             throw $this->createNotFoundException('Equipment not found.');
@@ -84,7 +94,7 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             try {
-                $oracleCrud->updateEquipment($id, $this->equipmentDataFromRequest($request));
+                $oracleCrud->updateEquipment($id, $this->equipmentDataFromRequest($request), $currentUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update equipment: ' . $e->getMessage());
             }
@@ -92,14 +102,14 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $oracleCrud->listEquipments();
+        $equipments = $oracleCrud->listEquipments($currentUserId);
         $maintenance = [
             'equipment' => null,
             'maintenanceDate' => null,
             'maintenanceType' => null,
             'cost' => null,
         ];
-        $maintenances = $oracleCrud->listMaintenances();
+        $maintenances = $oracleCrud->listMaintenances($currentUserId);
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -115,12 +125,17 @@ final class ManagementController extends AbstractController
     #[Route('/management/equipments/{id}/delete', name: 'management_equipments_delete', methods: ['POST'])]
     public function deleteEquipment(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
         if (!$this->isCsrfTokenValid('delete_equipment_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         try {
-            $oracleCrud->deleteEquipment($id);
+            $oracleCrud->deleteEquipment($id, $currentUserId);
         } catch (\Throwable $e) {
             $this->addFlash('error', 'Unable to delete equipment: ' . $e->getMessage());
         }
@@ -131,7 +146,12 @@ final class ManagementController extends AbstractController
     #[Route('/management/equipments/maintenance/{id}/edit', name: 'management_maintenance_edit', methods: ['GET', 'POST'])]
     public function editMaintenance(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $maintenance = $oracleCrud->findMaintenance($id);
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        $maintenance = $oracleCrud->findMaintenance($id, $currentUserId);
 
         if (!$maintenance) {
             throw $this->createNotFoundException('Maintenance not found.');
@@ -139,7 +159,7 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             try {
-                $oracleCrud->updateMaintenance($id, $this->maintenanceDataFromRequest($request));
+                $oracleCrud->updateMaintenance($id, $this->maintenanceDataFromRequest($request), $currentUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update maintenance: ' . $e->getMessage());
             }
@@ -147,8 +167,8 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $oracleCrud->listEquipments();
-        $maintenances = $oracleCrud->listMaintenances();
+        $equipments = $oracleCrud->listEquipments($currentUserId);
+        $maintenances = $oracleCrud->listMaintenances($currentUserId);
         $equipment = [
             'name' => null,
             'type' => null,
@@ -170,12 +190,17 @@ final class ManagementController extends AbstractController
     #[Route('/management/equipments/maintenance/{id}/delete', name: 'management_maintenance_delete', methods: ['POST'])]
     public function deleteMaintenance(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
         if (!$this->isCsrfTokenValid('delete_maintenance_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         try {
-            $oracleCrud->deleteMaintenance($id);
+            $oracleCrud->deleteMaintenance($id, $currentUserId);
         } catch (\Throwable $e) {
             $this->addFlash('error', 'Unable to delete maintenance: ' . $e->getMessage());
         }
@@ -186,6 +211,23 @@ final class ManagementController extends AbstractController
     #[Route('/admin/management/equipments', name: 'admin_management_equipments')]
     public function adminEquipments(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        $allUsers = $oracleCrud->listUsers();
+        $selectedUserId = (int) $request->query->get('user_id', 0);
+        if ($selectedUserId <= 0 && $allUsers !== []) {
+            $selectedUserId = (int) ($allUsers[0]['id'] ?? $currentAdminId);
+            foreach ($allUsers as $userRow) {
+                if (!$this->isAdminRole((string) ($userRow['roleName'] ?? ''))) {
+                    $selectedUserId = (int) ($userRow['id'] ?? $selectedUserId);
+                    break;
+                }
+            }
+        }
+
         $equipment = [
             'name' => null,
             'type' => null,
@@ -200,31 +242,50 @@ final class ManagementController extends AbstractController
         ];
 
         if ($request->isMethod('POST')) {
+            $postedTargetUserId = (int) $request->request->get('target_user_id', $selectedUserId);
+            if ($postedTargetUserId > 0) {
+                $selectedUserId = $postedTargetUserId;
+            }
+
             $formType = (string) $request->request->get('form_type', 'equipment');
 
             try {
                 if ($formType === 'maintenance') {
-                    $oracleCrud->createMaintenance($this->maintenanceDataFromRequest($request));
+                    $oracleCrud->createMaintenance($this->maintenanceDataFromRequest($request), $selectedUserId);
                 } else {
-                    $oracleCrud->createEquipment($this->equipmentDataFromRequest($request));
+                    $oracleCrud->createEquipment($this->equipmentDataFromRequest($request), $selectedUserId);
                 }
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
             }
 
-            return $this->redirectToRoute('admin_management_equipments');
+            return $this->redirectToRoute('admin_management_equipments', ['user_id' => $selectedUserId]);
         }
 
-        $equipments = $oracleCrud->listEquipments();
-        $maintenances = $oracleCrud->listMaintenances();
+        $equipments = $oracleCrud->listEquipments($selectedUserId);
+        $maintenances = $oracleCrud->listMaintenances($selectedUserId);
 
-        return $this->renderAdminEquipmentsTemplate($equipments, $maintenances, $equipment, false, $maintenance, false);
+        return $this->renderAdminEquipmentsTemplate(
+            $equipments,
+            $maintenances,
+            $equipment,
+            false,
+            $maintenance,
+            false,
+            $allUsers,
+            $selectedUserId
+        );
     }
 
     #[Route('/admin/management/equipments/{id}/edit', name: 'admin_management_equipments_edit', methods: ['GET', 'POST'])]
     public function adminEditEquipment(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $equipment = $oracleCrud->findEquipment($id);
+        $selectedUserId = (int) $request->query->get('user_id', 0);
+        if ($selectedUserId <= 0) {
+            return $this->redirectToRoute('admin_management_equipments');
+        }
+
+        $equipment = $oracleCrud->findEquipment($id, $selectedUserId);
 
         if (!$equipment) {
             throw $this->createNotFoundException('Equipment not found.');
@@ -232,16 +293,17 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             try {
-                $oracleCrud->updateEquipment($id, $this->equipmentDataFromRequest($request));
+                $oracleCrud->updateEquipment($id, $this->equipmentDataFromRequest($request), $selectedUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update equipment: ' . $e->getMessage());
             }
 
-            return $this->redirectToRoute('admin_management_equipments');
+            return $this->redirectToRoute('admin_management_equipments', ['user_id' => $selectedUserId]);
         }
 
-        $equipments = $oracleCrud->listEquipments();
-        $maintenances = $oracleCrud->listMaintenances();
+        $equipments = $oracleCrud->listEquipments($selectedUserId);
+        $maintenances = $oracleCrud->listMaintenances($selectedUserId);
+        $allUsers = $oracleCrud->listUsers();
         $maintenance = [
             'equipment' => null,
             'maintenanceDate' => null,
@@ -249,29 +311,48 @@ final class ManagementController extends AbstractController
             'cost' => null,
         ];
 
-        return $this->renderAdminEquipmentsTemplate($equipments, $maintenances, $equipment, true, $maintenance, false);
+        return $this->renderAdminEquipmentsTemplate(
+            $equipments,
+            $maintenances,
+            $equipment,
+            true,
+            $maintenance,
+            false,
+            $allUsers,
+            $selectedUserId
+        );
     }
 
     #[Route('/admin/management/equipments/{id}/delete', name: 'admin_management_equipments_delete', methods: ['POST'])]
     public function adminDeleteEquipment(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $selectedUserId = (int) $request->query->get('user_id', 0);
+        if ($selectedUserId <= 0) {
+            return $this->redirectToRoute('admin_management_equipments');
+        }
+
         if (!$this->isCsrfTokenValid('delete_equipment_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         try {
-            $oracleCrud->deleteEquipment($id);
+            $oracleCrud->deleteEquipment($id, $selectedUserId);
         } catch (\Throwable $e) {
             $this->addFlash('error', 'Unable to delete equipment: ' . $e->getMessage());
         }
 
-        return $this->redirectToRoute('admin_management_equipments');
+        return $this->redirectToRoute('admin_management_equipments', ['user_id' => $selectedUserId]);
     }
 
     #[Route('/admin/management/equipments/maintenance/{id}/edit', name: 'admin_management_maintenance_edit', methods: ['GET', 'POST'])]
     public function adminEditMaintenance(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $maintenance = $oracleCrud->findMaintenance($id);
+        $selectedUserId = (int) $request->query->get('user_id', 0);
+        if ($selectedUserId <= 0) {
+            return $this->redirectToRoute('admin_management_equipments');
+        }
+
+        $maintenance = $oracleCrud->findMaintenance($id, $selectedUserId);
 
         if (!$maintenance) {
             throw $this->createNotFoundException('Maintenance not found.');
@@ -279,16 +360,17 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             try {
-                $oracleCrud->updateMaintenance($id, $this->maintenanceDataFromRequest($request));
+                $oracleCrud->updateMaintenance($id, $this->maintenanceDataFromRequest($request), $selectedUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update maintenance: ' . $e->getMessage());
             }
 
-            return $this->redirectToRoute('admin_management_equipments');
+            return $this->redirectToRoute('admin_management_equipments', ['user_id' => $selectedUserId]);
         }
 
-        $equipments = $oracleCrud->listEquipments();
-        $maintenances = $oracleCrud->listMaintenances();
+        $equipments = $oracleCrud->listEquipments($selectedUserId);
+        $maintenances = $oracleCrud->listMaintenances($selectedUserId);
+        $allUsers = $oracleCrud->listUsers();
         $equipment = [
             'name' => null,
             'type' => null,
@@ -296,23 +378,37 @@ final class ManagementController extends AbstractController
             'purchaseDate' => null,
         ];
 
-        return $this->renderAdminEquipmentsTemplate($equipments, $maintenances, $equipment, false, $maintenance, true);
+        return $this->renderAdminEquipmentsTemplate(
+            $equipments,
+            $maintenances,
+            $equipment,
+            false,
+            $maintenance,
+            true,
+            $allUsers,
+            $selectedUserId
+        );
     }
 
     #[Route('/admin/management/equipments/maintenance/{id}/delete', name: 'admin_management_maintenance_delete', methods: ['POST'])]
     public function adminDeleteMaintenance(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $selectedUserId = (int) $request->query->get('user_id', 0);
+        if ($selectedUserId <= 0) {
+            return $this->redirectToRoute('admin_management_equipments');
+        }
+
         if (!$this->isCsrfTokenValid('delete_maintenance_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         try {
-            $oracleCrud->deleteMaintenance($id);
+            $oracleCrud->deleteMaintenance($id, $selectedUserId);
         } catch (\Throwable $e) {
             $this->addFlash('error', 'Unable to delete maintenance: ' . $e->getMessage());
         }
 
-        return $this->redirectToRoute('admin_management_equipments');
+        return $this->redirectToRoute('admin_management_equipments', ['user_id' => $selectedUserId]);
     }
 
     #[Route('/management/stock', name: 'management_stock')]
@@ -349,20 +445,160 @@ final class ManagementController extends AbstractController
         ]);
     }
 
-    #[Route('/management/users', name: 'management_users')]
-    public function users(): Response
+    #[Route('/management/users', name: 'management_users', methods: ['GET', 'POST'])]
+    public function users(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $session = $request->getSession();
+        $currentUserId = (int) $session->get('auth_user_id', 0);
+
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        try {
+            $currentUser = $oracleCrud->findUser($currentUserId);
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to load profile: ' . $e->getMessage());
+            $currentUser = null;
+        }
+
+        if (!$currentUser) {
+            return $this->redirectToRoute('auth_logout');
+        }
+
+        if ($request->isMethod('POST')) {
+            try {
+                $payload = [
+                    'lastName' => trim((string) $request->request->get('last_name')),
+                    'firstName' => trim((string) $request->request->get('first_name')),
+                    'email' => trim((string) $request->request->get('email')),
+                    'passwordHash' => null,
+                    'status' => (string) ($currentUser['status'] ?? 'Active'),
+                    'roleName' => (string) ($currentUser['roleName'] ?? 'USER'),
+                ];
+
+                $newPassword = trim((string) $request->request->get('password'));
+                if ($newPassword !== '') {
+                    $payload['passwordHash'] = password_hash($newPassword, PASSWORD_BCRYPT);
+                }
+
+                $oracleCrud->updateUser($currentUserId, $payload);
+                $this->addFlash('success', 'Profile updated.');
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to update profile: ' . $e->getMessage());
+            }
+
+            return $this->redirectToRoute('management_users');
+        }
+
         return $this->render('management/users.html.twig', [
             'active' => 'users',
+            'currentUser' => $currentUser,
         ]);
     }
 
-    #[Route('/admin/management/users', name: 'admin_management_users')]
-    public function adminUsers(): Response
+    #[Route('/admin/management/users', name: 'admin_management_users', methods: ['GET', 'POST'])]
+    public function adminUsers(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $session = $request->getSession();
+        $currentUserId = (int) $session->get('auth_user_id', 0);
+
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        if ($request->isMethod('POST')) {
+            $action = (string) $request->request->get('user_action', 'create');
+            try {
+                if ($action === 'delete') {
+                    $id = (int) $request->request->get('id');
+                    if ($id > 0 && $id !== $currentUserId) {
+                        $oracleCrud->deleteUser($id);
+                        $this->addFlash('success', 'User deleted.');
+                    }
+                } else {
+                    $id = (int) $request->request->get('id');
+                    $payload = [
+                        'lastName' => trim((string) $request->request->get('last_name')),
+                        'firstName' => trim((string) $request->request->get('first_name')),
+                        'email' => trim((string) $request->request->get('email')),
+                        'passwordHash' => null,
+                        'status' => trim((string) $request->request->get('status')) ?: 'Active',
+                        'roleName' => trim((string) $request->request->get('role_name')) ?: 'USER',
+                    ];
+
+                    $password = trim((string) $request->request->get('password'));
+                    if ($password !== '') {
+                        $payload['passwordHash'] = password_hash($password, PASSWORD_BCRYPT);
+                    }
+
+                    if ($action === 'update' && $id > 0) {
+                        $oracleCrud->updateUser($id, $payload);
+                        $this->addFlash('success', 'User updated.');
+                    }
+
+                    if ($action === 'create') {
+                        if (($payload['passwordHash'] ?? null) === null) {
+                            $payload['passwordHash'] = password_hash('changeme123', PASSWORD_BCRYPT);
+                        }
+
+                        $oracleCrud->createUser($payload);
+                        $this->addFlash('success', 'User created.');
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'User operation failed: ' . $e->getMessage());
+            }
+
+            return $this->redirectToRoute('admin_management_users');
+        }
+
+        try {
+            $users = $oracleCrud->listUsers();
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to load users: ' . $e->getMessage());
+            $users = [];
+        }
+
+        $currentUser = null;
+        $adminCount = 0;
+        $activeCount = 0;
+        $pendingCount = 0;
+        $suspendedCount = 0;
+        foreach ($users as $user) {
+            $isAdmin = $this->isAdminRole((string) ($user['roleName'] ?? ''));
+            $status = strtolower((string) ($user['status'] ?? ''));
+
+            if ((int) ($user['id'] ?? 0) === $currentUserId) {
+                $currentUser = $user;
+            }
+
+            if ($isAdmin) {
+                $adminCount++;
+            }
+
+            if ($status === 'active') {
+                $activeCount++;
+            } elseif ($status === 'pending') {
+                $pendingCount++;
+            } elseif ($status === 'suspended') {
+                $suspendedCount++;
+            }
+        }
+
         return $this->render('management/users.html.twig', [
             'active' => 'users',
             'adminMode' => true,
+            'currentUser' => $currentUser,
+            'users' => $users,
+            'userStats' => [
+                'total' => count($users),
+                'admins' => $adminCount,
+                'normal' => max(count($users) - $adminCount, 0),
+                'active' => $activeCount,
+                'pending' => $pendingCount,
+                'suspended' => $suspendedCount,
+            ],
         ]);
     }
 
@@ -424,6 +660,7 @@ final class ManagementController extends AbstractController
      * @param array<int, array<string, mixed>> $maintenances
      * @param array<string, mixed> $equipment
      * @param array<string, mixed> $maintenance
+     * @param array<int, array<string, mixed>> $availableUsers
      */
     private function renderAdminEquipmentsTemplate(
         array $equipments,
@@ -431,7 +668,9 @@ final class ManagementController extends AbstractController
         array $equipment,
         bool $editing,
         array $maintenance,
-        bool $maintenanceEditing
+        bool $maintenanceEditing,
+        array $availableUsers = [],
+        int $selectedUserId = 0
     ): Response {
         $normalizedEquipments = array_map(static function (array $row): array {
             $purchaseDate = $row['purchaseDate'] ?? null;
@@ -629,6 +868,8 @@ final class ManagementController extends AbstractController
 
         return $this->render('admin/equipments.html.twig', [
             'active' => 'equipments',
+            'availableUsers' => $availableUsers,
+            'selectedUserId' => $selectedUserId,
             'equipments' => $normalizedEquipments,
             'equipment' => $equipment,
             'editing' => $editing,
@@ -665,5 +906,10 @@ final class ManagementController extends AbstractController
             'costTrendValues' => $costTrendValues,
             'recentLogs' => $recentLogs,
         ]);
+    }
+
+    private function isAdminRole(string $roleName): bool
+    {
+        return str_contains(strtoupper($roleName), 'ADMIN');
     }
 }

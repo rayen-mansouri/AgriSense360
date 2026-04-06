@@ -410,6 +410,21 @@
         margin 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.sidebar-logout,
+.admin-panel .sidebar-logout {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.sidebar-logout:hover,
+.admin-panel .sidebar-logout:hover {
+    color: #ffffff;
+    opacity: 1;
+}
+
 [data-collapsed="false"] .sidebar .sidebar-foot,
 .admin-panel[data-collapsed="false"] .sidebar .sidebar-foot {
     transition-delay: 0.2s;

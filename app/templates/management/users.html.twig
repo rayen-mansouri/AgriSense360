@@ -1,28 +1,36 @@
 {% extends adminMode|default(false) ? 'admin/layout.html.twig' : 'management/layout.html.twig' %}
 
 {% block title %}User Management{% endblock %}
+{% block body_state_class %}{% if adminMode|default(false) %} users-management-view{% endif %}{% endblock %}
 {% block eyebrow %}User Management{% endblock %}
-{% block heading %}Users, access, and roles{% endblock %}
-{% block subhead %}CRUD UI for User and Role. Actions are visual only.{% endblock %}
+{% block heading %}{% if adminMode|default(false) %}Users, access, and roles{% else %}My account profile{% endif %}{% endblock %}
+{% block subhead %}{% if adminMode|default(false) %}Manage all user accounts, role assignments, and status analytics from one console.{% else %}View and update your account information.{% endif %}{% endblock %}
 
 {% block body %}
 <section class="crud-section">
+    {% for message in app.flashes('error') %}
+        <div class="crud-card" style="border-color: rgba(216, 74, 74, 0.35);">
+            <p style="color:#8c2121; font-weight:600;">{{ message }}</p>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('success') %}
+        <div class="crud-card" style="border-color: rgba(76, 170, 102, 0.35);">
+            <p style="color:#2d6e41; font-weight:600;">{{ message }}</p>
+        </div>
+    {% endfor %}
+
+    {% if not adminMode|default(false) %}
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>User</h2>
-                <p>Manage accounts, email, and status.</p>
-            </div>
-            <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add user</button>
+                <h2>My Account</h2>
+                <p>General profile information and credentials.</p>
             </div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search users">
-                    <span class="pill">2 records</span>
+                    <span class="pill">1 profile</span>
                 </div>
                 <table class="data-table">
                     <thead>
@@ -37,64 +45,101 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>#US-01</td>
-                            <td>Hamdi</td>
-                            <td>Leila</td>
-                            <td>leila@farm.tn</td>
-                            <td><span class="status ok">Active</span></td>
+                            <td>#US-{{ currentUser.id|default(0) }}</td>
+                            <td>{{ currentUser.lastName|default('-') }}</td>
+                            <td>{{ currentUser.firstName|default('-') }}</td>
+                            <td>{{ currentUser.email|default('-') }}</td>
+                            <td><span class="status ok">{{ currentUser.status|default('Active') }}</span></td>
                             <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#US-07</td>
-                            <td>Gharbi</td>
-                            <td>Youssef</td>
-                            <td>youssef@farm.tn</td>
-                            <td><span class="status warn">Pending</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
+                                <span class="link">Profile</span>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <div class="crud-form">
-                <h3>Create / Edit user</h3>
-                <form>
+                <h3>Update My Profile</h3>
+                <form method="post">
                     <div class="form-grid">
                         <label class="field">
                             <span>Nom</span>
-                            <input class="input" type="text" placeholder="Last name">
+                            <input class="input" type="text" name="last_name" value="{{ currentUser.lastName|default('') }}" required>
                         </label>
                         <label class="field">
                             <span>Prenom</span>
-                            <input class="input" type="text" placeholder="First name">
+                            <input class="input" type="text" name="first_name" value="{{ currentUser.firstName|default('') }}" required>
                         </label>
                         <label class="field">
                             <span>Email</span>
-                            <input class="input" type="email" placeholder="email@domain.tn">
+                            <input class="input" type="email" name="email" value="{{ currentUser.email|default('') }}" required>
                         </label>
                         <label class="field">
-                            <span>Mot de passe</span>
-                            <input class="input" type="password" placeholder="********">
-                        </label>
-                        <label class="field">
-                            <span>Statut</span>
-                            <select class="input">
-                                <option>Active</option>
-                                <option>Pending</option>
-                                <option>Suspended</option>
-                            </select>
+                            <span>New Password</span>
+                            <input class="input" type="password" name="password" placeholder="Leave empty to keep current password">
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">Save</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>User Analytics</h2>
+                <p>Quick stats and distribution for all accounts.</p>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <span class="pill">{{ userStats.total|default(0) }} total</span>
+                </div>
+                <table class="data-table">
+                    <tbody>
+                        <tr><th>Total Users</th><td>{{ userStats.total|default(0) }}</td></tr>
+                        <tr><th>Admins</th><td>{{ userStats.admins|default(0) }}</td></tr>
+                        <tr><th>Normal Users</th><td>{{ userStats.normal|default(0) }}</td></tr>
+                        <tr><th>Active</th><td>{{ userStats.active|default(0) }}</td></tr>
+                        <tr><th>Pending</th><td>{{ userStats.pending|default(0) }}</td></tr>
+                        <tr><th>Suspended</th><td>{{ userStats.suspended|default(0) }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-form">
+                <h3>Role / Status Distribution</h3>
+                {% set totalUsers = userStats.total|default(0) > 0 ? userStats.total : 1 %}
+                {% set adminWidth = ((userStats.admins|default(0) / totalUsers) * 100)|round(1) %}
+                {% set normalWidth = ((userStats.normal|default(0) / totalUsers) * 100)|round(1) %}
+                {% set activeWidth = ((userStats.active|default(0) / totalUsers) * 100)|round(1) %}
+                {% set pendingWidth = ((userStats.pending|default(0) / totalUsers) * 100)|round(1) %}
+                {% set suspendedWidth = ((userStats.suspended|default(0) / totalUsers) * 100)|round(1) %}
+                <div style="display:grid; gap:12px;">
+                    <div>
+                        <p style="margin-bottom:6px;">Admins {{ adminWidth }}%</p>
+                        <div style="height:10px; background:#e9e3d8; border-radius:999px;"><span style="display:block; height:10px; width:{{ adminWidth }}%; background:#7b8cc5; border-radius:999px;"></span></div>
+                    </div>
+                    <div>
+                        <p style="margin-bottom:6px;">Normal {{ normalWidth }}%</p>
+                        <div style="height:10px; background:#e9e3d8; border-radius:999px;"><span style="display:block; height:10px; width:{{ normalWidth }}%; background:#69ad7a; border-radius:999px;"></span></div>
+                    </div>
+                    <div>
+                        <p style="margin-bottom:6px;">Active {{ activeWidth }}%</p>
+                        <div style="height:10px; background:#e9e3d8; border-radius:999px;"><span style="display:block; height:10px; width:{{ activeWidth }}%; background:#57a565; border-radius:999px;"></span></div>
+                    </div>
+                    <div>
+                        <p style="margin-bottom:6px;">Pending {{ pendingWidth }}%</p>
+                        <div style="height:10px; background:#e9e3d8; border-radius:999px;"><span style="display:block; height:10px; width:{{ pendingWidth }}%; background:#d8ac4e; border-radius:999px;"></span></div>
+                    </div>
+                    <div>
+                        <p style="margin-bottom:6px;">Suspended {{ suspendedWidth }}%</p>
+                        <div style="height:10px; background:#e9e3d8; border-radius:999px;"><span style="display:block; height:10px; width:{{ suspendedWidth }}%; background:#cb6464; border-radius:999px;"></span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -102,71 +147,186 @@
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>Role</h2>
-                <p>Define permissions and descriptions.</p>
-            </div>
-            <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add role</button>
+                <h2>Admin Profile</h2>
+                <p>Your administrator identity in this portal.</p>
             </div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
-                <div class="list-head">
-                    <input class="input" type="search" placeholder="Search roles">
-                    <span class="pill">2 records</span>
-                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Id</th>
                             <th>Nom</th>
-                            <th>Description</th>
-                            <th>Actions</th>
+                            <th>Prenom</th>
+                            <th>Email</th>
+                            <th>Role</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>#RL-01</td>
-                            <td>Admin</td>
-                            <td>Full access to management</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#RL-03</td>
-                            <td>Supervisor</td>
-                            <td>Read/write for operational teams</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
+                            <td>#US-{{ currentUser.id|default(0) }}</td>
+                            <td>{{ currentUser.lastName|default('-') }}</td>
+                            <td>{{ currentUser.firstName|default('-') }}</td>
+                            <td>{{ currentUser.email|default('-') }}</td>
+                            <td><span class="status ok">{{ currentUser.roleName|default('ADMIN') }}</span></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div class="crud-form" style="display:flex; align-items:center;">
+                <p>Admin profile is managed from the authentication flow. Use the section below to manage all users and role permissions.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card users-accounts-card">
+        <div class="crud-head">
+            <div>
+                <h2>All User Accounts</h2>
+                <p>Create, edit, delete, and change roles/status for any account.</p>
+            </div>
+        </div>
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <span class="pill">{{ users|length }} records</span>
+                </div>
+                <div class="table-scroll users-table-scroll">
+                    <table class="data-table users-data-table">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Nom</th>
+                                <th>Prenom</th>
+                                <th>Email</th>
+                                <th>Statut</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users|default([]) %}
+                                <tr>
+                                    <td>#US-{{ user.id }}</td>
+                                    <td>{{ user.lastName }}</td>
+                                    <td>{{ user.firstName }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td><span class="status {{ user.status|lower == 'active' ? 'ok' : 'warn' }}">{{ user.status }}</span></td>
+                                    <td><span class="status {{ user.roleName|upper matches '/ADMIN/' ? 'warn' : 'ok' }}">{{ user.roleName }}</span></td>
+                                    <td>
+                                        <button
+                                            class="link"
+                                            type="button"
+                                            data-edit-user
+                                            data-id="{{ user.id }}"
+                                            data-last-name="{{ user.lastName }}"
+                                            data-first-name="{{ user.firstName }}"
+                                            data-email="{{ user.email }}"
+                                            data-status="{{ user.status }}"
+                                            data-role="{{ user.roleName }}"
+                                        >Edit</button>
+                                        <form method="post" style="display:inline;">
+                                            <input type="hidden" name="user_action" value="delete">
+                                            <input type="hidden" name="id" value="{{ user.id }}">
+                                            <button class="link danger" type="submit" {% if user.id == currentUser.id|default(0) %}disabled{% endif %}>Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="7">No users found.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <div class="crud-form">
-                <h3>Create / Edit role</h3>
-                <form>
+                <h3>Create / Update user</h3>
+                <form method="post" id="user-account-form">
                     <div class="form-grid">
                         <label class="field">
-                            <span>Nom</span>
-                            <input class="input" type="text" placeholder="Role name">
+                            <span>User ID (for update)</span>
+                            <input class="input" type="number" id="user-form-id" name="id" placeholder="Leave empty to create">
                         </label>
                         <label class="field">
-                            <span>Description</span>
-                            <input class="input" type="text" placeholder="Role description">
+                            <span>Nom</span>
+                            <input class="input" type="text" id="user-form-last-name" name="last_name" placeholder="Last name" required>
+                        </label>
+                        <label class="field">
+                            <span>Prenom</span>
+                            <input class="input" type="text" id="user-form-first-name" name="first_name" placeholder="First name" required>
+                        </label>
+                        <label class="field">
+                            <span>Email</span>
+                            <input class="input" type="email" id="user-form-email" name="email" placeholder="email@domain.tn" required>
+                        </label>
+                        <label class="field">
+                            <span>Password</span>
+                            <input class="input" type="password" id="user-form-password" name="password" placeholder="Optional on update">
+                        </label>
+                        <label class="field">
+                            <span>Status</span>
+                            <select class="input" id="user-form-status" name="status">
+                                <option>Active</option>
+                                <option>Pending</option>
+                                <option>Suspended</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Role</span>
+                            <select class="input" id="user-form-role" name="role_name">
+                                <option value="USER">USER</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit" name="user_action" value="create">Create</button>
+                        <button class="ghost" type="submit" name="user_action" value="update" id="user-update-button">Update</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+    {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+    {{ parent() }}
+    {% if adminMode|default(false) %}
+    <script>
+        (function () {
+            const form = document.getElementById('user-account-form');
+            if (!form) {
+                return;
+            }
+
+            const idInput = document.getElementById('user-form-id');
+            const lastNameInput = document.getElementById('user-form-last-name');
+            const firstNameInput = document.getElementById('user-form-first-name');
+            const emailInput = document.getElementById('user-form-email');
+            const passwordInput = document.getElementById('user-form-password');
+            const statusSelect = document.getElementById('user-form-status');
+            const roleSelect = document.getElementById('user-form-role');
+            const updateButton = document.getElementById('user-update-button');
+
+            document.querySelectorAll('[data-edit-user]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    idInput.value = btn.dataset.id || '';
+                    lastNameInput.value = btn.dataset.lastName || '';
+                    firstNameInput.value = btn.dataset.firstName || '';
+                    emailInput.value = btn.dataset.email || '';
+                    statusSelect.value = btn.dataset.status || 'Active';
+                    roleSelect.value = (btn.dataset.role || 'USER').toUpperCase().includes('ADMIN') ? 'ADMIN' : 'USER';
+                    passwordInput.value = '';
+                    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    updateButton.focus();
+                });
+            });
+        })();
+    </script>
+    {% endif %}
 {% endblock %}

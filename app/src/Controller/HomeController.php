@@ -9,17 +9,13 @@ use Symfony\Component\Routing\Annotation\Route;
 
 final class HomeController extends AbstractController
 {
-    #[Route('/', name: 'home')]
+    #[Route('/home', name: 'home')]
     public function index(): Response
     {
-        return $this->render('home/index.html.twig', [
-            'dashboardMode' => 'user',
-            'switchTarget' => 'admin_home',
-            'switchLabel' => 'Open Admin',
-        ]);
+        return $this->render('home/index.html.twig');
     }
 
-    #[Route('/admin', name: 'admin_home')]
+    #[Route('/admin/home', name: 'admin_home')]
     public function admin(OracleSqlPlusCrudService $oracleCrud): Response
     {
         try {

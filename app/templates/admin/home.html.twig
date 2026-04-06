@@ -4,61 +4,9 @@
 {% block eyebrow %}Control Center{% endblock %}
 {% block heading %}Administrative Operations Dashboard{% endblock %}
 {% block subhead %}Executive visibility into equipment reliability, maintenance pressure, and operational spend across AgriSense infrastructure.{% endblock %}
-{% block body_state_class %} intro-page intro-pending intro-locked{% endblock %}
 {% block collapsed_state %}true{% endblock %}
 
 {% block body %}
-    <section class="plant-intro-overlay" id="plant-intro-overlay" aria-label="AgriSense intro animation">
-        <canvas id="plant-intro-canvas" aria-hidden="true"></canvas>
-        <div class="plant-intro-overlay__layer"></div>
-        <div class="plant-intro-overlay__content">
-            <h2 class="plant-intro-title" id="plant-intro-title">AgriSense 360</h2>
-            <p class="plant-intro-sub" id="plant-intro-sub">Administrative Intelligence Layer</p>
-
-            <aside class="plant-intro-panel left top" id="plant-panel-left-a">
-                <span class="side-label">Oversight</span>
-                <strong>Fleet Visibility</strong>
-                <span class="side-sub">Track asset readiness, maintenance pressure, and operational reliability from one administrative vantage point.</span>
-            </aside>
-
-            <aside class="plant-intro-panel left middle" id="plant-panel-left-b">
-                <span class="side-label">Control</span>
-                <strong>Decision Speed</strong>
-                <span class="side-sub">Prioritize interventions faster with structured metrics and predictive trend signals tailored for administrators.</span>
-            </aside>
-
-            <aside class="plant-intro-panel left bottom" id="plant-panel-left-c">
-                <span class="side-label">Compliance</span>
-                <strong>Audit Friendly</strong>
-                <span class="side-sub">Maintain clean records on equipment lifecycle and maintenance actions with an accountable operations timeline.</span>
-            </aside>
-
-            <aside class="plant-intro-panel right top" id="plant-panel-right-a">
-                <span class="side-label">Assets</span>
-                <strong>{{ kpis.totalEquipments }}</strong>
-                <span class="side-sub">Total tracked equipments under active administration scope.</span>
-            </aside>
-
-            <aside class="plant-intro-panel right middle" id="plant-panel-right-b">
-                <span class="side-label">Maintenance</span>
-                <strong>{{ kpis.totalMaintenances }}</strong>
-                <span class="side-sub">Logged maintenance interventions and service history entries.</span>
-            </aside>
-
-            <aside class="plant-intro-panel right bottom" id="plant-panel-right-c">
-                <span class="side-label">Readiness</span>
-                <strong>{{ kpis.readyRate }}%</strong>
-                <span class="side-sub">Current fleet availability ratio ready for operations.</span>
-            </aside>
-
-            <div class="plant-intro-progress">
-                <div class="plant-intro-progress__track"><div class="plant-intro-progress__fill" id="plant-intro-fill"></div></div>
-                <span id="plant-intro-text">scroll to grow</span>
-            </div>
-            <button type="button" class="plant-intro-dive" id="plant-intro-dive">Dive In</button>
-        </div>
-    </section>
-
     <section class="ops-kpi-grid">
         <article class="ops-kpi">
             <span class="k">Total Equipments</span>
@@ -172,7 +120,6 @@
             </header>
             <div class="ops-actions">
                 <a class="primary" href="{{ path('admin_management_equipments') }}">Open E&M Management</a>
-                <a class="ghost" href="{{ path('home') }}">Switch to User Home</a>
             </div>
             <p class="ops-note">This dashboard is administrative only and focused on supervision and operational decisions.</p>
         </article>
@@ -242,9 +189,4 @@
 
         drawOpsCurve();
     </script>
-{% endblock %}
-
-{% block scripts %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="{{ asset('assets/scripts/home-plant-overlay.js') }}"></script>
 {% endblock %}

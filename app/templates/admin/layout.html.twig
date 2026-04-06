@@ -13,7 +13,6 @@
 </head>
 <body class="admin-mode admin-panel{% block body_state_class %}{% endblock %}" data-collapsed="{% block collapsed_state %}true{% endblock %}">
     <div class="page">
-        <a class="mode-switch" href="{{ path('home') }}">Open User</a>
         <aside class="sidebar" aria-label="Admin primary" id="sidebar">
             <div class="brand">
                 <img src="{{ asset('assets/images/agrisense-logo.png') }}" alt="AgriSense 360 logo" class="brand-logo">
@@ -110,7 +109,7 @@
             </nav>
             <div class="sidebar-foot">
                 <span class="pulse-dot"></span>
-                <span>UI only mode</span>
+                <a class="sidebar-logout" href="{{ path('auth_logout') }}">Log out</a>
             </div>
         </aside>
 
@@ -128,8 +127,7 @@
                     <p class="subhead">{% block subhead %}{% endblock %}</p>
                 </div>
                 <div class="topbar-actions">
-                    <a class="ghost" href="{{ path('home') }}">Open User Home</a>
-                    <a class="primary" href="{{ path('admin_home') }}">Open Admin Home</a>
+                    <a class="primary" href="{{ path('admin_home') }}">Admin Overview</a>
                 </div>
             </header>
 

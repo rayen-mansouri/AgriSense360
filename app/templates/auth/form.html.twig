@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }} | AgriSense 360</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/styles/auth.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="{% if mode == 'admin' %}admin-mode{% endif %}">
+    <main class="auth-shell">
+        <section class="auth-card">
+            <a class="auth-back" href="{{ path('intro', { mode: mode }) }}">Back to Intro</a>
+            <p class="auth-kicker">{{ mode == 'admin' ? 'Admin Access' : 'User Access' }}</p>
+            <h1>{{ title }}</h1>
+            <p class="auth-sub">Use your AgriSense account credentials to continue.</p>
+
+            {% for message in app.flashes('error') %}
+                <div class="auth-alert error">{{ message }}</div>
+            {% endfor %}
+            {% for message in app.flashes('success') %}
+                <div class="auth-alert success">{{ message }}</div>
+            {% endfor %}
+
+            <form method="post" class="auth-form">
+                {% if authType == 'signup' %}
+                    <div class="auth-grid">
+                        <label class="field">
+                            <span>First Name</span>
+                            <input class="input" type="text" name="first_name" required>
+                        </label>
+                        <label class="field">
+                            <span>Last Name</span>
+                            <input class="input" type="text" name="last_name" required>
+                        </label>
+                    </div>
+                {% endif %}
+
+                <label class="field">
+                    <span>Email</span>
+                    <input class="input" type="email" name="email" required>
+                </label>
+
+                <label class="field">
+                    <span>Password</span>
+                    <input class="input" type="password" name="password" required>
+                </label>
+
+                <button class="primary auth-submit" type="submit">{{ submitLabel }}</button>
+            </form>
+
+            <div class="auth-switch">
+                {% if authType == 'login' %}
+                    <span>Need an account?</span>
+                    <a href="{{ path('auth_signup', { mode: mode }) }}">Sign up</a>
+                {% else %}
+                    <span>Already have an account?</span>
+                    <a href="{{ path('auth_login', { mode: mode }) }}">Log in</a>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
