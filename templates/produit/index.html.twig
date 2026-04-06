@@ -1,0 +1,70 @@
+{% extends 'layout/front_base.html.twig' %}
+{% block title %}Catalogue — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px">
+    <div>
+        <h1 class="page-title">🛒 Catalogue Produits</h1>
+        <p class="page-subtitle">{{ produits|length }} produit(s){% if search %} pour « {{ search }} »{% endif %}{% if selectedCat %} dans « {{ selectedCat }} »{% endif %}</p>
+    </div>
+    <a href="{{ path('produit_new') }}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Nouveau Produit
+    </a>
+</div>
+
+<!-- FILTRES -->
+<div class="filter-bar">
+    <a href="{{ path('produit_index') }}" class="filter-chip {{ search=='' and selectedCat=='' ? 'active':'' }}">
+        <i class="fa-solid fa-th-large"></i> Tous
+    </a>
+    {% for cat in categories %}
+        <a href="{{ path('produit_index', {cat: cat}) }}" class="filter-chip {{ selectedCat==cat ? 'active':'' }}">{{ cat }}</a>
+    {% endfor %}
+    <div style="flex:1;min-width:16px"></div>
+    <form action="{{ path('produit_index') }}" method="GET" class="filter-search">
+        <i class="fa-solid fa-magnifying-glass" style="color:#9aaa8a"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Rechercher...">
+    </form>
+</div>
+
+<!-- LISTE -->
+{% if produits is empty %}
+    <div class="card"><div class="empty-state">
+        <i class="fa-solid fa-box-open"></i>
+        <p>Aucun produit trouvé.</p>
+        <a href="{{ path('produit_index') }}" class="btn btn-primary btn-sm">Réinitialiser</a>
+    </div></div>
+{% else %}
+<div class="catalogue-grid">
+    {% for produit in produits %}
+    {% set stock = produit.stockActuel %}
+    <a href="{{ path('produit_show', {id: produit.id}) }}" class="product-card-front">
+        <div class="product-card-img">
+            {% if produit.photoUrl %}<img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}">
+            {% else %}<div class="product-img-placeholder"><i class="fa-solid fa-seedling"></i></div>{% endif %}
+            <span class="product-card-badge">{{ produit.categorie ?: 'Autre' }}</span>
+        </div>
+        <div class="product-card-body">
+            <div class="product-card-name">{{ produit.nom }}</div>
+            {% if produit.description %}<div class="product-card-desc">{{ produit.description|slice(0,90) }}{% if produit.description|length>90 %}…{% endif %}</div>{% endif %}
+            <div class="product-card-price">{{ produit.prixUnitaire }} DT <span>/ unité</span></div>
+        </div>
+        <div class="product-card-footer">
+            {% if stock %}
+                {% if stock.quantiteActuelle == 0 %}
+                    <div class="stock-indicator"><div class="stock-dot rupture"></div><span style="color:#f44336">Rupture</span></div>
+                {% elseif stock.isEnAlerte %}
+                    <div class="stock-indicator"><div class="stock-dot low"></div><span style="color:#ff9800">{{ stock.quantiteActuelle }} {{ stock.uniteMesure }} — limité</span></div>
+                {% else %}
+                    <div class="stock-indicator"><div class="stock-dot ok"></div><span style="color:#2e7d32">{{ stock.quantiteActuelle }} {{ stock.uniteMesure }}</span></div>
+                {% endif %}
+            {% else %}
+                <div class="stock-indicator"><div class="stock-dot rupture"></div><span style="color:#9aaa8a">Aucun stock</span></div>
+            {% endif %}
+            <span class="btn btn-primary btn-sm">Détails →</span>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

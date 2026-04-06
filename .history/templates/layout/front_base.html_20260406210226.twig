@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agrisens 360 — Agriculture Intelligente{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- CSS principal - chemin ABSOLU pour tester -->
+    <link rel="stylesheet" href="/css/agrisens.css">
+    
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+
+<!-- HEADER FRONT -->
+<header class="front-header">
+    <div class="front-header-container">
+        <a href="{{ path('front_accueil') }}" class="front-logo">
+    <i class="fa-solid fa-seedling"></i>
+    <span>Agrisens 360</span>
+</a>
+
+        <nav class="front-nav">
+    <a href="{{ path('front_accueil') }}" class="{{ app.request.attributes.get('_route') == 'front_accueil' ? 'active' : '' }}">
+        <i class="fa-solid fa-house"></i> Accueil
+    </a>
+    <a href="{{ path('front_catalogue') }}" class="{{ app.request.attributes.get('_route') == 'front_catalogue' ? 'active' : '' }}">
+        <i class="fa-solid fa-leaf"></i> Catalogue
+    </a>
+    <a href="{{ path('front_produit_new') }}" class="{{ app.request.attributes.get('_route') == 'front_produit_new' ? 'active' : '' }}">
+        <i class="fa-solid fa-plus-circle"></i> Nouveau Produit
+    </a>
+</nav>
+
+        <div class="front-header-right">
+            <form action="{{ path('front_catalogue') }}" method="GET" class="front-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="q" placeholder="Rechercher...">
+            </form>
+            <div class="front-user">
+                <i class="fa-solid fa-user"></i>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- FLASH MESSAGES -->
+<div class="flash-container">
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="flash flash-{{ label }}">
+                <i class="fa-solid {{ label == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
+                {{ message }}
+                <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="front-main">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- FOOTER -->
+<footer class="front-footer">
+    <div class="front-footer-container">
+        <div class="front-footer-logo">
+            <i class="fa-solid fa-seedling"></i>
+            <span>Agrisens 360</span>
+        </div>
+        <p>© {{ "now"|date("Y") }} — Solutions agricoles intelligentes</p>
+    </div>
+</footer>
+
+<script>
+// Auto-dismiss flash messages
+setTimeout(() => {
+    document.querySelectorAll('.flash').forEach(flash => {
+        flash.style.opacity = '0';
+        setTimeout(() => flash.remove(), 300);
+    });
+}, 5000);
+</script>
+
+{% block javascripts %}{% endblock %}
+
+</body>
+</html>

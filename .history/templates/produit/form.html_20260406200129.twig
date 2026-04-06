@@ -1,0 +1,322 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">{{ subtitle }}</p>
+    </div>
+    <a href="{{ path('home') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+</div>
+
+<div class="form-container">
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'produitForm', enctype: 'multipart/form-data'}}) }}
+
+    <!-- Carte Produit -->
+    <div class="card">
+        <div class="form-card-header">
+            <div class="form-card-icon"><i class="fa-solid fa-box"></i></div>
+            <div>
+                <h2 class="form-card-title">📦 Informations Produit</h2>
+                <p class="form-card-subtitle">Renseignez les détails du produit agricole</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Catégorie *</label>
+                {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie'}}) }}
+                <div class="error-msg" id="error-categorie"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nom du produit *</label>
+                {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom'}}) }}
+                <div class="error-msg" id="error-nom"></div>
+            </div>
+
+            <div class="form-group full-width">
+                <label class="form-label">Description</label>
+                {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Prix unitaire (DT) *</label>
+                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix'}}) }}
+                <div class="error-msg" id="error-prix"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Photo du produit *</label>
+                <div class="upload-box" id="uploadArea">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Cliquez pour choisir une image</p>
+                    {{ form_widget(form.produit.photoFile, {'attr': {'class': 'file-input', 'id': 'photoInput', 'accept': 'image/*'}}) }}
+                </div>
+                <div id="imagePreview" style="display:none; margin-top: 15px;">
+                    <img id="previewImg" style="max-width: 150px; border-radius: 8px;">
+                    <button type="button" class="remove-img" id="removeImgBtn">✖ Supprimer</button>
+                </div>
+                <div class="error-msg" id="error-photo"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte Stock -->
+    <div class="card">
+        <div class="form-card-header">
+            <div class="form-card-icon"><i class="fa-solid fa-warehouse"></i></div>
+            <div>
+                <h2 class="form-card-title">📊 Stock Initial</h2>
+                <p class="form-card-subtitle">Optionnel</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Quantité actuelle</label>
+                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Seuil d'alerte</label>
+                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Unité de mesure</label>
+                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite'}}) }}
+                <div class="error-msg" id="error-unite"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Emplacement</label>
+                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Date de réception</label>
+                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Date d'expiration</label>
+                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control'}}) }}
+                <div class="error-msg" id="error-dates"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+        <a href="{{ path('home') }}" class="btn btn-secondary">Annuler</a>
+        <button type="submit" class="btn btn-primary">{{ btnLabel }}</button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments
+    const form = document.getElementById('produitForm');
+    const photoInput = document.getElementById('photoInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const removeImgBtn = document.getElementById('removeImgBtn');
+    let imageSelected = false;
+
+    // ====================== PRÉVISUALISATION IMAGE ======================
+    if (uploadArea && photoInput) {
+        // Clic sur la zone d'upload
+        uploadArea.addEventListener('click', function() {
+            photoInput.click();
+        });
+
+        // Changement de fichier
+        photoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        uploadArea.style.display = 'none';
+                        imageSelected = true;
+                        // Effacer l'erreur photo
+                        const errorDiv = document.getElementById('error-photo');
+                        if (errorDiv) errorDiv.innerHTML = '';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Veuillez sélectionner une image valide');
+                    this.value = '';
+                }
+            }
+        });
+    }
+
+    // Supprimer l'image
+    if (removeImgBtn) {
+        removeImgBtn.addEventListener('click', function() {
+            photoInput.value = '';
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'flex';
+            imageSelected = false;
+        });
+    }
+
+    // ====================== AFFICHAGE DES ALERTES ======================
+    function showError(fieldId, message) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '<span class="alert-bubble">⚠️ ' + message + '</span>';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.style.borderColor = '#dc3545';
+            input.style.backgroundColor = '#fff8f8';
+        }
+    }
+
+    function clearError(fieldId) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.style.borderColor = '';
+            input.style.backgroundColor = '';
+        }
+    }
+
+    // ====================== VALIDATION ======================
+    function validateForm() {
+        let isValid = true;
+
+        // Nettoyer les erreurs
+        ['categorie', 'nom', 'prix', 'photo', 'unite', 'dates'].forEach(clearError);
+
+        // Catégorie
+        const categorie = document.getElementById('categorie');
+        if (!categorie.value) {
+            showError('categorie', 'La catégorie est obligatoire');
+            isValid = false;
+        }
+
+        // Nom
+        const nom = document.getElementById('nom');
+        if (!nom.value.trim()) {
+            showError('nom', 'Le nom du produit est obligatoire');
+            isValid = false;
+        } else if (nom.value.trim().length < 3) {
+            showError('nom', 'Le nom doit contenir au moins 3 caractères');
+            isValid = false;
+        }
+
+        // Prix
+        const prix = document.getElementById('prix');
+        const prixVal = parseFloat(prix.value);
+        if (!prix.value) {
+            showError('prix', 'Le prix unitaire est obligatoire');
+            isValid = false;
+        } else if (prixVal <= 0) {
+            showError('prix', 'Le prix doit être supérieur à 0');
+            isValid = false;
+        }
+
+        // Photo
+        const hasFile = photoInput && photoInput.files && photoInput.files.length > 0;
+        if (!hasFile && !imageSelected) {
+            showError('photo', 'La photo du produit est obligatoire');
+            isValid = false;
+        }
+
+        // Stock : si quantité > 0, unité obligatoire
+        const quantite = document.getElementById('quantite');
+        const unite = document.getElementById('unite');
+        if (quantite && parseFloat(quantite.value) > 0 && (!unite || !unite.value)) {
+            showError('unite', 'L\'unité est obligatoire si quantité > 0');
+            isValid = false;
+        }
+
+        // Dates
+        const dateReception = document.getElementById('dateReception');
+        const dateExpiration = document.getElementById('dateExpiration');
+        if (dateReception && dateReception.value && dateExpiration && dateExpiration.value) {
+            if (new Date(dateExpiration.value) < new Date(dateReception.value)) {
+                showError('dates', 'La date d\'expiration doit être après la date de réception');
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
+    // Soumission
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            const firstError = document.querySelector('.alert-bubble');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.form-container { max-width: 900px; margin: 0 auto; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.full-width { grid-column: span 2; }
+.card { background: white; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.form-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+.form-card-icon { width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px; }
+.form-card-title { font-size: 18px; font-weight: 600; margin: 0; }
+.form-card-subtitle { font-size: 13px; color: #666; margin: 0; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; transition: all 0.2s; }
+.form-control:focus { outline: none; border-color: #5a9814; box-shadow: 0 0 0 2px rgba(90,152,20,0.1); }
+
+/* Upload */
+.upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa; }
+.upload-box:hover { border-color: #5a9814; background: #f8fff4; }
+.upload-box i { font-size: 40px; color: #999; margin-bottom: 10px; }
+.upload-box p { margin: 0; color: #666; }
+.file-input { display: none; }
+.remove-img { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 20px; cursor: pointer; margin-top: 10px; font-size: 12px; }
+
+/* Alertes */
+.error-msg { min-height: 30px; margin-top: 5px; }
+.alert-bubble { background: #dc3545; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; display: inline-block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Actions */
+.form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+.btn { padding: 10px 24px; border-radius: 30px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; }
+.btn-primary { background: #5a9814; color: white; }
+.btn-primary:hover { background: #4a7a10; }
+.btn-secondary { background: #f0f2f5; color: #4a5568; }
+
+@media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .full-width { grid-column: span 1; }
+    .form-actions { flex-direction: column; }
+    .btn { text-align: center; }
+}
+</style>
+{% endblock %}

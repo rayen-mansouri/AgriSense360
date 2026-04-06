@@ -1,0 +1,57 @@
+{% extends 'layout/front_base.html.twig' %}
+
+{% block title %}Ajouter un produit - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="fa-solid fa-plus-circle"></i> Ajouter un produit</h3>
+                </div>
+                <div class="card-body">
+                    {{ form_start(form, {'attr': {'enctype': 'multipart/form-data'}}) }}
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.categorie, 'Catégorie', {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.categorie, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.categorie) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.nom, 'Nom du produit', {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.nom, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.nom) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.description, 'Description', {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
+                        {{ form_errors(form.description) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.prixUnitaire, 'Prix unitaire (DT)', {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.prixUnitaire, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.prixUnitaire) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.photoFile, 'Photo du produit', {'label_attr': {'class': 'form-label'}}) }}
+                        {{ form_widget(form.photoFile, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(form.photoFile) }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ path('catalogue') }}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-success">Ajouter</button>
+                    </div>
+                    
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

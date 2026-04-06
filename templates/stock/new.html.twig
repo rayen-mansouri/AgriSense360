@@ -1,0 +1,14 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Ajouter du Stock - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1>Ajouter du stock</h1>
+
+    {{ form_start(form) }}
+    {{ form_widget(form) }}
+    <button type="submit" class="btn btn-success btn-lg mt-3">Enregistrer le Stock</button>
+    {{ form_end(form) }}
+</div>
+{% endblock %}

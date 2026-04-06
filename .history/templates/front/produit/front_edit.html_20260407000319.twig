@@ -1,0 +1,837 @@
+{# templates/produit/front_edit.html.twig #}
+{% extends 'layout/front_base.html.twig' %}
+
+{% block title %}Modifier {{ produit.nom }} - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="front-produit-container">
+    <div class="front-produit-header edit-header">
+        <h1><i class="fa-solid fa-pen-to-square"></i> Modifier le produit</h1>
+        <p>{{ produit.nom }}</p>
+    </div>
+
+    <form method="post" id="produitForm" enctype="multipart/form-data" class="front-produit-form">
+        {{ form_widget(form._token) }}
+
+        <!-- Section produit -->
+        <div class="form-section">
+            <div class="section-title">
+                <i class="fa-solid fa-box"></i>
+                <h2>Informations produit</h2>
+            </div>
+
+            <div class="form-group field-container">
+                <label class="form-label">Catégorie *</label>
+                {{ form_widget(form.categorie, {'attr': {'class': 'form-control field-categorie'}}) }}
+                <div class="error-container error-categorie" style="margin-top: 6px;"></div>
+            </div>
+
+            <div class="form-group field-container">
+                <label class="form-label">Nom du produit *</label>
+                {{ form_widget(form.nom, {'attr': {'class': 'form-control field-nom'}}) }}
+                <div class="error-container error-nom" style="margin-top: 6px;"></div>
+            </div>
+
+            <div class="form-group field-container">
+                <label class="form-label">Description</label>
+                {{ form_widget(form.description, {'attr': {'class': 'form-control field-description', 'rows': 4}}) }}
+                <div class="error-container error-description" style="margin-top: 6px;"></div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group field-container">
+                        <label class="form-label">Prix unitaire (DT) *</label>
+                        {{ form_widget(form.prixUnitaire, {'attr': {'class': 'form-control field-prix'}}) }}
+                        <div class="error-container error-prix" style="margin-top: 6px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-col">
+                    <div class="form-group field-container">
+                        <label class="form-label">Photo du produit</label>
+                        
+                        {# Image actuelle #}
+                        {% if produit.photoFile %}
+                        <div id="currentImageZone" class="current-image-zone">
+                            <img src="{{ asset('uploads/produits/' ~ produit.photo) }}" alt="{{ produit.nom }}">
+                            <span class="current-image-label">📷 Image actuelle</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="upload-area" id="uploadZone">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>{% if produit.photo_url %}Changer l'image{% else %}Ajouter une image{% endif %}</p>
+                            <span class="upload-hint">JPG, PNG, WebP (max 5MB)</span>
+                        </div>
+                        <div style="width: 0; height: 0; overflow: hidden;">
+                            {{ form_widget(form.photo_url, {'attr': {'class': 'field-photo'}}) }}
+                        </div>
+                        <div id="previewZone" class="image-preview" style="display:none;">
+                            <img id="previewImage" src="" alt="Nouvelle image">
+                            <button type="button" id="btnSupprimer" class="remove-image">🗑️ Annuler</button>
+                        </div>
+                        <div class="error-container error-photo" style="margin-top: 6px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section stock -->
+        <div class="form-section">
+            <div class="section-title">
+                <i class="fa-solid fa-warehouse"></i>
+                <h2>Stock</h2>
+                {% if produit.stock %}
+                    <span class="badge-success">Stock existant</span>
+                {% else %}
+                    <span class="badge-info">Optionnel</span>
+                {% endif %}
+            </div>
+
+            {% if produit.stock %}
+            <div class="current-stock-info">
+                <div class="stock-stat">
+                    <span class="stock-value">{{ produit.stock.quantite }}</span>
+                    <span class="stock-label">{{ produit.stock.unite }}</span>
+                </div>
+                {% if produit.stock.emplacement %}
+                <div class="stock-detail">
+                    <i class="fa-solid fa-location-dot"></i> {{ produit.stock.emplacement }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group field-container">
+                        <label class="form-label">Quantité</label>
+                        <input type="text" 
+                               name="stock_quantite" 
+                               class="form-control field-stockQuantite" 
+                               value="{{ produit.stock ? produit.stock.quantite : '0' }}">
+                        <div class="error-container error-stockQuantite" style="margin-top: 6px;"></div>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group field-container">
+                        <label class="form-label">Unité de mesure</label>
+                        <select name="stock_unite" class="form-control field-stockUnite">
+                            <option value="">Sélectionner...</option>
+                            <option value="kg" {% if produit.stock and produit.stock.unite == 'kg' %}selected{% endif %}>kg</option>
+                            <option value="g" {% if produit.stock and produit.stock.unite == 'g' %}selected{% endif %}>g</option>
+                            <option value="L" {% if produit.stock and produit.stock.unite == 'L' %}selected{% endif %}>L</option>
+                            <option value="mL" {% if produit.stock and produit.stock.unite == 'mL' %}selected{% endif %}>mL</option>
+                            <option value="unité" {% if produit.stock and produit.stock.unite == 'unité' %}selected{% endif %}>unité</option>
+                            <option value="sac" {% if produit.stock and produit.stock.unite == 'sac' %}selected{% endif %}>sac</option>
+                        </select>
+                        <div class="error-container error-stockUnite" style="margin-top: 6px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <i class="fa-solid fa-info-circle"></i>
+                <span>Vous pourrez gérer le stock plus tard dans l'espace d'administration.</span>
+                <a href="{{ path('admin') }}">Aller au backoffice →</a>
+            </div>
+        </div>
+
+        <!-- Boutons -->
+        <div class="form-actions">
+            <a href="{{ path('front_stock_list') }}" class="btn-secondary">Annuler</a>
+            <button type="submit" class="btn-primary">
+                <i class="fa-solid fa-check"></i> Enregistrer les modifications
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script type="text/javascript">
+(function() {
+    
+    var form = null;
+    var uploadZone = null;
+    var previewZone = null;
+    var currentImageZone = null;
+    var previewImage = null;
+    var btnSupprimer = null;
+    var fileInput = null;
+    var imageSelectionnee = false;
+    var photoExistante = {{ produit.photoFile ? 'true' : 'false' }};
+    
+    function trouverChamp(nomChamp) {
+        var elements = document.getElementsByClassName('field-' + nomChamp);
+        if (elements && elements.length > 0) {
+            return elements[0];
+        }
+        return null;
+    }
+    
+    function trouverErreurContainer(nomChamp) {
+        var elements = document.getElementsByClassName('error-' + nomChamp);
+        if (elements && elements.length > 0) {
+            return elements[0];
+        }
+        return null;
+    }
+    
+    function afficherErreur(nomChamp, message) {
+        var errorDiv = trouverErreurContainer(nomChamp);
+        if (errorDiv) {
+            var html = '<div style="';
+            html += 'background-color: #fee2e2;';
+            html += 'color: #b91c1c;';
+            html += 'padding: 8px 12px;';
+            html += 'border-radius: 6px;';
+            html += 'font-size: 13px;';
+            html += 'border-left: 4px solid #dc2626;';
+            html += '">';
+            html += '<strong>⚠️ ' + message + '</strong>';
+            html += '</div>';
+            errorDiv.innerHTML = html;
+        }
+        
+        var champ = trouverChamp(nomChamp);
+        if (champ) {
+            champ.style.borderColor = '#dc2626';
+            champ.style.backgroundColor = '#fef2f2';
+        }
+    }
+    
+    function masquerErreur(nomChamp) {
+        var errorDiv = trouverErreurContainer(nomChamp);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+        }
+        var champ = trouverChamp(nomChamp);
+        if (champ) {
+            champ.style.borderColor = '';
+            champ.style.backgroundColor = '';
+        }
+    }
+    
+    function masquerToutesErreurs() {
+        var champs = ['categorie', 'nom', 'description', 'prix', 'photo', 'stockQuantite', 'stockUnite'];
+        for (var i = 0; i < champs.length; i++) {
+            masquerErreur(champs[i]);
+        }
+    }
+    
+    function getValeur(nomChamp) {
+        var champ = trouverChamp(nomChamp);
+        if (champ) {
+            return champ.value;
+        }
+        return '';
+    }
+    
+    function trim(str) {
+        if (!str) return '';
+        var result = str;
+        while (result.charAt(0) === ' ') {
+            result = result.substring(1);
+        }
+        while (result.length > 0 && result.charAt(result.length - 1) === ' ') {
+            result = result.substring(0, result.length - 1);
+        }
+        return result;
+    }
+    
+    function estUneImage(nomFichier) {
+        if (!nomFichier) return false;
+        var extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+        var nomLower = nomFichier.toLowerCase();
+        for (var i = 0; i < extensions.length; i++) {
+            if (nomLower.indexOf(extensions[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function validerFormulaire() {
+        var estValide = true;
+        var erreurs = [];
+        
+        masquerToutesErreurs();
+        
+        // Catégorie
+        var categorieVal = getValeur('categorie');
+        if (!categorieVal || categorieVal === '') {
+            afficherErreur('categorie', 'La catégorie est obligatoire');
+            erreurs.push('categorie');
+            estValide = false;
+        }
+        
+        // Nom
+        var nomVal = trim(getValeur('nom'));
+        if (!nomVal || nomVal === '') {
+            afficherErreur('nom', 'Le nom du produit est obligatoire');
+            erreurs.push('nom');
+            estValide = false;
+        } else if (nomVal.length < 3) {
+            afficherErreur('nom', 'Le nom doit contenir au moins 3 caractères');
+            erreurs.push('nom');
+            estValide = false;
+        } else if (nomVal.length > 100) {
+            afficherErreur('nom', 'Le nom ne peut pas dépasser 100 caractères');
+            erreurs.push('nom');
+            estValide = false;
+        }
+        
+        // Description (optionnelle mais longueur max)
+        var descVal = trim(getValeur('description'));
+        if (descVal && descVal.length > 1000) {
+            afficherErreur('description', 'La description ne peut pas dépasser 1000 caractères');
+            erreurs.push('description');
+            estValide = false;
+        }
+        
+        // Prix
+        var prixVal = getValeur('prix');
+        if (!prixVal || prixVal === '') {
+            afficherErreur('prix', 'Le prix unitaire est obligatoire');
+            erreurs.push('prix');
+            estValide = false;
+        } else {
+            prixVal = prixVal.replace(',', '.');
+            var prixNum = parseFloat(prixVal);
+            if (isNaN(prixNum)) {
+                afficherErreur('prix', 'Le prix doit être un nombre valide');
+                erreurs.push('prix');
+                estValide = false;
+            } else if (prixNum <= 0) {
+                afficherErreur('prix', 'Le prix doit être supérieur à 0');
+                erreurs.push('prix');
+                estValide = false;
+            } else if (prixNum > 999999.99) {
+                afficherErreur('prix', 'Le prix est trop élevé (max: 999999.99)');
+                erreurs.push('prix');
+                estValide = false;
+            }
+        }
+        
+        // Photo - Optionnelle en édition si une photo existe déjà
+        if (!photoExistante && !imageSelectionnee) {
+            var photoValide = false;
+            if (fileInput) {
+                if (fileInput.files && fileInput.files.length > 0) {
+                    photoValide = true;
+                } else if (fileInput.value && fileInput.value !== '') {
+                    photoValide = true;
+                }
+            }
+            
+            if (!photoValide) {
+                afficherErreur('photo', 'La photo du produit est obligatoire');
+                erreurs.push('photo');
+                estValide = false;
+            }
+        }
+        
+        // Stock quantité (optionnel)
+        var stockQteVal = getValeur('stockQuantite');
+        var stockQteNum = 0;
+        if (stockQteVal && stockQteVal !== '') {
+            stockQteNum = parseFloat(stockQteVal);
+            if (isNaN(stockQteNum)) {
+                afficherErreur('stockQuantite', 'La quantité doit être un nombre valide');
+                erreurs.push('stockQuantite');
+                estValide = false;
+            } else if (stockQteNum < 0) {
+                afficherErreur('stockQuantite', 'La quantité ne peut pas être négative');
+                erreurs.push('stockQuantite');
+                estValide = false;
+            }
+        }
+        
+        // Stock unité (requise si quantité > 0)
+        var stockUniteVal = getValeur('stockUnite');
+        if (stockQteVal && stockQteVal !== '' && !isNaN(stockQteNum) && stockQteNum > 0) {
+            if (!stockUniteVal || stockUniteVal === '') {
+                afficherErreur('stockUnite', 'L\'unité est requise si la quantité est supérieure à 0');
+                erreurs.push('stockUnite');
+                estValide = false;
+            }
+        }
+        
+        // Scroll vers première erreur
+        if (erreurs.length > 0) {
+            var premiereErreur = trouverErreurContainer(erreurs[0]);
+            if (premiereErreur && premiereErreur.scrollIntoView) {
+                premiereErreur.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        return estValide;
+    }
+    
+    function initialiser() {
+        form = document.getElementById('produitForm');
+        uploadZone = document.getElementById('uploadZone');
+        previewZone = document.getElementById('previewZone');
+        currentImageZone = document.getElementById('currentImageZone');
+        previewImage = document.getElementById('previewImage');
+        btnSupprimer = document.getElementById('btnSupprimer');
+        
+        // Trouver l'input file
+        fileInput = trouverChamp('photo');
+        if (!fileInput) {
+            var allInputs = document.getElementsByTagName('input');
+            for (var i = 0; i < allInputs.length; i++) {
+                if (allInputs[i].type === 'file') {
+                    fileInput = allInputs[i];
+                    break;
+                }
+            }
+        }
+        
+        if (!form) return;
+        
+        // Upload zone click
+        if (uploadZone && fileInput) {
+            uploadZone.onclick = function(e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                fileInput.click();
+                return false;
+            };
+        }
+        
+        // File input change
+        if (fileInput) {
+            fileInput.onchange = function() {
+                var fichiers = this.files;
+                if (fichiers && fichiers.length > 0) {
+                    var fichier = fichiers[0];
+                    var nom = fichier.name;
+                    
+                    if (!estUneImage(nom)) {
+                        afficherErreur('photo', 'Veuillez sélectionner une image (JPG, PNG, GIF, WebP)');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (fichier.size > 5 * 1024 * 1024) {
+                        afficherErreur('photo', 'L\'image ne doit pas dépasser 5 Mo');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    masquerErreur('photo');
+                    
+                    if (window.FileReader) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImage.src = e.target.result;
+                            previewZone.style.display = 'flex';
+                            uploadZone.style.display = 'none';
+                            if (currentImageZone) {
+                                currentImageZone.style.display = 'none';
+                            }
+                            imageSelectionnee = true;
+                        };
+                        reader.readAsDataURL(fichier);
+                    } else {
+                        previewZone.style.display = 'flex';
+                        uploadZone.style.display = 'none';
+                        if (currentImageZone) {
+                            currentImageZone.style.display = 'none';
+                        }
+                        imageSelectionnee = true;
+                    }
+                }
+            };
+        }
+        
+        // Bouton annuler nouvelle image
+        if (btnSupprimer) {
+            btnSupprimer.onclick = function(e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                
+                if (fileInput) fileInput.value = '';
+                if (previewImage) previewImage.src = '';
+                previewZone.style.display = 'none';
+                uploadZone.style.display = 'flex';
+                if (currentImageZone) {
+                    currentImageZone.style.display = 'flex';
+                }
+                imageSelectionnee = false;
+                
+                return false;
+            };
+        }
+        
+        // Soumission
+        form.onsubmit = function(e) {
+            var valide = validerFormulaire();
+            if (!valide) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                } else {
+                    e.returnValue = false;
+                }
+                return false;
+            }
+            return true;
+        };
+        
+        // Validation temps réel
+        var champsAValider = ['categorie', 'nom', 'prix', 'stockQuantite'];
+        for (var i = 0; i < champsAValider.length; i++) {
+            (function(nomChamp) {
+                var champ = trouverChamp(nomChamp);
+                if (champ) {
+                    champ.onfocus = function() {
+                        masquerErreur(nomChamp);
+                    };
+                }
+            })(champsAValider[i]);
+        }
+    }
+    
+    var tentatives = 0;
+    var interval = setInterval(function() {
+        tentatives++;
+        var formTest = document.getElementById('produitForm');
+        if (formTest || tentatives > 100) {
+            clearInterval(interval);
+            if (formTest) {
+                initialiser();
+            }
+        }
+    }, 50);
+    
+})();
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.front-produit-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.front-produit-header {
+    background: linear-gradient(135deg, #5a9814 0%, #3a6b0a 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 30px;
+    color: white;
+    text-align: center;
+}
+
+.front-produit-header.edit-header {
+    background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+}
+
+.front-produit-header h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.front-produit-form {
+    background: white;
+    border-radius: 0 0 20px 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.form-section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e8f5e9;
+}
+
+.section-title i {
+    font-size: 24px;
+    color: #5a9814;
+}
+
+.section-title h2 {
+    font-size: 20px;
+    margin: 0;
+}
+
+.badge-info {
+    background: #e8f5e9;
+    color: #5a9814;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.badge-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #5a9814;
+    box-shadow: 0 0 0 3px rgba(90, 152, 20, 0.1);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Image actuelle */
+.current-image-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 2px solid #dee2e6;
+}
+
+.current-image-zone img {
+    max-width: 180px;
+    max-height: 180px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    object-fit: cover;
+}
+
+.current-image-label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Stock actuel */
+.current-stock-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid #5a9814;
+}
+
+.stock-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.stock-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+.stock-label {
+    font-size: 16px;
+    color: #558b2f;
+    font-weight: 500;
+}
+
+.stock-detail {
+    font-size: 14px;
+    color: #555;
+}
+
+.stock-detail i {
+    color: #5a9814;
+}
+
+.upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    border-color: #5a9814;
+    background: #f0f7e6;
+}
+
+.upload-area i {
+    font-size: 40px;
+    color: #9aaa8a;
+    margin-bottom: 12px;
+}
+
+.upload-hint {
+    font-size: 11px;
+    color: #999;
+}
+
+.image-preview {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 16px;
+    background: #e3f2fd;
+    border-radius: 12px;
+    border: 2px solid #2196f3;
+}
+
+.image-preview img {
+    max-width: 200px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.remove-image {
+    background: #fee;
+    border: none;
+    color: #dc3545;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.remove-image:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.info-box {
+    background: #e3f2fd;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.info-box i {
+    color: #2196f3;
+}
+
+.info-box a {
+    color: #2196f3;
+    text-decoration: none;
+    margin-left: auto;
+    font-weight: 500;
+}
+
+.info-box a:hover {
+    text-decoration: underline;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #5a9814 0%, #4a7a10 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4a7a10 0%, #3a6b0a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(90, 152, 20, 0.3);
+}
+
+.btn-secondary {
+    background: #f0f2f5;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #e2e6ea;
+}
+
+@media (max-width: 640px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary {
+        text-align: center;
+        justify-content: center;
+    }
+    
+    .current-stock-info {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

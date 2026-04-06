@@ -1,0 +1,332 @@
+{# templates/produit/edit.html.twig #}
+{% extends 'layout/base.html.twig' %}
+{% block title %}Modifier {{ produit.nom }} — Agrisens 360{% endblock %}
+
+{# Surcharge thème Symfony - supprimer toutes les erreurs Symfony #}
+{% block form_errors %}{% endblock %}
+{% block form_help %}{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 24px; margin: 0;">Modifier le Produit</h1>
+            <p style="color: #666; margin: 5px 0 0;">Produit : <strong>{{ produit.nom }}</strong></p>
+        </div>
+        <a href="{{ path('produit_index') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour</a>
+    </div>
+
+    <form method="post" id="produitEditForm" enctype="multipart/form-data" novalidate>
+        {{ form_widget(form._token) }}
+
+        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px;">
+                    <i class="fa-solid fa-pen"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 18px; margin: 0;">📦 Informations Produit</h2>
+                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Modifiez les détails du produit</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Catégorie *</label>
+                    {{ form_widget(form.categorie, {'attr': {'class': 'field-categorie', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
+                    <div class="error-categorie" style="margin-top: 6px;"></div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Nom du produit *</label>
+                    {{ form_widget(form.nom, {'attr': {'class': 'field-nom', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
+                    <div class="error-nom" style="margin-top: 6px;"></div>
+                </div>
+
+                <div style="grid-column: span 2;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Description</label>
+                    {{ form_widget(form.description, {'attr': {'class': 'field-description', 'rows': 4, 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
+                    <div class="error-description" style="margin-top: 6px;"></div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Prix unitaire (DT) *</label>
+                    {{ form_widget(form.prixUnitaire, {'attr': {'class': 'field-prix', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
+                    <div class="error-prix" style="margin-top: 6px;"></div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Photo (optionnel)</label>
+                    {% if produit.photo %}
+                    <div id="currentPhoto" style="margin-bottom: 10px; text-align: center;">
+                        <p style="font-size: 12px; color: #666; margin-bottom: 5px;">Photo actuelle :</p>
+                        <img src="{{ asset('uploads/produits/' ~ produit.photo) }}" alt="{{ produit.nom }}" style="max-width: 120px; border-radius: 8px; border: 2px solid #5a9814;">
+                    </div>
+                    {% endif %}
+                    <div id="uploadZone" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc;">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 13px; color: #475569;">Cliquez pour changer l'image</p>
+                    </div>
+                    <div style="width: 0; height: 0; overflow: hidden;">
+                        {{ form_widget(form.photoFile, {'attr': {'class': 'field-photo'}}) }}
+                    </div>
+                    <div id="previewZone" style="display: none; margin-top: 10px; text-align: center;">
+                        <img id="previewImage" src="" alt="Aperçu" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #5a9814;">
+                        <br>
+                        <button type="button" id="btnSupprimer" style="background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 20px; cursor: pointer; margin-top: 8px; font-size: 12px;">✖ Annuler</button>
+                    </div>
+                    <div class="error-photo" style="margin-top: 6px;"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <a href="{{ path('produit_index') }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
+            <button type="submit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">
+                <i class="fa-solid fa-save"></i> Enregistrer les Modifications
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script type="text/javascript">
+(function() {
+
+    var form = null;
+    var uploadZone = null;
+    var previewZone = null;
+    var previewImage = null;
+    var btnSupprimer = null;
+    var fileInput = null;
+    var currentPhoto = null;
+
+    function trouverChamp(c) {
+        var el = document.getElementsByClassName('field-' + c);
+        return (el && el.length > 0) ? el[0] : null;
+    }
+
+    function trouverErreur(c) {
+        var el = document.getElementsByClassName('error-' + c);
+        return (el && el.length > 0) ? el[0] : null;
+    }
+
+    function afficherErreur(c, msg) {
+        var d = trouverErreur(c);
+        if (d) {
+            d.innerHTML = '<div style="background:#fee2e2;color:#b91c1c;padding:8px 12px;border-radius:6px;font-size:13px;border-left:4px solid #dc2626;margin-top:4px;"><strong>⚠️ ' + msg + '</strong></div>';
+        }
+        var ch = trouverChamp(c);
+        if (ch) { ch.style.borderColor = '#dc2626'; ch.style.backgroundColor = '#fef2f2'; }
+    }
+
+    function masquerErreur(c) {
+        var d = trouverErreur(c);
+        if (d) d.innerHTML = '';
+        var ch = trouverChamp(c);
+        if (ch) { ch.style.borderColor = '#ddd'; ch.style.backgroundColor = ''; }
+    }
+
+    function masquerTout() {
+        var liste = ['categorie','nom','description','prix','photo'];
+        for (var i = 0; i < liste.length; i++) masquerErreur(liste[i]);
+    }
+
+    function getVal(c) {
+        var ch = trouverChamp(c);
+        return ch ? ch.value : '';
+    }
+
+    function trim(s) {
+        if (!s) return '';
+        while (s.charAt(0) === ' ') s = s.substring(1);
+        while (s.length > 0 && s.charAt(s.length - 1) === ' ') s = s.substring(0, s.length - 1);
+        return s;
+    }
+
+    function estUneImage(nom) {
+        if (!nom) return false;
+        var ext = ['.jpg','.jpeg','.png','.gif','.webp','.bmp'];
+        var n = nom.toLowerCase();
+        for (var i = 0; i < ext.length; i++) {
+            if (n.indexOf(ext[i]) !== -1) return true;
+        }
+        return false;
+    }
+
+    function valider() {
+        var ok = true;
+        var erreurs = [];
+        masquerTout();
+
+        if (!getVal('categorie') || trim(getVal('categorie')) === '') {
+            afficherErreur('categorie', 'La catégorie est obligatoire');
+            erreurs.push('categorie'); ok = false;
+        }
+
+        var nomVal = trim(getVal('nom'));
+        if (!nomVal) {
+            afficherErreur('nom', 'Le nom est obligatoire');
+            erreurs.push('nom'); ok = false;
+        } else if (nomVal.length < 3) {
+            afficherErreur('nom', 'Le nom doit contenir au moins 3 caractères');
+            erreurs.push('nom'); ok = false;
+        } else if (nomVal.length > 100) {
+            afficherErreur('nom', 'Le nom ne peut pas dépasser 100 caractères');
+            erreurs.push('nom'); ok = false;
+        }
+
+        var descVal = trim(getVal('description'));
+        if (descVal && descVal.length > 1000) {
+            afficherErreur('description', 'Maximum 1000 caractères');
+            erreurs.push('description'); ok = false;
+        }
+
+        var prixVal = getVal('prix');
+        if (!prixVal || trim(prixVal) === '') {
+            afficherErreur('prix', 'Le prix est obligatoire');
+            erreurs.push('prix'); ok = false;
+        } else {
+            var prixNum = parseFloat(prixVal.replace(',', '.'));
+            if (isNaN(prixNum)) {
+                afficherErreur('prix', 'Le prix doit être un nombre valide');
+                erreurs.push('prix'); ok = false;
+            } else if (prixNum <= 0) {
+                afficherErreur('prix', 'Le prix doit être supérieur à 0');
+                erreurs.push('prix'); ok = false;
+            } else if (prixNum > 999999.99) {
+                afficherErreur('prix', 'Le prix est trop élevé');
+                erreurs.push('prix'); ok = false;
+            }
+        }
+
+        if (erreurs.length > 0) {
+            var el = trouverErreur(erreurs[0]);
+            if (el && el.scrollIntoView) el.scrollIntoView();
+        }
+        return ok;
+    }
+
+    function initialiser() {
+        form = document.getElementById('produitEditForm');
+        uploadZone = document.getElementById('uploadZone');
+        previewZone = document.getElementById('previewZone');
+        previewImage = document.getElementById('previewImage');
+        btnSupprimer = document.getElementById('btnSupprimer');
+        currentPhoto = document.getElementById('currentPhoto');
+
+        fileInput = trouverChamp('photo');
+        if (!fileInput) {
+            var inputs = document.getElementsByTagName('input');
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].type === 'file') { fileInput = inputs[i]; break; }
+            }
+        }
+
+        if (!form) return;
+
+        if (uploadZone && fileInput) {
+            uploadZone.onclick = function(e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                fileInput.click();
+                return false;
+            };
+        }
+
+        if (fileInput) {
+            fileInput.onchange = function() {
+                if (this.files && this.files.length > 0) {
+                    var f = this.files[0];
+                    if (!estUneImage(f.name)) {
+                        afficherErreur('photo', 'Veuillez sélectionner une image');
+                        this.value = ''; return;
+                    }
+                    if (f.size > 5 * 1024 * 1024) {
+                        afficherErreur('photo', 'L\'image ne doit pas dépasser 5 Mo');
+                        this.value = ''; return;
+                    }
+                    masquerErreur('photo');
+                    if (window.FileReader) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImage.src = e.target.result;
+                            previewZone.style.display = 'block';
+                            uploadZone.style.display = 'none';
+                            if (currentPhoto) currentPhoto.style.display = 'none';
+                        };
+                        reader.readAsDataURL(f);
+                    } else {
+                        previewZone.style.display = 'block';
+                        uploadZone.style.display = 'none';
+                        if (currentPhoto) currentPhoto.style.display = 'none';
+                    }
+                }
+            };
+        }
+
+        if (btnSupprimer) {
+            btnSupprimer.onclick = function(e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                if (fileInput) fileInput.value = '';
+                if (previewImage) previewImage.src = '';
+                previewZone.style.display = 'none';
+                uploadZone.style.display = 'block';
+                if (currentPhoto) currentPhoto.style.display = 'block';
+                return false;
+            };
+        }
+
+        form.onsubmit = function(e) {
+            if (!valider()) {
+                if (e.preventDefault) e.preventDefault();
+                else e.returnValue = false;
+                return false;
+            }
+            return true;
+        };
+
+        var champs = ['categorie','nom','prix'];
+        for (var i = 0; i < champs.length; i++) {
+            (function(c) {
+                var ch = trouverChamp(c);
+                if (ch) {
+                    ch.onfocus = function() { masquerErreur(c); };
+                    ch.onblur = function() {
+                        var val = trim(getVal(c));
+                        if (c === 'categorie' && !val) afficherErreur(c, 'La catégorie est obligatoire');
+                        if (c === 'nom') {
+                            if (!val) afficherErreur(c, 'Le nom est obligatoire');
+                            else if (val.length < 3) afficherErreur(c, 'Minimum 3 caractères');
+                        }
+                        if (c === 'prix') {
+                            if (!val) afficherErreur(c, 'Le prix est obligatoire');
+                            else {
+                                var n = parseFloat(val.replace(',', '.'));
+                                if (isNaN(n)) afficherErreur(c, 'Nombre invalide');
+                                else if (n <= 0) afficherErreur(c, 'Le prix doit être > 0');
+                            }
+                        }
+                    };
+                }
+            })(champs[i]);
+        }
+    }
+
+    var t = 0;
+    var iv = setInterval(function() {
+        t++;
+        if (document.getElementById('produitEditForm') || t > 100) {
+            clearInterval(iv);
+            initialiser();
+        }
+    }, 50);
+
+})();
+</script>
+{% endblock %}

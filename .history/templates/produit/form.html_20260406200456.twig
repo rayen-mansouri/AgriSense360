@@ -1,0 +1,281 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">{{ subtitle }}</p>
+    </div>
+    <a href="{{ path('home') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+</div>
+
+<div class="form-container">
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'produitForm', enctype: 'multipart/form-data'}}) }}
+
+    <!-- Carte Produit -->
+    <div class="card">
+        <div class="form-card-header">
+            <div class="form-card-icon"><i class="fa-solid fa-box"></i></div>
+            <div>
+                <h2 class="form-card-title">📦 Informations Produit</h2>
+                <p class="form-card-subtitle">Renseignez les détails du produit agricole</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Catégorie *</label>
+                {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie'}}) }}
+                <div class="error-msg" id="error-categorie"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nom du produit *</label>
+                {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom'}}) }}
+                <div class="error-msg" id="error-nom"></div>
+            </div>
+
+            <div class="form-group full-width">
+                <label class="form-label">Description</label>
+                {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'rows': 4}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Prix unitaire (DT) *</label>
+                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix'}}) }}
+                <div class="error-msg" id="error-prix"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Photo du produit *</label>
+                <input type="file" id="simplePhotoInput" accept="image/*" class="form-control">
+                {{ form_widget(form.produit.photoFile, {'attr': {'class': 'form-control', 'id': 'hiddenPhotoInput', 'style': 'display:none'}}) }}
+                <div id="simpleImagePreview" style="display:none; margin-top: 10px;">
+                    <img id="simplePreviewImg" style="max-width: 150px; border-radius: 8px;">
+                    <button type="button" id="simpleRemoveBtn" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:5px; margin-top:5px;">Supprimer</button>
+                </div>
+                <div class="error-msg" id="error-photo"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte Stock -->
+    <div class="card">
+        <div class="form-card-header">
+            <div class="form-card-icon"><i class="fa-solid fa-warehouse"></i></div>
+            <div>
+                <h2 class="form-card-title">📊 Stock Initial</h2>
+                <p class="form-card-subtitle">Optionnel</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Quantité actuelle</label>
+                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Seuil d'alerte</label>
+                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Unité de mesure</label>
+                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite'}}) }}
+                <div class="error-msg" id="error-unite"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Emplacement</label>
+                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Date de réception</label>
+                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control'}}) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Date d'expiration</label>
+                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control'}}) }}
+                <div class="error-msg" id="error-dates"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+        <a href="{{ path('home') }}" class="btn btn-secondary">Annuler</a>
+        <button type="submit" class="btn btn-primary">{{ btnLabel }}</button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments simplifiés
+    const simpleInput = document.getElementById('simplePhotoInput');
+    const hiddenInput = document.getElementById('hiddenPhotoInput');
+    const previewDiv = document.getElementById('simpleImagePreview');
+    const previewImg = document.getElementById('simplePreviewImg');
+    const removeBtn = document.getElementById('simpleRemoveBtn');
+    const form = document.getElementById('produitForm');
+
+    let hasImage = false;
+
+    // Quand l'utilisateur choisit un fichier
+    simpleInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Copier le fichier vers le champ caché Symfony
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            hiddenInput.files = dataTransfer.files;
+            
+            // Afficher l'aperçu
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                previewImg.src = ev.target.result;
+                previewDiv.style.display = 'block';
+                simpleInput.style.display = 'none';
+                hasImage = true;
+                // Effacer l'erreur
+                const errorDiv = document.getElementById('error-photo');
+                if (errorDiv) errorDiv.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Supprimer l'image
+    removeBtn.addEventListener('click', function() {
+        simpleInput.value = '';
+        hiddenInput.value = '';
+        previewDiv.style.display = 'none';
+        simpleInput.style.display = 'block';
+        hasImage = false;
+    });
+
+    // Fonctions d'erreur
+    function showError(fieldId, message) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '<span style="color:#dc3545; font-size:12px;">⚠️ ' + message + '</span>';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.style.borderColor = '#dc3545';
+        }
+    }
+
+    function clearError(fieldId) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.style.borderColor = '';
+        }
+    }
+
+    // Validation
+    function validateForm() {
+        let isValid = true;
+        
+        // Catégorie
+        const categorie = document.getElementById('categorie');
+        if (!categorie.value) {
+            showError('categorie', 'Catégorie obligatoire');
+            isValid = false;
+        } else {
+            clearError('categorie');
+        }
+        
+        // Nom
+        const nom = document.getElementById('nom');
+        if (!nom.value.trim()) {
+            showError('nom', 'Nom obligatoire');
+            isValid = false;
+        } else if (nom.value.trim().length < 3) {
+            showError('nom', 'Minimum 3 caractères');
+            isValid = false;
+        } else {
+            clearError('nom');
+        }
+        
+        // Prix
+        const prix = document.getElementById('prix');
+        const prixVal = parseFloat(prix.value);
+        if (!prix.value) {
+            showError('prix', 'Prix obligatoire');
+            isValid = false;
+        } else if (prixVal <= 0) {
+            showError('prix', 'Prix doit être > 0');
+            isValid = false;
+        } else {
+            clearError('prix');
+        }
+        
+        // Photo
+        if (!hasImage && (!hiddenInput.files || hiddenInput.files.length === 0)) {
+            showError('photo', 'Photo obligatoire');
+            isValid = false;
+        } else {
+            clearError('photo');
+        }
+        
+        // Stock: si quantité > 0, unité obligatoire
+        const quantite = document.getElementById('quantite');
+        const unite = document.getElementById('unite');
+        if (quantite && parseFloat(quantite.value) > 0 && (!unite || !unite.value)) {
+            showError('unite', 'Unité requise');
+            isValid = false;
+        } else {
+            clearError('unite');
+        }
+        
+        return isValid;
+    }
+
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.form-container { max-width: 900px; margin: 0 auto; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.full-width { grid-column: span 2; }
+.card { background: white; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.form-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+.form-card-icon { width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px; }
+.form-card-title { font-size: 18px; font-weight: 600; margin: 0; }
+.form-card-subtitle { font-size: 13px; color: #666; margin: 0; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; }
+.form-control:focus { outline: none; border-color: #5a9814; }
+.error-msg { min-height: 24px; margin-top: 5px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+.btn { padding: 10px 24px; border-radius: 30px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; }
+.btn-primary { background: #5a9814; color: white; }
+.btn-primary:hover { background: #4a7a10; }
+.btn-secondary { background: #f0f2f5; color: #4a5568; }
+@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } .form-actions { flex-direction: column; } .btn { text-align: center; } }
+</style>
+{% endblock %}

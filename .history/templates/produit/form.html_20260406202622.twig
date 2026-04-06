@@ -1,0 +1,585 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 24px; margin: 0;">{{ title }}</h1>
+            <p style="color: #666; margin: 5px 0 0;">{{ subtitle }}</p>
+        </div>
+        <a href="{{ path('home') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour</a>
+    </div>
+
+    <form method="post" id="produitForm" enctype="multipart/form-data">
+        {{ form_widget(form._token) }}
+
+        <!-- Carte Produit -->
+        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px;">
+                    <i class="fa-solid fa-box"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 18px; margin: 0;">📦 Informations Produit</h2>
+                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Renseignez les détails du produit agricole</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Catégorie -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Catégorie *</label>
+                    {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-categorie" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Nom -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Nom du produit *</label>
+                    {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-nom" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Description -->
+                <div style="grid-column: span 2;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Description</label>
+                    {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'rows': 4, 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                </div>
+
+                <!-- Prix -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Prix unitaire (DT) *</label>
+                    {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-prix" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Photo -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Photo du produit *</label>
+                    
+                    <!-- Zone d'upload cliquable -->
+                    <div id="uploadZone" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc;">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 13px; color: #475569;">Cliquez pour choisir une image</p>
+                    </div>
+                    
+                    <!-- Input file caché -->
+                    <div style="width: 0; height: 0; overflow: hidden;">
+                        {{ form_widget(form.produit.photoFile, {'attr': {'id': 'fileInput', 'class': 'file-input-hidden'}}) }}
+                    </div>
+                    
+                    <!-- Aperçu image -->
+                    <div id="previewZone" style="display: none; margin-top: 10px; text-align: center;">
+                        <img id="previewImage" src="" alt="Aperçu" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #5a9814;">
+                        <br>
+                        <span id="fileName" style="font-size: 12px; color: #666; display: block; margin-top: 5px;"></span>
+                        <button type="button" id="btnSupprimer" style="background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 20px; cursor: pointer; margin-top: 8px; font-size: 12px;">✖ Supprimer</button>
+                    </div>
+                    
+                    <div id="error-photo" style="margin-top: 6px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte Stock -->
+        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 20px;">
+                    <i class="fa-solid fa-warehouse"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 18px; margin: 0;">📊 Stock Initial</h2>
+                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Optionnel</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Quantité -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Quantité actuelle</label>
+                    {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-quantite" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Seuil -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Seuil d'alerte</label>
+                    {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-seuil" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Unité -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Unité de mesure</label>
+                    {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-unite" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Emplacement -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Emplacement</label>
+                    {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control', 'id': 'emplacement', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                </div>
+
+                <!-- Date Réception -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date de réception</label>
+                    {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control', 'id': 'dateReception', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-dateReception" style="margin-top: 6px;"></div>
+                </div>
+
+                <!-- Date Expiration -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date d'expiration</label>
+                    {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control', 'id': 'dateExpiration', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-dateExpiration" style="margin-top: 6px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <a href="{{ path('home') }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
+            <button type="submit" id="btnSubmit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">{{ btnLabel }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script type="text/javascript">
+(function() {
+    
+    var uploadZone = null;
+    var fileInput = null;
+    var previewZone = null;
+    var previewImage = null;
+    var fileNameSpan = null;
+    var btnSupprimer = null;
+    var form = null;
+    var imageSelectionnee = false;
+    
+    // Trouver l'input file
+    function trouverInputFile() {
+        var input = document.getElementById('fileInput');
+        if (input) return input;
+        
+        var allInputs = document.getElementsByTagName('input');
+        for (var i = 0; i < allInputs.length; i++) {
+            if (allInputs[i].type === 'file') {
+                return allInputs[i];
+            }
+        }
+        return null;
+    }
+    
+    // =============================================
+    // AFFICHER UNE ERREUR PRES DU CHAMP
+    // =============================================
+    function afficherErreur(champId, message) {
+        var errorDiv = document.getElementById('error-' + champId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '<div style="background-color: #fee2e2; color: #dc2626; padding: 8px 12px; border-radius: 6px; font-size: 13px; border-left: 3px solid #dc2626;"><strong>⚠️ ' + message + '</strong></div>';
+        }
+        
+        var champ = document.getElementById(champId);
+        if (champ) {
+            champ.style.borderColor = '#dc2626';
+            champ.style.backgroundColor = '#fef2f2';
+        }
+    }
+    
+    // =============================================
+    // MASQUER UNE ERREUR
+    // =============================================
+    function masquerErreur(champId) {
+        var errorDiv = document.getElementById('error-' + champId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+        }
+        
+        var champ = document.getElementById(champId);
+        if (champ) {
+            champ.style.borderColor = '#ddd';
+            champ.style.backgroundColor = '';
+        }
+    }
+    
+    // =============================================
+    // MASQUER TOUTES LES ERREURS
+    // =============================================
+    function masquerToutesErreurs() {
+        var ids = ['categorie', 'nom', 'prix', 'photo', 'quantite', 'seuil', 'unite', 'dateReception', 'dateExpiration'];
+        for (var i = 0; i < ids.length; i++) {
+            masquerErreur(ids[i]);
+        }
+    }
+    
+    // =============================================
+    // VERIFIER SI C'EST UNE IMAGE
+    // =============================================
+    function estUneImage(nomFichier) {
+        var extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+        var nomLower = nomFichier.toLowerCase();
+        for (var i = 0; i < extensions.length; i++) {
+            if (nomLower.indexOf(extensions[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // =============================================
+    // VALIDATION DU FORMULAIRE
+    // =============================================
+    function validerFormulaire() {
+        var estValide = true;
+        masquerToutesErreurs();
+        
+        // --- CATEGORIE ---
+        var categorie = document.getElementById('categorie');
+        if (categorie) {
+            var catVal = categorie.value;
+            if (!catVal || catVal === '' || catVal === null) {
+                afficherErreur('categorie', 'La catégorie est obligatoire');
+                estValide = false;
+            }
+        }
+        
+        // --- NOM ---
+        var nom = document.getElementById('nom');
+        if (nom) {
+            var nomVal = nom.value;
+            // Trim manuel
+            while (nomVal.charAt(0) === ' ') {
+                nomVal = nomVal.substring(1);
+            }
+            while (nomVal.charAt(nomVal.length - 1) === ' ') {
+                nomVal = nomVal.substring(0, nomVal.length - 1);
+            }
+            
+            if (!nomVal || nomVal === '') {
+                afficherErreur('nom', 'Le nom du produit est obligatoire');
+                estValide = false;
+            } else if (nomVal.length < 3) {
+                afficherErreur('nom', 'Le nom doit contenir au moins 3 caractères');
+                estValide = false;
+            } else if (nomVal.length > 100) {
+                afficherErreur('nom', 'Le nom ne peut pas dépasser 100 caractères');
+                estValide = false;
+            }
+        }
+        
+        // --- PRIX ---
+        var prix = document.getElementById('prix');
+        if (prix) {
+            var prixVal = prix.value;
+            if (!prixVal || prixVal === '') {
+                afficherErreur('prix', 'Le prix unitaire est obligatoire');
+                estValide = false;
+            } else {
+                // Remplacer virgule par point
+                prixVal = prixVal.replace(',', '.');
+                var prixNum = parseFloat(prixVal);
+                
+                if (isNaN(prixNum)) {
+                    afficherErreur('prix', 'Le prix doit être un nombre valide');
+                    estValide = false;
+                } else if (prixNum <= 0) {
+                    afficherErreur('prix', 'Le prix doit être supérieur à 0');
+                    estValide = false;
+                } else if (prixNum > 999999.99) {
+                    afficherErreur('prix', 'Le prix est trop élevé (max: 999999.99)');
+                    estValide = false;
+                }
+            }
+        }
+        
+        // --- PHOTO ---
+        var photoValide = false;
+        if (imageSelectionnee) {
+            photoValide = true;
+        } else if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            photoValide = true;
+        } else if (fileInput && fileInput.value && fileInput.value !== '') {
+            photoValide = true;
+        }
+        
+        if (!photoValide) {
+            afficherErreur('photo', 'La photo du produit est obligatoire');
+            estValide = false;
+        }
+        
+        // --- QUANTITE ---
+        var quantite = document.getElementById('quantite');
+        var qteNum = 0;
+        if (quantite && quantite.value && quantite.value !== '') {
+            qteNum = parseFloat(quantite.value);
+            if (isNaN(qteNum)) {
+                afficherErreur('quantite', 'La quantité doit être un nombre valide');
+                estValide = false;
+            } else if (qteNum < 0) {
+                afficherErreur('quantite', 'La quantité ne peut pas être négative');
+                estValide = false;
+            }
+        }
+        
+        // --- SEUIL ---
+        var seuil = document.getElementById('seuil');
+        if (seuil && seuil.value && seuil.value !== '') {
+            var seuilNum = parseFloat(seuil.value);
+            if (isNaN(seuilNum)) {
+                afficherErreur('seuil', 'Le seuil doit être un nombre valide');
+                estValide = false;
+            } else if (seuilNum < 0) {
+                afficherErreur('seuil', 'Le seuil ne peut pas être négatif');
+                estValide = false;
+            }
+        }
+        
+        // --- UNITE (requise si quantité > 0) ---
+        var unite = document.getElementById('unite');
+        if (quantite && quantite.value && quantite.value !== '') {
+            if (!isNaN(qteNum) && qteNum > 0) {
+                if (!unite || !unite.value || unite.value === '') {
+                    afficherErreur('unite', 'L\'unité est requise quand la quantité est supérieure à 0');
+                    estValide = false;
+                }
+            }
+        }
+        
+        // --- DATES ---
+        var dateReception = document.getElementById('dateReception');
+        var dateExpiration = document.getElementById('dateExpiration');
+        
+        if (dateReception && dateReception.value && dateReception.value !== '' &&
+            dateExpiration && dateExpiration.value && dateExpiration.value !== '') {
+            
+            var dr = new Date(dateReception.value);
+            var de = new Date(dateExpiration.value);
+            
+            if (de.getTime() < dr.getTime()) {
+                afficherErreur('dateExpiration', 'La date d\'expiration doit être postérieure à la date de réception');
+                estValide = false;
+            }
+        }
+        
+        return estValide;
+    }
+    
+    // =============================================
+    // INITIALISATION
+    // =============================================
+    function initialiser() {
+        uploadZone = document.getElementById('uploadZone');
+        previewZone = document.getElementById('previewZone');
+        previewImage = document.getElementById('previewImage');
+        fileNameSpan = document.getElementById('fileName');
+        btnSupprimer = document.getElementById('btnSupprimer');
+        form = document.getElementById('produitForm');
+        fileInput = trouverInputFile();
+        
+        if (!uploadZone || !fileInput) {
+            return;
+        }
+        
+        // ========== CLIC SUR ZONE UPLOAD ==========
+        uploadZone.onclick = function(e) {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+            
+            if (fileInput.click) {
+                fileInput.click();
+            }
+            return false;
+        };
+        
+        // ========== CHANGEMENT DE FICHIER ==========
+        fileInput.onchange = function() {
+            var fichiers = this.files;
+            
+            if (fichiers && fichiers.length > 0) {
+                var fichier = fichiers[0];
+                var nomFichier = fichier.name;
+                
+                if (!estUneImage(nomFichier)) {
+                    afficherErreur('photo', 'Veuillez sélectionner une image (JPG, PNG, GIF, WEBP)');
+                    this.value = '';
+                    return;
+                }
+                
+                if (fichier.size > 5 * 1024 * 1024) {
+                    afficherErreur('photo', 'L\'image ne doit pas dépasser 5 Mo');
+                    this.value = '';
+                    return;
+                }
+                
+                masquerErreur('photo');
+                
+                if (window.FileReader) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        fileNameSpan.innerHTML = nomFichier;
+                        previewZone.style.display = 'block';
+                        uploadZone.style.display = 'none';
+                        imageSelectionnee = true;
+                    };
+                    reader.readAsDataURL(fichier);
+                } else {
+                    fileNameSpan.innerHTML = nomFichier;
+                    previewZone.style.display = 'block';
+                    uploadZone.style.display = 'none';
+                    imageSelectionnee = true;
+                }
+            }
+        };
+        
+        // ========== BOUTON SUPPRIMER ==========
+        if (btnSupprimer) {
+            btnSupprimer.onclick = function(e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+                
+                fileInput.value = '';
+                previewImage.src = '';
+                fileNameSpan.innerHTML = '';
+                previewZone.style.display = 'none';
+                uploadZone.style.display = 'block';
+                imageSelectionnee = false;
+                
+                return false;
+            };
+        }
+        
+        // ========== SOUMISSION DU FORMULAIRE ==========
+        if (form) {
+            form.onsubmit = function(e) {
+                var estValide = validerFormulaire();
+                
+                if (!estValide) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    
+                    // Scroll vers la première erreur visible
+                    var tousLesDivs = document.getElementsByTagName('div');
+                    for (var i = 0; i < tousLesDivs.length; i++) {
+                        var div = tousLesDivs[i];
+                        if (div.id && div.id.indexOf('error-') === 0 && div.innerHTML !== '') {
+                            div.scrollIntoView();
+                            break;
+                        }
+                    }
+                    
+                    return false;
+                }
+                
+                return true;
+            };
+        }
+        
+        // ========== VALIDATION EN TEMPS REEL (au blur) ==========
+        function ajouterValidationTempsReel(champId, validateur) {
+            var champ = document.getElementById(champId);
+            if (champ) {
+                champ.onfocus = function() {
+                    masquerErreur(champId);
+                };
+                
+                champ.onblur = function() {
+                    validateur(this);
+                };
+            }
+        }
+        
+        // Catégorie
+        ajouterValidationTempsReel('categorie', function(champ) {
+            if (!champ.value || champ.value === '') {
+                afficherErreur('categorie', 'La catégorie est obligatoire');
+            }
+        });
+        
+        // Nom
+        ajouterValidationTempsReel('nom', function(champ) {
+            var val = champ.value;
+            while (val.charAt(0) === ' ') val = val.substring(1);
+            while (val.charAt(val.length - 1) === ' ') val = val.substring(0, val.length - 1);
+            
+            if (!val || val === '') {
+                afficherErreur('nom', 'Le nom est obligatoire');
+            } else if (val.length < 3) {
+                afficherErreur('nom', 'Minimum 3 caractères requis');
+            }
+        });
+        
+        // Prix
+        ajouterValidationTempsReel('prix', function(champ) {
+            var val = champ.value;
+            if (!val || val === '') {
+                afficherErreur('prix', 'Le prix est obligatoire');
+            } else {
+                val = val.replace(',', '.');
+                var num = parseFloat(val);
+                if (isNaN(num)) {
+                    afficherErreur('prix', 'Nombre invalide');
+                } else if (num <= 0) {
+                    afficherErreur('prix', 'Le prix doit être supérieur à 0');
+                }
+            }
+        });
+        
+        // Quantité
+        ajouterValidationTempsReel('quantite', function(champ) {
+            if (champ.value && champ.value !== '') {
+                var num = parseFloat(champ.value);
+                if (isNaN(num)) {
+                    afficherErreur('quantite', 'Nombre invalide');
+                } else if (num < 0) {
+                    afficherErreur('quantite', 'La quantité ne peut pas être négative');
+                }
+            }
+        });
+        
+        // Seuil
+        ajouterValidationTempsReel('seuil', function(champ) {
+            if (champ.value && champ.value !== '') {
+                var num = parseFloat(champ.value);
+                if (isNaN(num)) {
+                    afficherErreur('seuil', 'Nombre invalide');
+                } else if (num < 0) {
+                    afficherErreur('seuil', 'Le seuil ne peut pas être négatif');
+                }
+            }
+        });
+    }
+    
+    // =============================================
+    // LANCEMENT
+    // =============================================
+    var tentatives = 0;
+    var maxTentatives = 100;
+    
+    var interval = setInterval(function() {
+        tentatives++;
+        
+        var uploadZoneTest = document.getElementById('uploadZone');
+        var formTest = document.getElementById('produitForm');
+        
+        if ((uploadZoneTest && formTest) || tentatives >= maxTentatives) {
+            clearInterval(interval);
+            if (uploadZoneTest && formTest) {
+                initialiser();
+            }
+        }
+    }, 50);
+    
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">{{ subtitle }}</p>
+    </div>
+    <a href="{{ path('home') }}" class="btn btn-ghost">
+        <i class="fa-solid fa-arrow-left"></i> Retour
+    </a>
+</div>
+
+<div class="form-container">
+    {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+    <div class="card" style="margin-bottom:22px">
+        <div class="form-card-header">
+            <div class="form-card-icon" style="background:#e8f5e9;color:#5a9814">
+                <i class="fa-solid fa-box"></i>
+            </div>
+            <div>
+                <h2 class="form-card-title">📦 Informations du Produit</h2>
+                <p class="form-card-subtitle">{{ subtitle }}</p>
+            </div>
+        </div>
+
+        {% if form.vars.errors|length > 0 %}
+        <div class="form-errors">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            {% for e in form.vars.errors %}<span>{{ e.message }}</span>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-grid">
+            <div class="form-group form-group-full">
+                <label class="form-label"><i class="fa-solid fa-tag"></i> Catégorie *</label>
+                {{ form_widget(form.produit.categorie) }}
+                {{ form_errors(form.produit.categorie) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-font"></i> Nom du produit *</label>
+                {{ form_widget(form.produit.nom) }}
+                {{ form_errors(form.produit.nom) }}
+            </div>
+
+            <div class="form-group form-group-full">
+                <label class="form-label"><i class="fa-solid fa-align-left"></i> Description</label>
+                {{ form_widget(form.produit.description, {attr: {rows: 4}}) }}
+                {{ form_errors(form.produit.description) }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-coins"></i> Prix unitaire (DT) *</label>
+                {{ form_widget(form.produit.prixUnitaire) }}
+                {{ form_errors(form.produit.prixUnitaire) }}
+            </div>
+
+            <div class="form-group form-group-full">
+                <label class="form-label"><i class="fa-solid fa-camera"></i> Photo du produit *</label>
+                {{ form_widget(form.produit.photoFile) }}
+                {{ form_errors(form.produit.photoFile) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock -->
+    <div class="card" style="margin-bottom:22px">
+        <div class="form-card-header">
+            <div class="form-card-icon" style="background:#e3f2fd;color:#2196f3">
+                <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div>
+                <h2 class="form-card-title">📊 Stock Initial (optionnel)</h2>
+                <p class="form-card-subtitle">Remplissez si vous voulez ajouter du stock immédiatement</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            {% if form.stock is defined %}
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-cubes"></i> Quantité actuelle</label>
+                    {{ form_widget(form.stock.quantiteActuelle) }}
+                    {{ form_errors(form.stock.quantiteActuelle) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-bell"></i> Seuil d'alerte</label>
+                    {{ form_widget(form.stock.seuilAlerte) }}
+                    {{ form_errors(form.stock.seuilAlerte) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-ruler"></i> Unité de mesure</label>
+                    {{ form_widget(form.stock.uniteMesure) }}
+                    {{ form_errors(form.stock.uniteMesure) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-location-dot"></i> Emplacement</label>
+                    {{ form_widget(form.stock.emplacement) }}
+                    {{ form_errors(form.stock.emplacement) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-calendar-plus"></i> Date de réception</label>
+                    {{ form_widget(form.stock.dateReception) }}
+                    {{ form_errors(form.stock.dateReception) }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fa-solid fa-calendar-xmark"></i> Date d'expiration</label>
+                    {{ form_widget(form.stock.dateExpiration) }}
+                    {{ form_errors(form.stock.dateExpiration) }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card form-actions-card">
+        <a href="{{ path('home') }}" class="btn btn-ghost btn-lg">
+            <i class="fa-solid fa-xmark"></i> Annuler
+        </a>
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-check"></i> {{ btnLabel }}
+        </button>
+        <p class="required-hint">* Champs obligatoires</p>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}

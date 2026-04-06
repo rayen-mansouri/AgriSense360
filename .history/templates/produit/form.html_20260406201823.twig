@@ -1,0 +1,397 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 24px; margin: 0;">{{ title }}</h1>
+            <p style="color: #666; margin: 5px 0 0;">{{ subtitle }}</p>
+        </div>
+        <a href="{{ path('home') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour</a>
+    </div>
+
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'produitForm', enctype: 'multipart/form-data'}}) }}
+
+    <!-- Carte Produit -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+            <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px;">
+                <i class="fa-solid fa-box"></i>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; margin: 0;">📦 Informations Produit</h2>
+                <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Renseignez les détails du produit agricole</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Catégorie *</label>
+                {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-categorie" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Nom du produit *</label>
+                {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-nom" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div style="grid-column: span 2;">
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Description</label>
+                {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'rows': 4, 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Prix unitaire (DT) *</label>
+                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-prix" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Photo du produit *</label>
+                
+                <!-- Zone d'upload personnalisée -->
+                <div id="uploadArea" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; position: relative;">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px; display: block;"></i>
+                    <p style="margin: 0; font-size: 13px; color: #475569;">Cliquez pour choisir une image</p>
+                </div>
+                
+                <!-- Champ fichier caché - en dehors de uploadArea -->
+                <div style="position: absolute; left: -9999px; opacity: 0;">
+                    {{ form_widget(form.produit.photoFile, {'attr': {'id': 'photoFileInput', 'class': 'photo-file-input'}}) }}
+                </div>
+                
+                <!-- Aperçu de l'image -->
+                <div id="imagePreview" style="display: none; margin-top: 10px; text-align: center;">
+                    <img id="previewImg" src="" alt="Aperçu" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #5a9814;">
+                    <br>
+                    <button type="button" id="removeImageBtn" style="background: #dc3545; color: white; border: none; padding: 5px 12px; border-radius: 20px; cursor: pointer; margin-top: 8px; font-size: 12px;">✖ Supprimer</button>
+                </div>
+                
+                <div id="error-photo" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte Stock -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+            <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 20px;">
+                <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; margin: 0;">📊 Stock Initial</h2>
+                <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Optionnel</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Quantité actuelle</label>
+                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Seuil d'alerte</label>
+                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Unité de mesure</label>
+                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-unite" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Emplacement</label>
+                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date de réception</label>
+                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control', 'id': 'dateReception', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date d'expiration</label>
+                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control', 'id': 'dateExpiration', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-dates" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+        <a href="{{ path('home') }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
+        <button type="submit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">{{ btnLabel }}</button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+(function() {
+    // Attendre que le DOM soit prêt
+    var checkReady = setInterval(function() {
+        var uploadArea = document.getElementById('uploadArea');
+        if (uploadArea) {
+            clearInterval(checkReady);
+            initUpload();
+        }
+    }, 100);
+
+    function initUpload() {
+        var uploadArea = document.getElementById('uploadArea');
+        var imagePreview = document.getElementById('imagePreview');
+        var previewImg = document.getElementById('previewImg');
+        var removeBtn = document.getElementById('removeImageBtn');
+        var form = document.getElementById('produitForm');
+        var hasImage = false;
+        
+        // Trouver le champ fichier - il peut avoir un ID généré par Symfony
+        var photoInput = document.getElementById('photoFileInput');
+        if (!photoInput) {
+            // Chercher par type dans le formulaire
+            var inputs = document.querySelectorAll('input[type="file"]');
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].name && inputs[i].name.indexOf('photoFile') !== -1) {
+                    photoInput = inputs[i];
+                    break;
+                }
+            }
+        }
+        
+        // Debug
+        if (window.console) {
+            console.log('Upload Area trouvé:', uploadArea);
+            console.log('Photo Input trouvé:', photoInput);
+            if (photoInput) {
+                console.log('Photo Input ID:', photoInput.id);
+                console.log('Photo Input Name:', photoInput.name);
+            }
+        }
+        
+        if (!photoInput) {
+            if (window.console) console.log('ERREUR: Champ photo non trouvé!');
+            return;
+        }
+        
+        // Clic sur la zone d'upload
+        uploadArea.onclick = function(e) {
+            if (window.console) console.log('Clic sur zone upload');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Déclencher le clic sur l'input file
+            if (photoInput.click) {
+                photoInput.click();
+            } else {
+                // Fallback pour anciens navigateurs
+                var evt = document.createEvent('MouseEvents');
+                evt.initEvent('click', true, true);
+                photoInput.dispatchEvent(evt);
+            }
+            
+            return false;
+        };
+        
+        // Changement de fichier
+        photoInput.onchange = function() {
+            if (window.console) console.log('Fichier changé');
+            
+            var files = this.files;
+            if (files && files.length > 0) {
+                var file = files[0];
+                if (window.console) console.log('Fichier:', file.name);
+                
+                // Vérifier le type
+                var fileName = file.name.toLowerCase();
+                var isImage = fileName.indexOf('.jpg') !== -1 || 
+                              fileName.indexOf('.jpeg') !== -1 || 
+                              fileName.indexOf('.png') !== -1 || 
+                              fileName.indexOf('.gif') !== -1 ||
+                              fileName.indexOf('.webp') !== -1;
+                
+                if (!isImage && file.type) {
+                    isImage = file.type.indexOf('image') !== -1;
+                }
+                
+                if (isImage) {
+                    // Créer l'aperçu avec FileReader
+                    if (window.FileReader) {
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImg.src = e.target.result;
+                            imagePreview.style.display = 'block';
+                            uploadArea.style.display = 'none';
+                            hasImage = true;
+                            clearError('photo');
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        // Fallback sans aperçu
+                        imagePreview.style.display = 'block';
+                        uploadArea.style.display = 'none';
+                        previewImg.alt = file.name;
+                        hasImage = true;
+                        clearError('photo');
+                    }
+                } else {
+                    window.alert('Veuillez sélectionner une image (JPG, PNG, GIF, WEBP)');
+                    this.value = '';
+                }
+            }
+        };
+        
+        // Supprimer l'image
+        if (removeBtn) {
+            removeBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                photoInput.value = '';
+                imagePreview.style.display = 'none';
+                uploadArea.style.display = 'block';
+                previewImg.src = '';
+                hasImage = false;
+                
+                return false;
+            };
+        }
+        
+        // Fonctions d'erreur
+        function showError(fieldId, message) {
+            var errorDiv = document.getElementById('error-' + fieldId);
+            if (errorDiv) {
+                errorDiv.innerHTML = '⚠️ ' + message;
+            }
+            var input = document.getElementById(fieldId);
+            if (input) {
+                input.style.borderColor = '#dc3545';
+            }
+        }
+        
+        function clearError(fieldId) {
+            var errorDiv = document.getElementById('error-' + fieldId);
+            if (errorDiv) {
+                errorDiv.innerHTML = '';
+            }
+            var input = document.getElementById(fieldId);
+            if (input) {
+                input.style.borderColor = '';
+            }
+        }
+        
+        // Validation du formulaire
+        function validateForm() {
+            var isValid = true;
+            
+            // Catégorie
+            var categorie = document.getElementById('categorie');
+            if (categorie && !categorie.value) {
+                showError('categorie', 'La catégorie est obligatoire');
+                isValid = false;
+            } else {
+                clearError('categorie');
+            }
+            
+            // Nom
+            var nom = document.getElementById('nom');
+            if (nom) {
+                var nomVal = nom.value.replace(/^\s+|\s+$/g, '');
+                if (!nomVal) {
+                    showError('nom', 'Le nom est obligatoire');
+                    isValid = false;
+                } else if (nomVal.length < 3) {
+                    showError('nom', 'Minimum 3 caractères');
+                    isValid = false;
+                } else {
+                    clearError('nom');
+                }
+            }
+            
+            // Prix
+            var prix = document.getElementById('prix');
+            if (prix) {
+                var prixVal = parseFloat(prix.value);
+                if (!prix.value) {
+                    showError('prix', 'Le prix est obligatoire');
+                    isValid = false;
+                } else if (isNaN(prixVal) || prixVal <= 0) {
+                    showError('prix', 'Le prix doit être > 0');
+                    isValid = false;
+                } else {
+                    clearError('prix');
+                }
+            }
+            
+            // Photo
+            var photoFiles = photoInput.files;
+            if (!hasImage && (!photoFiles || photoFiles.length === 0)) {
+                showError('photo', 'La photo est obligatoire');
+                isValid = false;
+            } else {
+                clearError('photo');
+            }
+            
+            // Unité si quantité
+            var quantite = document.getElementById('quantite');
+            var unite = document.getElementById('unite');
+            if (quantite && unite) {
+                var qteVal = parseFloat(quantite.value);
+                if (!isNaN(qteVal) && qteVal > 0 && !unite.value) {
+                    showError('unite', 'Unité requise si quantité > 0');
+                    isValid = false;
+                } else {
+                    clearError('unite');
+                }
+            }
+            
+            // Dates
+            var dateReception = document.getElementById('dateReception');
+            var dateExpiration = document.getElementById('dateExpiration');
+            if (dateReception && dateExpiration && dateReception.value && dateExpiration.value) {
+                var dr = new Date(dateReception.value);
+                var de = new Date(dateExpiration.value);
+                if (de < dr) {
+                    showError('dates', 'L\'expiration doit être après la réception');
+                    isValid = false;
+                } else {
+                    clearError('dates');
+                }
+            }
+            
+            return isValid;
+        }
+        
+        // Soumission
+        if (form) {
+            form.onsubmit = function(e) {
+                if (window.console) console.log('Soumission du formulaire');
+                
+                if (!validateForm()) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    window.alert('Veuillez corriger les erreurs avant de soumettre');
+                    return false;
+                }
+                
+                return true;
+            };
+        }
+        
+        if (window.console) console.log('Initialisation terminée');
+    }
+})();
+</script>
+{% endblock %}

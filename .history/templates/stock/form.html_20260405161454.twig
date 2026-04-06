@@ -1,0 +1,63 @@
+{% extends 'layout/base.html.twig' %}
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div><h1 class="page-title">{{ title }}</h1><p class="page-subtitle">{{ subtitle }}</p></div>
+    <a href="{{ path('home') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+</div>
+
+<div class="form-container">
+{{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
+
+<div class="card" style="margin-bottom:22px">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#e3f2fd;color:var(--blue)"><i class="fa-solid fa-warehouse"></i></div>
+        <div><h2 class="form-card-title">📊 Informations du Stock</h2><p class="form-card-subtitle">{{ subtitle }}</p></div>
+    </div>
+    {% if form.vars.errors|length > 0 %}
+    <div class="form-errors"><i class="fa-solid fa-circle-exclamation"></i>{% for e in form.vars.errors %}<span>{{ e.message }}</span>{% endfor %}</div>
+    {% endif %}
+    <div class="form-grid">
+        {% if form.produit is defined %}
+        <div class="form-group form-group-full">
+            <label class="form-label"><i class="fa-solid fa-leaf"></i> Produit *</label>
+            {{ form_widget(form.produit) }}{{ form_errors(form.produit) }}
+        </div>
+        {% endif %}
+        <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-cubes"></i> Quantité actuelle *</label>
+            {{ form_widget(form.quantiteActuelle) }}{{ form_errors(form.quantiteActuelle) }}
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-bell"></i> Seuil d'alerte</label>
+            {{ form_widget(form.seuilAlerte) }}{{ form_errors(form.seuilAlerte) }}
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-ruler"></i> Unité de mesure *</label>
+            {{ form_widget(form.uniteMesure) }}{{ form_errors(form.uniteMesure) }}
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-location-dot"></i> Emplacement</label>
+            {{ form_widget(form.emplacement) }}{{ form_errors(form.emplacement) }}
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-calendar-plus"></i> Date de réception</label>
+            {{ form_widget(form.dateReception) }}{{ form_errors(form.dateReception) }}
+        </div>
+        <div class="form-group">
+            <label class="form-label"><i class="fa-solid fa-calendar-xmark"></i> Date d'expiration</label>
+            {{ form_widget(form.dateExpiration) }}{{ form_errors(form.dateExpiration) }}
+        </div>
+    </div>
+</div>
+
+<div class="card form-actions-card">
+    <a href="{{ path('home') }}" class="btn btn-ghost btn-lg"><i class="fa-solid fa-xmark"></i> Annuler</a>
+    <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-check"></i> {{ btnLabel }}</button>
+    <p class="required-hint">* Champs obligatoires</p>
+</div>
+
+{{ form_end(form) }}
+</div>
+{% endblock %}

@@ -1,0 +1,552 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">{{ subtitle }}</p>
+    </div>
+    <a href="{{ path('home') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+</div>
+
+<div class="form-container">
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'produitForm', enctype: 'multipart/form-data'}}) }}
+
+    <!-- Carte Produit -->
+    <div class="card" style="margin-bottom:22px">
+        <div class="form-card-header">
+            <div class="form-card-icon" style="background:#e8f5e9;color:#5a9814">
+                <i class="fa-solid fa-box"></i>
+            </div>
+            <div>
+                <h2 class="form-card-title">📦 Informations Produit</h2>
+                <p class="form-card-subtitle">Renseignez les détails du produit agricole</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group" id="group-categorie">
+                <label class="form-label"><i class="fa-solid fa-tag"></i> Catégorie <span class="required-star">*</span></label>
+                {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie'}}) }}
+                <div class="error-message" id="error-categorie"></div>
+            </div>
+
+            <div class="form-group" id="group-nom">
+                <label class="form-label"><i class="fa-solid fa-font"></i> Nom du produit <span class="required-star">*</span></label>
+                {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom'}}) }}
+                <div class="error-message" id="error-nom"></div>
+            </div>
+
+            <div class="form-group form-group-full" id="group-description">
+                <label class="form-label"><i class="fa-solid fa-align-left"></i> Description</label>
+                {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'id': 'description', 'rows': 4}}) }}
+                <div class="error-message" id="error-description"></div>
+            </div>
+
+            <div class="form-group" id="group-prix">
+                <label class="form-label"><i class="fa-solid fa-coins"></i> Prix unitaire (DT) <span class="required-star">*</span></label>
+                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix'}}) }}
+                <div class="error-message" id="error-prix"></div>
+            </div>
+
+            <div class="form-group" id="group-photo">
+                <label class="form-label"><i class="fa-solid fa-camera"></i> Photo du produit <span class="required-star">*</span></label>
+                <div class="file-upload-area" id="uploadArea">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Cliquez ou glissez une image ici</p>
+                    <span class="upload-hint">JPG, PNG, WebP (max 5MB)</span>
+                    {{ form_widget(form.produit.photoFile, {'attr': {'class': 'file-input', 'id': 'photo_input', 'accept': 'image/*'}}) }}
+                </div>
+                <div id="image_preview" class="image-preview" style="display:none;">
+                    <img id="preview_img" src="" alt="Aperçu">
+                    <button type="button" class="preview-remove" id="removeBtn">×</button>
+                </div>
+                <div class="error-message" id="error-photo"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte Stock -->
+    <div class="card" style="margin-bottom:22px">
+        <div class="form-card-header">
+            <div class="form-card-icon" style="background:#e3f2fd;color:#2196f3">
+                <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div>
+                <h2 class="form-card-title">📊 Stock Initial</h2>
+                <p class="form-card-subtitle">Optionnel — remplissez si vous souhaitez ajouter du stock</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group" id="group-quantite">
+                <label class="form-label"><i class="fa-solid fa-cubes"></i> Quantité actuelle</label>
+                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite'}}) }}
+                <div class="error-message" id="error-quantite"></div>
+            </div>
+
+            <div class="form-group" id="group-seuil">
+                <label class="form-label"><i class="fa-solid fa-bell"></i> Seuil d'alerte</label>
+                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil'}}) }}
+                <div class="error-message" id="error-seuil"></div>
+            </div>
+
+            <div class="form-group" id="group-unite">
+                <label class="form-label"><i class="fa-solid fa-ruler"></i> Unité de mesure</label>
+                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite'}}) }}
+                <div class="error-message" id="error-unite"></div>
+            </div>
+
+            <div class="form-group" id="group-emplacement">
+                <label class="form-label"><i class="fa-solid fa-location-dot"></i> Emplacement</label>
+                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Entrepôt A, Rayon 3'}}) }}
+            </div>
+
+            <div class="form-group" id="group-dateReception">
+                <label class="form-label"><i class="fa-solid fa-calendar-plus"></i> Date de réception</label>
+                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control'}}) }}
+            </div>
+
+            <div class="form-group" id="group-dateExpiration">
+                <label class="form-label"><i class="fa-solid fa-calendar-xmark"></i> Date d'expiration</label>
+                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control'}}) }}
+                <div class="error-message" id="error-dates"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card form-actions-card">
+        <a href="{{ path('home') }}" class="btn btn-ghost btn-lg"><i class="fa-solid fa-xmark"></i> Annuler</a>
+        <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-check"></i> {{ btnLabel }}</button>
+        <p class="required-hint"><span class="required-star">*</span> Champs obligatoires</p>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments du formulaire
+    const form = document.getElementById('produitForm');
+    const fileInput = document.getElementById('photo_input');
+    const uploadArea = document.getElementById('uploadArea');
+    const imagePreview = document.getElementById('image_preview');
+    const previewImg = document.getElementById('preview_img');
+    const removeBtn = document.getElementById('removeBtn');
+    let imageLoaded = false;
+
+    // ====================== UPLOAD IMAGE ======================
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showError('photo', 'Format d\'image invalide. Utilisez JPG, PNG ou WebP.');
+                this.value = '';
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showError('photo', 'L\'image ne doit pas dépasser 5MB.');
+                this.value = '';
+                return;
+            }
+            
+            imageLoaded = true;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                clearError('photo');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            imageLoaded = false;
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+        });
+    }
+
+    // ====================== AFFICHAGE ERREURS ======================
+    function showError(fieldId, message) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = `<div class="alert-bubble"><i class="fa-solid fa-circle-exclamation"></i> ${message}</div>`;
+            errorDiv.style.display = 'block';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) input.classList.add('input-error');
+    }
+
+    function clearError(fieldId) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) input.classList.remove('input-error');
+    }
+
+    // ====================== VALIDATION ======================
+    function validateForm() {
+        let isValid = true;
+
+        // Catégorie
+        const categorie = document.getElementById('categorie');
+        if (!categorie.value) {
+            showError('categorie', 'Veuillez sélectionner une catégorie');
+            isValid = false;
+        } else {
+            clearError('categorie');
+        }
+
+        // Nom
+        const nom = document.getElementById('nom');
+        if (!nom.value.trim()) {
+            showError('nom', 'Le nom du produit est obligatoire');
+            isValid = false;
+        } else if (nom.value.trim().length < 3) {
+            showError('nom', 'Le nom doit contenir au moins 3 caractères');
+            isValid = false;
+        } else {
+            clearError('nom');
+        }
+
+        // Prix
+        const prix = document.getElementById('prix');
+        const prixVal = parseFloat(prix.value);
+        if (!prix.value) {
+            showError('prix', 'Le prix unitaire est obligatoire');
+            isValid = false;
+        } else if (isNaN(prixVal) || prixVal <= 0) {
+            showError('prix', 'Le prix doit être un nombre supérieur à 0');
+            isValid = false;
+        } else {
+            clearError('prix');
+        }
+
+        // Photo
+        if (!imageLoaded && (!fileInput.files || fileInput.files.length === 0)) {
+            showError('photo', 'La photo du produit est obligatoire');
+            isValid = false;
+        } else {
+            clearError('photo');
+        }
+
+        // Stock (optionnel mais cohérent)
+        const quantite = parseFloat(document.getElementById('quantite')?.value || 0);
+        const unite = document.getElementById('unite')?.value;
+        
+        if (quantite > 0 && !unite) {
+            showError('unite', 'L\'unité de mesure est requise quand une quantité est renseignée');
+            isValid = false;
+        } else {
+            clearError('unite');
+        }
+
+        // Dates
+        const dateRec = document.getElementById('dateReception')?.value;
+        const dateExp = document.getElementById('dateExpiration')?.value;
+        
+        if (dateRec && dateExp && new Date(dateExp) < new Date(dateRec)) {
+            showError('dates', 'La date d\'expiration doit être postérieure à la date de réception');
+            isValid = false;
+        } else {
+            clearError('dates');
+        }
+
+        return isValid;
+    }
+
+    // ====================== SOUMISSION ======================
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            const firstError = document.querySelector('.input-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+        }
+    });
+
+    // ====================== VALIDATION TEMPS RÉEL ======================
+    document.getElementById('nom')?.addEventListener('input', function() {
+        if (this.value.trim().length >= 3) clearError('nom');
+    });
+    
+    document.getElementById('prix')?.addEventListener('input', function() {
+        if (parseFloat(this.value) > 0) clearError('prix');
+    });
+    
+    document.getElementById('quantite')?.addEventListener('input', function() {
+        if (parseFloat(this.value) > 0) clearError('unite');
+    });
+    
+    document.getElementById('unite')?.addEventListener('change', function() {
+        if (this.value) clearError('unite');
+    });
+});
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+.form-container { max-width: 900px; margin: 0 auto; }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.form-group-full { grid-column: span 2; }
+.form-group { margin-bottom: 0; }
+
+/* Labels */
+.form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1a2a1a;
+    font-size: 14px;
+}
+
+.required-star {
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+/* Champs */
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #5a9814;
+    box-shadow: 0 0 0 3px rgba(90,152,20,0.1);
+}
+
+/* Upload */
+.file-upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f8fafc;
+}
+
+.file-upload-area:hover {
+    border-color: #5a9814;
+    background: #f0fdf4;
+}
+
+.file-upload-area i {
+    font-size: 40px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+}
+
+.file-upload-area p {
+    margin: 0;
+    color: #475569;
+}
+
+.upload-hint {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 8px;
+}
+
+.file-input { display: none; }
+
+/* Prévisualisation */
+.image-preview {
+    margin-top: 16px;
+    position: relative;
+    display: inline-block;
+}
+
+.image-preview img {
+    max-width: 180px;
+    border-radius: 12px;
+    border: 3px solid #5a9814;
+}
+
+.preview-remove {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.preview-remove:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+/* Messages d'erreur */
+.error-message { min-height: 44px; margin-top: 6px; }
+
+.alert-bubble {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideDown 0.25s ease;
+    box-shadow: 0 2px 8px rgba(245,158,11,0.25);
+}
+
+.alert-bubble i { font-size: 14px; }
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.input-error {
+    border-color: #f59e0b !important;
+    background-color: #fffbeb !important;
+}
+
+/* Carte */
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f6;
+}
+
+.form-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #eef2f6;
+}
+
+.form-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.form-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+}
+
+.form-card-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Actions */
+.form-actions-card {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #f8fafc;
+}
+
+.required-hint {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+    margin-right: auto;
+}
+
+.btn {
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: #5a9814;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #4a7a10;
+    transform: translateY(-2px);
+}
+
+.btn-ghost {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.btn-ghost:hover {
+    background: #e2e8f0;
+}
+
+.btn-lg {
+    padding: 12px 28px;
+    font-size: 15px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .form-group-full { grid-column: span 1; }
+    .card { padding: 20px; }
+    .form-actions-card { flex-direction: column; }
+    .btn { width: 100%; text-align: center; justify-content: center; }
+    .required-hint { margin-right: 0; margin-bottom: 12px; }
+}
+</style>
+{% endblock %}
