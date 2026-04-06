@@ -416,6 +416,34 @@ body.admin-panel {
     gap: 12px;
 }
 
+.admin-panel .recent-activity-tools {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-panel .recent-activity-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--admin-muted);
+}
+
+.admin-panel .recent-activity-filter .input {
+    min-width: 154px;
+    padding: 6px 10px;
+}
+
+.admin-panel .recent-log-reset {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
 .admin-panel .tag {
     border: 1px solid rgba(167, 207, 167, 0.26);
     background: rgba(70, 100, 70, 0.22);
@@ -490,6 +518,12 @@ body.admin-panel {
     padding: 12px;
     display: grid;
     gap: 5px;
+}
+
+.admin-panel .recent-log-empty {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--admin-muted);
 }
 
 .admin-panel .log-table {

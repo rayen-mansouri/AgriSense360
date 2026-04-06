@@ -81,23 +81,31 @@
         <article class="telemetry-panel recent-activity-panel">
             <header>
                 <h3>Recent Activity Log</h3>
-                <span class="tag">Derived from latest records</span>
+                <div class="recent-activity-tools">
+                    <span class="tag">Derived from latest records</span>
+                    <label class="recent-activity-filter" for="recent-log-date">
+                        <span>Date</span>
+                        <input class="input" type="date" id="recent-log-date">
+                    </label>
+                    <button class="ghost recent-log-reset" type="button" id="recent-log-reset">Clear</button>
+                </div>
             </header>
             <ul class="log-list">
                 {% for log in recentLogs %}
-                    <li>
+                    <li data-log-date="{{ log.timestamp|default('')|slice(0, 10)|e('html_attr') }}">
                         <span class="log-table">{{ log.table }}</span>
                         <p>{{ log.entry }}</p>
                         <small>{{ log.timestamp }}</small>
                     </li>
                 {% else %}
-                    <li>
+                    <li data-log-empty="true">
                         <span class="log-table">SYSTEM</span>
                         <p>No activity available yet.</p>
                         <small>N/A</small>
                     </li>
                 {% endfor %}
             </ul>
+            <p class="recent-log-empty" id="recent-log-empty" hidden>No logs for selected date.</p>
         </article>
     </section>
 
@@ -426,6 +434,30 @@
             const maintenanceReset = document.getElementById('maintenance-reset');
             const searchInput = document.getElementById('equipment-search');
             const equipmentRows = document.querySelectorAll('#equipments-table tbody tr');
+            const recentLogDateInput = document.getElementById('recent-log-date');
+            const recentLogResetButton = document.getElementById('recent-log-reset');
+            const recentLogRows = Array.from(document.querySelectorAll('.log-list li:not([data-log-empty="true"])'));
+            const recentLogEmpty = document.getElementById('recent-log-empty');
+
+            function applyRecentLogDateFilter() {
+                if (!recentLogDateInput || !recentLogEmpty || recentLogRows.length === 0) {
+                    return;
+                }
+
+                const selectedDate = recentLogDateInput.value;
+                let visibleCount = 0;
+
+                recentLogRows.forEach((row) => {
+                    const rowDate = (row.dataset.logDate || '').slice(0, 10);
+                    const shouldShow = selectedDate === '' || rowDate === selectedDate;
+                    row.style.display = shouldShow ? '' : 'none';
+                    if (shouldShow) {
+                        visibleCount += 1;
+                    }
+                });
+
+                recentLogEmpty.hidden = visibleCount !== 0;
+            }
 
             document.querySelectorAll('.js-edit-equipment').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -476,6 +508,20 @@
                     });
                 });
             }
+
+            if (recentLogDateInput) {
+                recentLogDateInput.addEventListener('input', applyRecentLogDateFilter);
+                recentLogDateInput.addEventListener('change', applyRecentLogDateFilter);
+            }
+
+            if (recentLogResetButton && recentLogDateInput) {
+                recentLogResetButton.addEventListener('click', () => {
+                    recentLogDateInput.value = '';
+                    applyRecentLogDateFilter();
+                });
+            }
+
+            applyRecentLogDateFilter();
 
             document.querySelectorAll('.js-ajax-delete').forEach((form) => {
                 form.addEventListener('submit', async (event) => {
