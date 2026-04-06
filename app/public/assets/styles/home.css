@@ -708,26 +708,26 @@ body.intro-locked .sidebar {
 }
 
 /* Collapsed state: bars converge into a → chevron */
-.sidebar-collapsed .toggle-icon::before {
+[data-collapsed="true"] .toggle-icon::before {
     top: 50%;
     transform: translateY(-50%) rotate(38deg) scaleX(0.62);
     transform-origin: right center;
 }
-.sidebar-collapsed .toggle-icon::after {
+[data-collapsed="true"] .toggle-icon::after {
     bottom: auto;
     top: 50%;
     transform: translateY(-50%) rotate(-38deg) scaleX(0.62);
     transform-origin: right center;
 }
-.sidebar-collapsed .toggle-mid {
+[data-collapsed="true"] .toggle-mid {
     transform: translateY(-50%) scaleX(1);
 }
 
 /* Hover while collapsed: nudge the arrow */
-.sidebar-collapsed .sidebar-toggle:hover .toggle-icon::before {
+[data-collapsed="true"] .sidebar-toggle:hover .toggle-icon::before {
     transform: translateY(-50%) rotate(38deg) scaleX(0.62) translateX(-3px);
 }
-.sidebar-collapsed .sidebar-toggle:hover .toggle-icon::after {
+[data-collapsed="true"] .sidebar-toggle:hover .toggle-icon::after {
     transform: translateY(-50%) rotate(-38deg) scaleX(0.62) translateX(-3px);
 }
 
@@ -837,7 +837,7 @@ body.intro-locked .sidebar {
 }
 
 /* Stagger brand text re-entry slightly after sidebar spring lands */
-.sidebar:not(.sidebar-collapsed) .brand-text {
+[data-collapsed="false"] .sidebar .brand-text {
     transition-delay: 0.08s;
 }
 
@@ -883,7 +883,7 @@ body.intro-locked .sidebar {
 }
 
 /* Nav title pops in after links settle */
-.sidebar:not(.sidebar-collapsed) .nav-title {
+[data-collapsed="false"] .sidebar .nav-title {
     transition-delay: 0.12s;
 }
 
@@ -902,7 +902,7 @@ body.intro-locked .sidebar {
     transition: justify-content 0.3s ease;
 }
 
-.sidebar:not(.sidebar-collapsed) .managements ul {
+[data-collapsed="false"] .sidebar .managements ul {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -986,12 +986,12 @@ body.intro-locked .sidebar {
         margin     0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.sidebar:not(.sidebar-collapsed) .managements li:nth-child(1) .nav-label { transition-delay: 0.06s; }
-.sidebar:not(.sidebar-collapsed) .managements li:nth-child(2) .nav-label { transition-delay: 0.09s; }
-.sidebar:not(.sidebar-collapsed) .managements li:nth-child(3) .nav-label { transition-delay: 0.12s; }
-.sidebar:not(.sidebar-collapsed) .managements li:nth-child(4) .nav-label { transition-delay: 0.15s; }
-.sidebar:not(.sidebar-collapsed) .managements li:nth-child(5) .nav-label { transition-delay: 0.18s; }
-.sidebar:not(.sidebar-collapsed) .managements li:nth-child(6) .nav-label { transition-delay: 0.21s; }
+[data-collapsed="false"] .sidebar .managements li:nth-child(1) .nav-label { transition-delay: 0.06s; }
+[data-collapsed="false"] .sidebar .managements li:nth-child(2) .nav-label { transition-delay: 0.09s; }
+[data-collapsed="false"] .sidebar .managements li:nth-child(3) .nav-label { transition-delay: 0.12s; }
+[data-collapsed="false"] .sidebar .managements li:nth-child(4) .nav-label { transition-delay: 0.15s; }
+[data-collapsed="false"] .sidebar .managements li:nth-child(5) .nav-label { transition-delay: 0.18s; }
+[data-collapsed="false"] .sidebar .managements li:nth-child(6) .nav-label { transition-delay: 0.21s; }
 
 /* ============================================================
    SIDEBAR FOOT
@@ -1017,7 +1017,7 @@ body.intro-locked .sidebar {
 }
 
 /* Foot slides in last — after everything else settles */
-.sidebar:not(.sidebar-collapsed) .sidebar-foot {
+[data-collapsed="false"] .sidebar .sidebar-foot {
     transition-delay: 0.2s;
 }
 
@@ -1683,16 +1683,16 @@ button > * {
 /* ============================================================
    COLLAPSED STATE
    ============================================================ */
-.sidebar-collapsed .page {
+[data-collapsed="true"] .page {
     grid-template-columns: 88px 1fr;
     transition: grid-template-columns 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.sidebar-collapsed .sidebar {
+[data-collapsed="true"] .sidebar {
     padding: 24px 10px;
 }
 
-.sidebar-collapsed .brand-text {
+[data-collapsed="true"] .brand-text {
     opacity: 0;
     transform: translateX(-10px) scale(0.94);
     max-width: 0;
@@ -1700,17 +1700,17 @@ button > * {
     transition-duration: 0.28s;
 }
 
-.sidebar-collapsed .brand {
+[data-collapsed="true"] .brand {
     justify-content: center;
 }
 
-.sidebar-collapsed .brand-logo {
+[data-collapsed="true"] .brand-logo {
     width: 48px;
     height: 48px;
     border-radius: 18px;
 }
 
-.sidebar-collapsed .nav-title {
+[data-collapsed="true"] .nav-title {
     opacity: 0;
     transform: translateX(-8px) scaleX(0.9);
     max-height: 0;
@@ -1719,24 +1719,24 @@ button > * {
     transition-duration: 0.22s;
 }
 
-.sidebar-collapsed .managements li {
+[data-collapsed="true"] .managements li {
     display: flex;
     justify-content: center;
     padding: 0;
 }
 
-.sidebar-collapsed .managements ul {
+[data-collapsed="true"] .managements ul {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 0;
 }
 
-.sidebar-collapsed .managements {
+[data-collapsed="true"] .managements {
     justify-content: space-between;
 }
 
-.sidebar-collapsed .managements .nav-link {
+[data-collapsed="true"] .managements .nav-link {
     width: 54px;
     height: 54px;
     padding: 0;
@@ -1744,17 +1744,17 @@ button > * {
     border-radius: 16px;
 }
 
-.sidebar-collapsed .nav-icon {
+[data-collapsed="true"] .nav-icon {
     width: 34px;
     height: 34px;
     border-radius: 14px;
 }
 
-.sidebar-collapsed .managements .nav-link:hover .nav-icon {
+[data-collapsed="true"] .managements .nav-link:hover .nav-icon {
     transform: scale(1.14) rotate(8deg);
 }
 
-.sidebar-collapsed .nav-label {
+[data-collapsed="true"] .nav-label {
     opacity: 0;
     transform: translateX(-10px) scale(0.9);
     max-width: 0;
@@ -1763,7 +1763,7 @@ button > * {
     transition-duration: 0.22s;
 }
 
-.sidebar-collapsed .sidebar-foot {
+[data-collapsed="true"] .sidebar-foot {
     opacity: 0;
     transform: translateY(6px) scale(0.95);
     max-height: 0;
@@ -1780,7 +1780,7 @@ button > * {
         grid-template-columns: 1fr;
     }
 
-    .sidebar-collapsed .page {
+    [data-collapsed="true"] .page {
         grid-template-columns: 1fr;
     }
 

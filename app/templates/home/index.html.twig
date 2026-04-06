@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if dashboardMode == 'admin' %}Admin Dashboard{% else %}AgriSense 360{% endif %}</title>
     <link rel="stylesheet" href="{{ asset('assets/styles/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/styles/menu.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="sidebar-collapsed {% if dashboardMode == 'admin' %}admin-mode{% endif %}">
+<body class="{% if dashboardMode == 'admin' %}admin-mode{% endif %}" data-collapsed="true">
 
     <section class="plant-intro-overlay" id="plant-intro-overlay" aria-label="AgriSense intro animation">
         <canvas id="plant-intro-canvas" aria-hidden="true"></canvas>
@@ -114,7 +115,7 @@
                 </svg>
             </div>
         </div>
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar" aria-label="Primary" id="sidebar">
             <div class="brand">
                 <img src="{{ asset('assets/images/agrisense-logo.png') }}" alt="AgriSense 360 logo" class="brand-logo">
                 <div class="brand-text">
@@ -124,8 +125,20 @@
             </div>
             <nav class="managements">
                 <p class="nav-title">Managements</p>
+                {% set currentRoute = app.request.attributes.get('_route') %}
                 <ul>
-                    <li>
+                    <li class="{% if currentRoute == 'home' %}active{% endif %}">
+                        <a class="nav-link" href="{{ path('home') }}">
+                            <span class="nav-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M4 11l8-7 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M6 10v8h12v-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                            <span class="nav-label">Home</span>
+                        </a>
+                    </li>
+                    <li class="{% if currentRoute == 'management_animals' %}active{% endif %}">
                         <a class="nav-link" href="{{ path('management_animals') }}">
                             <span class="nav-icon">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -137,7 +150,7 @@
                             <span class="nav-label">Animals Management</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="{% if currentRoute == 'management_equipments' %}active{% endif %}">
                         <a class="nav-link" href="{{ dashboardMode == 'admin' ? path('admin_management_equipments') : path('management_equipments') }}">
                             <span class="nav-icon">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -149,7 +162,7 @@
                             <span class="nav-label">{{ dashboardMode == 'admin' ? 'Admin Equipments & Maintenance' : 'Equipments Management' }}</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="{% if currentRoute == 'management_stock' %}active{% endif %}">
                         <a class="nav-link" href="{{ path('management_stock') }}">
                             <span class="nav-icon">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -160,7 +173,7 @@
                             <span class="nav-label">Stock Management</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="{% if currentRoute == 'management_culture' %}active{% endif %}">
                         <a class="nav-link" href="{{ path('management_culture') }}">
                             <span class="nav-icon">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -172,7 +185,7 @@
                             <span class="nav-label">Culture Management</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="{% if currentRoute == 'management_users' %}active{% endif %}">
                         <a class="nav-link" href="{{ path('management_users') }}">
                             <span class="nav-icon">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -183,7 +196,7 @@
                             <span class="nav-label">User Management</span>
                         </a>
                     </li>
-                    <li>
+                    <li class="{% if currentRoute == 'management_workers' %}active{% endif %}">
                         <a class="nav-link" href="{{ path('management_workers') }}">
                             <span class="nav-icon">
                                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -199,16 +212,18 @@
             </nav>
             <div class="sidebar-foot">
                 <span class="pulse-dot"></span>
-                <span>Connected to field data in real time</span>
+                <span>UI only mode</span>
             </div>
         </aside>
 
         <main class="content">
             <header class="topbar">
                 <div class="topbar-left">
-                    <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="false">
-                        <span class="toggle-icon"></span>
-                        <span class="toggle-text">Toggle menu</span>
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true">
+                        <span class="toggle-icon">
+                            <span class="toggle-mid"></span>
+                        </span>
+                        <span class="toggle-text">Menu</span>
                     </button>
                     <h1>AgriSense 360 helps farms grow healthier, faster, and smarter.</h1>
                     <p class="topbar-sub">Your AI assistant unifies livestock, crops, equipment, inventory, and workforce data into one living system.</p>
@@ -371,12 +386,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="{{ asset('assets/scripts/home-plant-overlay.js') }}"></script>
     <script>
-        const toggle = document.querySelector('.sidebar-toggle');
+        const btn = document.getElementById('sidebarToggle');
         const body = document.body;
-        toggle?.addEventListener('click', () => {
-            const isCollapsed = body.classList.toggle('sidebar-collapsed');
-            toggle.setAttribute('aria-expanded', (!isCollapsed).toString());
-        });
+
+        if (btn) {
+            const isCollapsed = body.getAttribute('data-collapsed') === 'true';
+            btn.setAttribute('aria-expanded', String(!isCollapsed));
+
+            btn.addEventListener('click', () => {
+                const collapsed = body.getAttribute('data-collapsed') === 'true';
+                const next = String(!collapsed);
+                body.setAttribute('data-collapsed', next);
+                localStorage.setItem('sidebarCollapsed', next);
+                btn.setAttribute('aria-expanded', String(next !== 'true'));
+            });
+        }
     </script>
 </body>
 </html>

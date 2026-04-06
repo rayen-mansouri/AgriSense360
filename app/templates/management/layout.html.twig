@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Management{% endblock %} | AgriSense 360</title>
     <link rel="stylesheet" href="{{ asset('assets/styles/management.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/styles/menu.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="management sidebar-collapsed">
+<body class="management" data-collapsed="true">
     <div class="page">
         <aside class="sidebar" aria-label="Primary" id="sidebar">
             <div class="brand">
@@ -114,9 +115,11 @@
         <main class="content">
             <header class="topbar">
                 <div class="topbar-title">
-                        <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="false">
-                            <span class="toggle-icon"></span>
-                            <span class="toggle-text">Toggle menu</span>
+                        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="true">
+                            <span class="toggle-icon">
+                                <span class="toggle-mid"></span>
+                            </span>
+                            <span class="toggle-text">Menu</span>
                         </button>
                     <p class="eyebrow">{% block eyebrow %}Management{% endblock %}</p>
                     <h1>{% block heading %}{% endblock %}</h1>
@@ -132,12 +135,19 @@
         </main>
     </div>
         <script>
-            const toggle = document.querySelector('.sidebar-toggle');
+            const btn = document.getElementById('sidebarToggle');
             const body = document.body;
-            if (toggle) {
-                toggle.addEventListener('click', () => {
-                    const isCollapsed = body.classList.toggle('sidebar-collapsed');
-                    toggle.setAttribute('aria-expanded', String(!isCollapsed));
+
+            if (btn) {
+                const isCollapsed = body.getAttribute('data-collapsed') === 'true';
+                btn.setAttribute('aria-expanded', String(!isCollapsed));
+
+                btn.addEventListener('click', () => {
+                    const collapsed = body.getAttribute('data-collapsed') === 'true';
+                    const next = String(!collapsed);
+                    body.setAttribute('data-collapsed', next);
+                    localStorage.setItem('sidebarCollapsed', next);
+                    btn.setAttribute('aria-expanded', String(next !== 'true'));
                 });
             }
         </script>
