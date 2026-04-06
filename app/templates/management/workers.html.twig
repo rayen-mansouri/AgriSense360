@@ -1,29 +1,70 @@
-{% extends adminMode|default(false) ? 'admin/layout.html.twig' : 'management/layout.html.twig' %}
+﻿{% extends adminMode|default(false) ? 'admin/layout.html.twig' : 'management/layout.html.twig' %}
 
 {% block title %}Workers Management{% endblock %}
 {% block eyebrow %}Workers Management{% endblock %}
 {% block heading %}Workers, assignments, and payments{% endblock %}
-{% block subhead %}CRUD UI for Ouvrier, Affectation, and Paiement. Actions are visual only.{% endblock %}
+{% block subhead %}Create, update, and delete workforce records with real database persistence.{% endblock %}
 
 {% block body %}
+{% set adminRoute = adminMode|default(false) ? 'admin_management_workers' : 'management_workers' %}
+{% set saveWorkerRoute = adminMode|default(false) ? 'admin_management_workers_save_worker' : 'management_workers_save_worker' %}
+{% set deleteWorkerRoute = adminMode|default(false) ? 'admin_management_workers_delete_worker' : 'management_workers_delete_worker' %}
+{% set saveAssignmentRoute = adminMode|default(false) ? 'admin_management_workers_save_assignment' : 'management_workers_save_assignment' %}
+{% set deleteAssignmentRoute = adminMode|default(false) ? 'admin_management_workers_delete_assignment' : 'management_workers_delete_assignment' %}
+{% set savePaymentRoute = adminMode|default(false) ? 'admin_management_workers_save_payment' : 'management_workers_save_payment' %}
+{% set deletePaymentRoute = adminMode|default(false) ? 'admin_management_workers_delete_payment' : 'management_workers_delete_payment' %}
+
 <section class="crud-section">
+    {% for errors in app.flashes('errors') %}
+        {% for message in errors %}
+            <div class="form-warning">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="crud-card" style="border-color: rgba(216, 74, 74, 0.35);">
+            <p style="color:#8c2121; font-weight:600;">{{ message }}</p>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('success') %}
+        <div class="crud-card" style="border-color: rgba(76, 170, 102, 0.35);">
+            <p style="color:#2d6e41; font-weight:600;">{{ message }}</p>
+        </div>
+    {% endfor %}
+
+    {% if adminMode|default(false) %}
+        <div class="crud-card">
+            <div class="crud-head">
+                <div>
+                    <h2>Owner selector</h2>
+                    <p>Switch between users to manage their workforce records.</p>
+                </div>
+            </div>
+            <form method="get" class="form-grid" style="grid-template-columns: minmax(0, 1fr) auto; align-items:end;">
+                <label class="field" style="grid-column: 1 / -1;">
+                    <span>User</span>
+                    <select class="input" name="user_id">
+                        {% for user in availableUsers|default([]) %}
+                            <option value="{{ user.id }}" {% if user.id == selectedUserId %}selected{% endif %}>{{ user.firstName }} {{ user.lastName }} - {{ user.email }}</option>
+                        {% else %}
+                            <option value="{{ selectedUserId }}">Current admin</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button class="primary" type="submit">Switch user</button>
+            </form>
+        </div>
+    {% endif %}
+
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>Ouvrier</h2>
-                <p>Track workforce roles and availability.</p>
+                <h2>Workers</h2>
+                <p>Manage team members and availability.</p>
             </div>
-            <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add ouvrier</button>
-            </div>
+            <div class="crud-actions"><span class="pill">{{ workers|length }} records</span></div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
-                <div class="list-head">
-                    <input class="input" type="search" placeholder="Search ouvriers">
-                    <span class="pill">2 records</span>
-                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -37,65 +78,63 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>#OW-12</td>
-                            <td>Ben Ali</td>
-                            <td>Rim</td>
-                            <td>Field lead</td>
-                            <td>1200</td>
-                            <td><span class="status ok">Available</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#OW-18</td>
-                            <td>Jradi</td>
-                            <td>Omar</td>
-                            <td>Irrigation</td>
-                            <td>900</td>
-                            <td><span class="status warn">Busy</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                        {% for row in workers %}
+                            <tr>
+                                <td>#OW-{{ row.id }}</td>
+                                <td>{{ row.lastName }}</td>
+                                <td>{{ row.firstName }}</td>
+                                <td>{{ row.position }}</td>
+                                <td>{{ row.salary|number_format(2, '.', ',') }}</td>
+                                <td><span class="status {{ row.availability == 'Available' ? 'ok' : 'warn' }}">{{ row.availability }}</span></td>
+                                <td>
+                                    <a class="link" href="{{ path(adminRoute, adminMode|default(false) ? {user_id: selectedUserId, editWorkerId: row.id} : {editWorkerId: row.id}) }}">Edit</a>
+                                    <form method="post" action="{{ path(deleteWorkerRoute, {id: row.id}) }}" style="display:inline;">
+                                        {% if adminMode|default(false) %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="7">No workers found.</td></tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
             <div class="crud-form">
-                <h3>Create / Edit ouvrier</h3>
-                <form>
+                <h3>{{ editingWorker ? 'Edit worker' : 'Create worker' }}</h3>
+                <form method="post" action="{{ path(saveWorkerRoute) }}" novalidate>
+                    <input type="hidden" name="id" value="{{ editingWorker.id|default('') }}">
+                    {% if adminMode|default(false) %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
                     <div class="form-grid">
                         <label class="field">
                             <span>Nom</span>
-                            <input class="input" type="text" placeholder="Last name">
+                            <input class="input" type="text" name="last_name" value="{{ editingWorker.lastName|default('') }}" required>
                         </label>
                         <label class="field">
                             <span>Prenom</span>
-                            <input class="input" type="text" placeholder="First name">
+                            <input class="input" type="text" name="first_name" value="{{ editingWorker.firstName|default('') }}" required>
                         </label>
                         <label class="field">
                             <span>Poste</span>
-                            <input class="input" type="text" placeholder="Role">
+                            <input class="input" type="text" name="position" value="{{ editingWorker.position|default('') }}" required>
                         </label>
                         <label class="field">
                             <span>Salaire</span>
-                            <input class="input" type="number" placeholder="0">
+                            <input class="input" type="number" step="0.01" name="salary" value="{{ editingWorker.salary|default('0') }}" required>
                         </label>
                         <label class="field">
                             <span>Disponibilite</span>
-                            <select class="input">
-                                <option>Available</option>
-                                <option>Busy</option>
-                                <option>On leave</option>
+                            {% set availabilityValue = editingWorker.availability|default('Available') %}
+                            <select class="input" name="availability">
+                                <option value="Available" {% if availabilityValue == 'Available' %}selected{% endif %}>Available</option>
+                                <option value="Busy" {% if availabilityValue == 'Busy' %}selected{% endif %}>Busy</option>
+                                <option value="On leave" {% if availabilityValue == 'On leave' %}selected{% endif %}>On leave</option>
                             </select>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">{{ editingWorker ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path(adminRoute, adminMode|default(false) ? {user_id: selectedUserId} : {}) }}">Reset</a>
                     </div>
                 </form>
             </div>
@@ -105,24 +144,18 @@
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>Affectation</h2>
-                <p>Assign tasks with start and end dates.</p>
+                <h2>Assignments</h2>
+                <p>Create and track worker task allocations.</p>
             </div>
-            <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add affectation</button>
-            </div>
+            <div class="crud-actions"><span class="pill">{{ assignments|length }} records</span></div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
-                <div class="list-head">
-                    <input class="input" type="search" placeholder="Search affectations">
-                    <span class="pill">2 records</span>
-                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Id</th>
+                            <th>Worker</th>
                             <th>Tache</th>
                             <th>DateDebut</th>
                             <th>DateFin</th>
@@ -130,49 +163,59 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>#AF-07</td>
-                            <td>Soil prep</td>
-                            <td>2026-02-01</td>
-                            <td>2026-02-08</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#AF-09</td>
-                            <td>Harvest crew</td>
-                            <td>2026-03-12</td>
-                            <td>2026-03-18</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                        {% for row in assignments %}
+                            <tr>
+                                <td>#AF-{{ row.id }}</td>
+                                <td>{{ row.workerName }}</td>
+                                <td>{{ row.task }}</td>
+                                <td>{{ row.startDate ? row.startDate|date('Y-m-d') : '-' }}</td>
+                                <td>{{ row.endDate ? row.endDate|date('Y-m-d') : '-' }}</td>
+                                <td>
+                                    <a class="link" href="{{ path(adminRoute, adminMode|default(false) ? {user_id: selectedUserId, editAssignmentId: row.id} : {editAssignmentId: row.id}) }}">Edit</a>
+                                    <form method="post" action="{{ path(deleteAssignmentRoute, {id: row.id}) }}" style="display:inline;">
+                                        {% if adminMode|default(false) %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="6">No assignments found.</td></tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
             <div class="crud-form">
-                <h3>Create / Edit affectation</h3>
-                <form>
+                <h3>{{ editingAssignment ? 'Edit assignment' : 'Create assignment' }}</h3>
+                <form method="post" action="{{ path(saveAssignmentRoute) }}" novalidate>
+                    <input type="hidden" name="id" value="{{ editingAssignment.id|default('') }}">
+                    {% if adminMode|default(false) %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
                     <div class="form-grid">
                         <label class="field">
+                            <span>Worker</span>
+                            {% set selectedAssignmentWorker = editingAssignment ? (editingAssignment.workerId|default(0)) : 0 %}
+                            <select class="input" name="worker_id" required>
+                                <option value="">Select worker</option>
+                                {% for worker in workers %}
+                                    <option value="{{ worker.id }}" {% if selectedAssignmentWorker == worker.id %}selected{% endif %}>{{ worker.firstName }} {{ worker.lastName }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
                             <span>Tache</span>
-                            <input class="input" type="text" placeholder="Task name">
+                            <input class="input" type="text" name="task" value="{{ editingAssignment ? (editingAssignment.task|default('')) : '' }}" required>
                         </label>
                         <label class="field">
                             <span>Date debut</span>
-                            <input class="input" type="date">
+                            <input class="input" type="date" name="start_date" value="{{ editingAssignment and editingAssignment.startDate ? editingAssignment.startDate|date('Y-m-d') : '' }}">
                         </label>
                         <label class="field">
                             <span>Date fin</span>
-                            <input class="input" type="date">
+                            <input class="input" type="date" name="end_date" value="{{ editingAssignment and editingAssignment.endDate ? editingAssignment.endDate|date('Y-m-d') : '' }}">
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">{{ editingAssignment ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path(adminRoute, adminMode|default(false) ? {user_id: selectedUserId} : {}) }}">Reset</a>
                     </div>
                 </form>
             </div>
@@ -182,24 +225,18 @@
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>Paiement</h2>
-                <p>Payment history and status tracking.</p>
+                <h2>Payments</h2>
+                <p>Track worker payroll records and status.</p>
             </div>
-            <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add paiement</button>
-            </div>
+            <div class="crud-actions"><span class="pill">{{ payments|length }} records</span></div>
         </div>
         <div class="crud-grid">
             <div class="crud-list">
-                <div class="list-head">
-                    <input class="input" type="search" placeholder="Search paiements">
-                    <span class="pill">2 records</span>
-                </div>
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Id</th>
+                            <th>Worker</th>
                             <th>Montant</th>
                             <th>DatePaiement</th>
                             <th>Statut</th>
@@ -207,53 +244,64 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>#PM-04</td>
-                            <td>420</td>
-                            <td>2026-01-28</td>
-                            <td><span class="status ok">Paid</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#PM-11</td>
-                            <td>380</td>
-                            <td>2026-02-05</td>
-                            <td><span class="status warn">Pending</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                        {% for row in payments %}
+                            <tr>
+                                <td>#PM-{{ row.id }}</td>
+                                <td>{{ row.workerName }}</td>
+                                <td>{{ row.amount|number_format(2, '.', ',') }}</td>
+                                <td>{{ row.paymentDate ? row.paymentDate|date('Y-m-d') : '-' }}</td>
+                                <td><span class="status {{ row.status == 'Paid' ? 'ok' : 'warn' }}">{{ row.status }}</span></td>
+                                <td>
+                                    <a class="link" href="{{ path(adminRoute, adminMode|default(false) ? {user_id: selectedUserId, editPaymentId: row.id} : {editPaymentId: row.id}) }}">Edit</a>
+                                    <form method="post" action="{{ path(deletePaymentRoute, {id: row.id}) }}" style="display:inline;">
+                                        {% if adminMode|default(false) %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="6">No payments found.</td></tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
             <div class="crud-form">
-                <h3>Create / Edit paiement</h3>
-                <form>
+                <h3>{{ editingPayment ? 'Edit payment' : 'Create payment' }}</h3>
+                <form method="post" action="{{ path(savePaymentRoute) }}" novalidate>
+                    <input type="hidden" name="id" value="{{ editingPayment.id|default('') }}">
+                    {% if adminMode|default(false) %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
                     <div class="form-grid">
                         <label class="field">
+                            <span>Worker</span>
+                            {% set selectedPaymentWorker = editingPayment ? (editingPayment.workerId|default(0)) : 0 %}
+                            <select class="input" name="worker_id" required>
+                                <option value="">Select worker</option>
+                                {% for worker in workers %}
+                                    <option value="{{ worker.id }}" {% if selectedPaymentWorker == worker.id %}selected{% endif %}>{{ worker.firstName }} {{ worker.lastName }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
                             <span>Montant</span>
-                            <input class="input" type="number" placeholder="0">
+                            <input class="input" type="number" step="0.01" name="amount" value="{{ editingPayment ? (editingPayment.amount|default('0')) : '0' }}" required>
                         </label>
                         <label class="field">
                             <span>Date paiement</span>
-                            <input class="input" type="date">
+                            <input class="input" type="date" name="payment_date" value="{{ editingPayment and editingPayment.paymentDate ? editingPayment.paymentDate|date('Y-m-d') : '' }}">
                         </label>
                         <label class="field">
                             <span>Statut</span>
-                            <select class="input">
-                                <option>Paid</option>
-                                <option>Pending</option>
-                                <option>Failed</option>
+                            {% set paymentStatus = editingPayment ? (editingPayment.status|default('Pending')) : 'Pending' %}
+                            <select class="input" name="status">
+                                <option value="Paid" {% if paymentStatus == 'Paid' %}selected{% endif %}>Paid</option>
+                                <option value="Pending" {% if paymentStatus == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="Failed" {% if paymentStatus == 'Failed' %}selected{% endif %}>Failed</option>
                             </select>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">{{ editingPayment ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path(adminRoute, adminMode|default(false) ? {user_id: selectedUserId} : {}) }}">Reset</a>
                     </div>
                 </form>
             </div>

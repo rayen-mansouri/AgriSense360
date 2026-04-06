@@ -161,6 +161,10 @@
                 btn.setAttribute('aria-expanded', String(next !== 'true'));
             });
         }
+
+        document.querySelectorAll('form').forEach((form) => {
+            form.setAttribute('novalidate', 'novalidate');
+        });
     </script>
     {% block scripts %}{% endblock %}
 </body>

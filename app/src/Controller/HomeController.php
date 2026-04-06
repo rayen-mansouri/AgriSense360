@@ -4,20 +4,31 @@ namespace App\Controller;
 
 use App\Service\OracleSqlPlusCrudService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 final class HomeController extends AbstractController
 {
     #[Route('/home', name: 'home')]
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return $this->render('home/index.html.twig');
+        $session = $request->getSession();
+        $authTransition = (bool) $session->get('auth_transition', false);
+        $session->remove('auth_transition');
+
+        return $this->render('home/index.html.twig', [
+            'authTransition' => $authTransition,
+        ]);
     }
 
     #[Route('/admin/home', name: 'admin_home')]
-    public function admin(OracleSqlPlusCrudService $oracleCrud): Response
+    public function admin(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
+        $session = $request->getSession();
+        $authTransition = (bool) $session->get('auth_transition', false);
+        $session->remove('auth_transition');
+
         try {
             $equipments = $oracleCrud->listEquipments();
             $maintenances = $oracleCrud->listMaintenances();
@@ -85,6 +96,7 @@ final class HomeController extends AbstractController
 
         return $this->render('admin/home.html.twig', [
             'active' => 'home',
+            'authTransition' => $authTransition,
             'kpis' => [
                 'totalEquipments' => count($equipments),
                 'totalMaintenances' => count($maintenances),

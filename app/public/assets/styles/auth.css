@@ -424,6 +424,21 @@ body.admin-mode .auth-card {
     color: #1f5b34;
 }
 
+.field-warning {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #a53d3d;
+    animation: authFade 0.3s ease;
+}
+
+.auth-page.is-leaving .auth-shell {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+    filter: blur(1.5px);
+    transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+}
+
 .auth-switch {
     margin-top: 18px;
     display: flex;
