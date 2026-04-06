@@ -1,0 +1,433 @@
+﻿{% extends 'management/layout.html.twig' %}
+
+{% block title %}Equipments Management{% endblock %}
+{% block eyebrow %}Equipments Management{% endblock %}
+{% block heading %}Equipment management{% endblock %}
+{% block subhead %}{% endblock %}
+
+{% block body %}
+{% set isEditing = editing ?? false %}
+{% set formAction = isEditing ? path('management_equipments_edit', { id: equipment.id }) : path('management_equipments') %}
+{% set isMaintenanceEditing = maintenanceEditing ?? false %}
+{% set maintenanceAction = isMaintenanceEditing ? path('management_maintenance_edit', { id: maintenance.id }) : path('management_equipments') %}
+
+<section class="crud-section">
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Equipement</h2>
+                <p>Manage equipment inventory and status.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button" onclick="location.href='#equipment-form'">Add equipement</button>
+            </div>
+        </div>
+
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" id="equipment-search" type="search" placeholder="Search equipements" autocomplete="off">
+                    <span class="pill">{{ equipments|length }} records</span>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Etat</th>
+                            <th>DateAchat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipment-table-body">
+                        {% for row in equipments %}
+                            <tr>
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.type }}</td>
+                                <td>
+                                    {% if row.status == 'Ready' %}
+                                        <span class="status ok">Ready</span>
+                                    {% elseif row.status == 'Service' %}
+                                        <span class="status warn">Service</span>
+                                    {% else %}
+                                        <span class="status danger">{{ row.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ row.purchaseDate ? row.purchaseDate|date('Y-m-d') : '' }}</td>
+                                <td>
+                                    <button class="link js-edit-equipment" type="button" data-edit-url="{{ path('management_equipments_edit', { id: row.id }) }}">Edit</button>
+                                    <form action="{{ path('management_equipments_delete', { id: row.id }) }}" method="post" style="display:inline" data-ajax-form="1">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_equipment_' ~ row.id) }}">
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5">No equipment found yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="crud-form" id="equipment-form">
+                <h3>Create / Edit equipement</h3>
+                <form method="post" action="{{ formAction }}" data-ajax-form="1">
+                    <input type="hidden" name="form_type" value="equipment">
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Nom</span>
+                            <input class="input" type="text" name="name" placeholder="Equipment name" value="{{ equipment.name ?? '' }}" required>
+                        </label>
+                        <label class="field">
+                            <span>Type</span>
+                            <input class="input" type="text" name="type" placeholder="Harvest, spray" value="{{ equipment.type ?? '' }}" required>
+                        </label>
+                        <label class="field">
+                            <span>Etat</span>
+                            <select class="input" name="status" required>
+                                {% set currentStatus = equipment.status ?? 'Ready' %}
+                                <option value="Ready" {% if currentStatus == 'Ready' %}selected{% endif %}>Ready</option>
+                                <option value="Service" {% if currentStatus == 'Service' %}selected{% endif %}>Service</option>
+                                <option value="Offline" {% if currentStatus == 'Offline' %}selected{% endif %}>Offline</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Date achat</span>
+                            <input class="input" type="date" name="purchase_date" value="{{ equipment.purchaseDate ? equipment.purchaseDate|date('Y-m-d') : '' }}">
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="submit">{{ isEditing ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path('management_equipments') }}">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Maintenance</h2>
+                <p>Service history and maintenance costs.</p>
+            </div>
+            <div class="crud-actions">
+                <button class="ghost" type="button">Import</button>
+                <button class="primary" type="button" onclick="location.href='#maintenance-form'">Add maintenance</button>
+            </div>
+        </div>
+
+        <div class="crud-grid">
+            <div class="crud-list">
+                <div class="list-head">
+                    <input class="input" id="maintenance-search" type="search" placeholder="Search maintenance" autocomplete="off">
+                    <span class="pill">{{ maintenances|length }} records</span>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Equipement</th>
+                            <th>DateMaintenance</th>
+                            <th>TypeMaintenance</th>
+                            <th>Cout</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="maintenance-table-body">
+                        {% for row in maintenances %}
+                            <tr>
+                                <td>{{ row.equipment ? row.equipment.name : '-' }}</td>
+                                <td>{{ row.maintenanceDate ? row.maintenanceDate|date('Y-m-d') : '' }}</td>
+                                <td>{{ row.maintenanceType }}</td>
+                                <td>{{ row.cost }}</td>
+                                <td>
+                                    <button class="link js-edit-maintenance" type="button" data-edit-url="{{ path('management_maintenance_edit', { id: row.id }) }}">Edit</button>
+                                    <form action="{{ path('management_maintenance_delete', { id: row.id }) }}" method="post" style="display:inline" data-ajax-form="1">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_maintenance_' ~ row.id) }}">
+                                        <button class="link danger" type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5">No maintenance found yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="crud-form" id="maintenance-form">
+                <h3>Create / Edit maintenance</h3>
+                <form method="post" action="{{ maintenanceAction }}" data-ajax-form="1">
+                    <input type="hidden" name="form_type" value="maintenance">
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Equipement</span>
+                            {% set currentEquipmentId = maintenance.equipment ? maintenance.equipment.id : null %}
+                            <input type="hidden" name="equipment_id" id="maintenance-equipment-id" value="{{ currentEquipmentId ?? '' }}" required>
+                            <button class="input" type="button" id="equipment-picker-toggle" style="text-align:left;" {% if equipments is empty %}disabled{% endif %}>
+                                <span id="equipment-picker-label">
+                                    {% if maintenance.equipment %}
+                                        {{ maintenance.equipment.name }}
+                                    {% else %}
+                                        Select equipment
+                                    {% endif %}
+                                </span>
+                            </button>
+                            <div id="equipment-picker-panel" style="display:none; border:1px solid var(--stroke); border-radius:12px; padding:10px; background:#fff; margin-top:8px;">
+                                <input class="input" type="search" id="equipment-picker-search" placeholder="Search equipment" autocomplete="off" {% if equipments is empty %}disabled{% endif %}>
+                                <div id="equipment-picker-list" style="margin-top:8px; max-height:180px; overflow:auto; display:grid; gap:6px;">
+                                    {% if equipments is empty %}
+                                        <span class="pill">Add equipment first</span>
+                                    {% else %}
+                                        {% for eq in equipments %}
+                                            <button
+                                                class="ghost js-pick-equipment"
+                                                type="button"
+                                                data-equipment-id="{{ eq.id }}"
+                                                data-equipment-name="{{ eq.name }}"
+                                                style="justify-content:flex-start; text-align:left;"
+                                            >
+                                                {{ eq.name }}
+                                            </button>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </label>
+                        <label class="field">
+                            <span>Date maintenance</span>
+                            <input class="input" type="date" name="maintenance_date" value="{{ maintenance.maintenanceDate ? maintenance.maintenanceDate|date('Y-m-d') : '' }}" required>
+                        </label>
+                        <label class="field">
+                            <span>Type maintenance</span>
+                            <input class="input" type="text" name="maintenance_type" placeholder="Inspection, repair" value="{{ maintenance.maintenanceType ?? '' }}" required>
+                        </label>
+                        <label class="field">
+                            <span>Cout</span>
+                            <input class="input" type="number" name="cost" placeholder="0" step="0.01" value="{{ maintenance.cost ?? '' }}" required>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="submit">{{ isMaintenanceEditing ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path('management_equipments') }}">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+(() => {
+    let isUpdatingSection = false;
+
+    async function fetchHtml(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            ...options,
+        });
+
+        if (!response.ok) {
+            throw new Error('Request failed with status ' + response.status);
+        }
+
+        return response.text();
+    }
+
+    function applySearchFilter(inputSelector, tbodySelector) {
+        const input = document.querySelector(inputSelector);
+        const tbody = document.querySelector(tbodySelector);
+        if (!input || !tbody) {
+            return;
+        }
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const query = input.value.trim().toLowerCase();
+
+        rows.forEach((row) => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    function wireSearchInputs() {
+        const equipmentSearch = document.querySelector('#equipment-search');
+        const maintenanceSearch = document.querySelector('#maintenance-search');
+
+        if (equipmentSearch) {
+            equipmentSearch.addEventListener('input', () => {
+                applySearchFilter('#equipment-search', '#equipment-table-body');
+            });
+        }
+
+        if (maintenanceSearch) {
+            maintenanceSearch.addEventListener('input', () => {
+                applySearchFilter('#maintenance-search', '#maintenance-table-body');
+            });
+        }
+    }
+
+    function wireEquipmentPicker() {
+        const toggle = document.querySelector('#equipment-picker-toggle');
+        const panel = document.querySelector('#equipment-picker-panel');
+        const search = document.querySelector('#equipment-picker-search');
+
+        if (!toggle || !panel) {
+            return;
+        }
+
+        toggle.addEventListener('click', () => {
+            const isOpen = panel.style.display === 'block';
+            panel.style.display = isOpen ? 'none' : 'block';
+
+            if (!isOpen && search) {
+                search.focus();
+            }
+        });
+
+        if (search) {
+            search.addEventListener('input', () => {
+                const query = search.value.trim().toLowerCase();
+                const options = Array.from(document.querySelectorAll('.js-pick-equipment'));
+
+                options.forEach((option) => {
+                    const name = (option.dataset.equipmentName || '').toLowerCase();
+                    option.style.display = name.includes(query) ? '' : 'none';
+                });
+            });
+        }
+    }
+
+    function updateCrudSectionFromHtml(html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newSection = doc.querySelector('.crud-section');
+        const currentSection = document.querySelector('.crud-section');
+
+        if (!newSection || !currentSection) {
+            throw new Error('Unable to refresh CRUD section.');
+        }
+
+        currentSection.replaceWith(newSection);
+        wireSearchInputs();
+        wireEquipmentPicker();
+    }
+
+    async function submitAjaxForm(form) {
+        if (isUpdatingSection) {
+            return;
+        }
+
+        isUpdatingSection = true;
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalText = submitButton ? submitButton.textContent : '';
+
+        try {
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Saving...';
+            }
+
+            const body = new URLSearchParams(new FormData(form));
+            const html = await fetchHtml(form.action, {
+                method: form.method || 'POST',
+                body,
+            });
+
+            updateCrudSectionFromHtml(html);
+        } catch (error) {
+            console.error(error);
+            alert('Operation failed. Please try again.');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+
+            isUpdatingSection = false;
+        }
+    }
+
+    async function openEditForm(url) {
+        if (isUpdatingSection) {
+            return;
+        }
+
+        isUpdatingSection = true;
+
+        try {
+            const html = await fetchHtml(url, { method: 'GET' });
+            updateCrudSectionFromHtml(html);
+            const formSection = document.querySelector('#equipment-form, #maintenance-form');
+            if (formSection) {
+                formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Unable to open edit form.');
+        } finally {
+            isUpdatingSection = false;
+        }
+    }
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target.closest('form[data-ajax-form="1"]');
+        if (!form) {
+            return;
+        }
+
+        event.preventDefault();
+        submitAjaxForm(form);
+    });
+
+    document.addEventListener('click', (event) => {
+        const equipmentEditButton = event.target.closest('.js-edit-equipment');
+        if (equipmentEditButton) {
+            event.preventDefault();
+            openEditForm(equipmentEditButton.dataset.editUrl);
+            return;
+        }
+
+        const maintenanceEditButton = event.target.closest('.js-edit-maintenance');
+        if (maintenanceEditButton) {
+            event.preventDefault();
+            openEditForm(maintenanceEditButton.dataset.editUrl);
+            return;
+        }
+
+        const pickEquipmentButton = event.target.closest('.js-pick-equipment');
+        if (pickEquipmentButton) {
+            event.preventDefault();
+
+            const idInput = document.querySelector('#maintenance-equipment-id');
+            const label = document.querySelector('#equipment-picker-label');
+            const panel = document.querySelector('#equipment-picker-panel');
+
+            if (idInput) {
+                idInput.value = pickEquipmentButton.dataset.equipmentId || '';
+            }
+
+            if (label) {
+                label.textContent = pickEquipmentButton.dataset.equipmentName || 'Select equipment';
+            }
+
+            if (panel) {
+                panel.style.display = 'none';
+            }
+        }
+    });
+
+    wireSearchInputs();
+    wireEquipmentPicker();
+})();
+</script>
+{% endblock %}

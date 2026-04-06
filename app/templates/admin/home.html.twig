@@ -1,0 +1,192 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Admin Operations Dashboard{% endblock %}
+{% block eyebrow %}Control Center{% endblock %}
+{% block heading %}Administrative Operations Dashboard{% endblock %}
+{% block subhead %}Executive visibility into equipment reliability, maintenance pressure, and operational spend across AgriSense infrastructure.{% endblock %}
+{% block collapsed_state %}true{% endblock %}
+
+{% block body %}
+    <section class="ops-kpi-grid">
+        <article class="ops-kpi">
+            <span class="k">Total Equipments</span>
+            <strong>{{ kpis.totalEquipments }}</strong>
+            <small>Tracked assets in system</small>
+        </article>
+        <article class="ops-kpi">
+            <span class="k">Maintenance Records</span>
+            <strong>{{ kpis.totalMaintenances }}</strong>
+            <small>Historical interventions</small>
+        </article>
+        <article class="ops-kpi">
+            <span class="k">Ready Fleet Ratio</span>
+            <strong>{{ kpis.readyRate }}%</strong>
+            <small>Operational availability</small>
+        </article>
+        <article class="ops-kpi">
+            <span class="k">Avg Maintenance Cost</span>
+            <strong>{{ kpis.avgMaintenanceCost|number_format(2, '.', ',') }}</strong>
+            <small>Per maintenance event</small>
+        </article>
+    </section>
+
+    <section class="ops-grid">
+        <article class="ops-panel ops-panel-wide">
+            <header>
+                <h3>Maintenance Cost Curve (Last Months)</h3>
+                <span class="tag">Financial trend line</span>
+            </header>
+            <svg viewBox="0 0 820 260" class="trend-svg" id="ops-cost-curve" data-labels='{{ costLabels|json_encode|e('html_attr') }}' data-values='{{ costValues|json_encode|e('html_attr') }}'>
+                <defs>
+                    <linearGradient id="ops-cost-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="rgba(137, 205, 155, 0.46)" />
+                        <stop offset="100%" stop-color="rgba(137, 205, 155, 0.05)" />
+                    </linearGradient>
+                </defs>
+                <g class="grid-lines"></g>
+                <path class="trend-area" d=""></path>
+                <path class="trend-line" d=""></path>
+                <g class="trend-points"></g>
+                <g class="trend-labels"></g>
+            </svg>
+        </article>
+
+        <article class="ops-panel">
+            <header>
+                <h3>Equipment Status Composition</h3>
+                <span class="tag">Donut chart</span>
+            </header>
+            {% set totalStatus = statusCounts.Ready + statusCounts.Service + statusCounts.Offline %}
+            {% set safeTotalStatus = totalStatus > 0 ? totalStatus : 1 %}
+            {% set readyP = (statusCounts.Ready / safeTotalStatus * 100)|round(1) %}
+            {% set serviceP = (statusCounts.Service / safeTotalStatus * 100)|round(1) %}
+            {% set offlineP = (statusCounts.Offline / safeTotalStatus * 100)|round(1) %}
+            <div class="pie-wrap">
+                <div class="pie" style="background: conic-gradient(#89b66b 0 {{ readyP }}%, #f0b75f {{ readyP }}% {{ (readyP + serviceP) }}%, #d86a5b {{ (readyP + serviceP) }}% 100%);"></div>
+                <ul class="legend">
+                    <li><span class="dot" style="background:#89b66b"></span><span>Ready ({{ statusCounts.Ready }})</span><strong>{{ readyP }}%</strong></li>
+                    <li><span class="dot" style="background:#f0b75f"></span><span>Service ({{ statusCounts.Service }})</span><strong>{{ serviceP }}%</strong></li>
+                    <li><span class="dot" style="background:#d86a5b"></span><span>Offline ({{ statusCounts.Offline }})</span><strong>{{ offlineP }}%</strong></li>
+                </ul>
+            </div>
+        </article>
+
+        <article class="ops-panel">
+            <header>
+                <h3>Top Equipment Types</h3>
+                <span class="tag">Bar distribution</span>
+            </header>
+            {% set maxType = 1 %}
+            {% for value in topTypes %}
+                {% if value > maxType %}{% set maxType = value %}{% endif %}
+            {% endfor %}
+            <ul class="ops-bar-list">
+                {% for label, value in topTypes %}
+                    <li>
+                        <div class="meta"><span>{{ label }}</span><strong>{{ value }}</strong></div>
+                        <div class="track"><span style="width: {{ (value / maxType * 100)|round(1) }}%"></span></div>
+                    </li>
+                {% else %}
+                    <li class="ops-empty">No equipment type data.</li>
+                {% endfor %}
+            </ul>
+        </article>
+
+        <article class="ops-panel">
+            <header>
+                <h3>Top Maintenance Categories</h3>
+                <span class="tag">Bar distribution</span>
+            </header>
+            {% set maxMaintenanceType = 1 %}
+            {% for value in topMaintenanceTypes %}
+                {% if value > maxMaintenanceType %}{% set maxMaintenanceType = value %}{% endif %}
+            {% endfor %}
+            <ul class="ops-bar-list">
+                {% for label, value in topMaintenanceTypes %}
+                    <li>
+                        <div class="meta"><span>{{ label }}</span><strong>{{ value }}</strong></div>
+                        <div class="track"><span style="width: {{ (value / maxMaintenanceType * 100)|round(1) }}%"></span></div>
+                    </li>
+                {% else %}
+                    <li class="ops-empty">No maintenance category data.</li>
+                {% endfor %}
+            </ul>
+        </article>
+
+        <article class="ops-panel">
+            <header>
+                <h3>Admin Actions</h3>
+                <span class="tag">Quick access</span>
+            </header>
+            <div class="ops-actions">
+                <a class="primary" href="{{ path('admin_management_equipments') }}">Open E&M Management</a>
+            </div>
+            <p class="ops-note">This dashboard is administrative only and focused on supervision and operational decisions.</p>
+        </article>
+    </section>
+
+    <script>
+        function drawOpsCurve() {
+            const svg = document.getElementById('ops-cost-curve');
+            if (!svg) {
+                return;
+            }
+
+            const labels = JSON.parse(svg.dataset.labels || '[]');
+            const values = JSON.parse(svg.dataset.values || '[]').map((v) => Number(v));
+            if (!Array.isArray(values) || values.length === 0) {
+                return;
+            }
+
+            const width = 820;
+            const height = 260;
+            const paddingX = 42;
+            const paddingTop = 24;
+            const paddingBottom = 42;
+            const chartHeight = height - paddingTop - paddingBottom;
+            const chartWidth = width - paddingX * 2;
+            const min = Math.min(...values, 0);
+            const max = Math.max(...values, 1);
+            const range = Math.max(max - min, 1);
+
+            const points = values.map((value, index) => {
+                const x = paddingX + (index * chartWidth) / Math.max(values.length - 1, 1);
+                const y = paddingTop + (1 - (value - min) / range) * chartHeight;
+                return { x, y, value, label: labels[index] || '' };
+            });
+
+            const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+            const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${(height - paddingBottom).toFixed(2)} L ${points[0].x.toFixed(2)} ${(height - paddingBottom).toFixed(2)} Z`;
+
+            const grid = svg.querySelector('.grid-lines');
+            const line = svg.querySelector('.trend-line');
+            const area = svg.querySelector('.trend-area');
+            const pointsGroup = svg.querySelector('.trend-points');
+            const labelsGroup = svg.querySelector('.trend-labels');
+
+            if (!grid || !line || !area || !pointsGroup || !labelsGroup) {
+                return;
+            }
+
+            let gridHtml = '';
+            for (let i = 0; i <= 4; i += 1) {
+                const y = paddingTop + (i * chartHeight) / 4;
+                gridHtml += `<line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}"></line>`;
+            }
+            grid.innerHTML = gridHtml;
+
+            line.setAttribute('d', linePath);
+            area.setAttribute('d', areaPath);
+
+            pointsGroup.innerHTML = points
+                .map((point) => `<circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="4"></circle>`)
+                .join('');
+
+            labelsGroup.innerHTML = points
+                .map((point) => `<text x="${point.x.toFixed(2)}" y="${height - 16}" text-anchor="middle">${point.label.slice(2)}</text>`)
+                .join('');
+        }
+
+        drawOpsCurve();
+    </script>
+{% endblock %}

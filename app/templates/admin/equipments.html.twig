@@ -1,0 +1,582 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Admin Equipment & Maintenance{% endblock %}
+{% block heading %}Equipment & Maintenance Command Console{% endblock %}
+{% block subhead %}Database telemetry, maintenance analytics, and operational CRUD for admin-level supervision.{% endblock %}
+
+{% block body %}
+    <section class="telemetry-panel" style="margin-bottom: 18px;">
+        <header>
+            <h3>Selected User Scope</h3>
+            <span class="tag">Admin can switch and manage each account data</span>
+        </header>
+        <form method="get" action="{{ path('admin_management_equipments') }}" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+            <label style="min-width:280px; display:grid; gap:6px;">
+                <span>User</span>
+                <select class="input" name="user_id" required>
+                    {% for user in availableUsers %}
+                        <option value="{{ user.id }}" {% if user.id == selectedUserId %}selected{% endif %}>
+                            #{{ user.id }} - {{ user.firstName }} {{ user.lastName }} ({{ user.roleName }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button class="primary" type="submit">Load User Data</button>
+        </form>
+    </section>
+
+    <section class="stats-rail">
+        <article class="stat-tile">
+            <span class="k">Equipments</span>
+            <span class="v">{{ adminStats.equipmentCount }}</span>
+            <small>Rows in EQUIPMENTS</small>
+        </article>
+        <article class="stat-tile">
+            <span class="k">Maintenance Logs</span>
+            <span class="v">{{ adminStats.maintenanceCount }}</span>
+            <small>Rows in MAINTENANCE</small>
+        </article>
+        <article class="stat-tile">
+            <span class="k">Total / Avg Cost</span>
+            <span class="v">{{ adminStats.maintenanceCost|number_format(2, '.', ',') }}</span>
+            <small>Avg: {{ adminStats.averageCost|number_format(2, '.', ',') }}</small>
+        </article>
+        <article class="stat-tile">
+            <span class="k">Last DB Change</span>
+            <span class="v">{{ dbTelemetry.lastDataChange ?: 'N/A' }}</span>
+            <small>Most recent known table date</small>
+        </article>
+    </section>
+
+    <section class="telemetry-grid">
+        <article class="telemetry-panel">
+            <header>
+                <h3>Database Signals</h3>
+                <span class="tag">Live from SQL*Plus reads</span>
+            </header>
+            <dl class="kv-grid">
+                <div>
+                    <dt>Equipments Rows</dt>
+                    <dd>{{ dbTelemetry.equipmentRows }}</dd>
+                </div>
+                <div>
+                    <dt>Maintenance Rows</dt>
+                    <dd>{{ dbTelemetry.maintenanceRows }}</dd>
+                </div>
+                <div>
+                    <dt>Last Equipment ID</dt>
+                    <dd>{{ dbTelemetry.latestEquipmentId }}</dd>
+                </div>
+                <div>
+                    <dt>Last Maintenance ID</dt>
+                    <dd>{{ dbTelemetry.latestMaintenanceId }}</dd>
+                </div>
+                <div>
+                    <dt>Estimated Next Equipment ID</dt>
+                    <dd>{{ dbTelemetry.nextEquipmentIdEstimate }}</dd>
+                </div>
+                <div>
+                    <dt>Estimated Next Maintenance ID</dt>
+                    <dd>{{ dbTelemetry.nextMaintenanceIdEstimate }}</dd>
+                </div>
+                <div>
+                    <dt>Latest Equipment Date</dt>
+                    <dd>{{ dbTelemetry.lastEquipmentChange ?: 'N/A' }}</dd>
+                </div>
+                <div>
+                    <dt>Latest Maintenance Date</dt>
+                    <dd>{{ dbTelemetry.lastMaintenanceChange ?: 'N/A' }}</dd>
+                </div>
+                <div>
+                    <dt>Missing Purchase Dates</dt>
+                    <dd>{{ dbTelemetry.missingPurchaseDateCount }}</dd>
+                </div>
+                <div>
+                    <dt>Equipment Type Count</dt>
+                    <dd>{{ dbTelemetry.equipmentTypeCount }}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="telemetry-panel recent-activity-panel">
+            <header>
+                <h3>Recent Activity Log</h3>
+                <div class="recent-activity-tools">
+                    <span class="tag">Derived from latest records</span>
+                    <label class="recent-activity-filter" for="recent-log-date">
+                        <span>Date</span>
+                        <input class="input" type="date" id="recent-log-date">
+                    </label>
+                    <button class="ghost recent-log-reset" type="button" id="recent-log-reset">Clear</button>
+                </div>
+            </header>
+            <ul class="log-list">
+                {% for log in recentLogs %}
+                    <li data-log-date="{{ log.timestamp|default('')|slice(0, 10)|e('html_attr') }}">
+                        <span class="log-table">{{ log.table }}</span>
+                        <p>{{ log.entry }}</p>
+                        <small>{{ log.timestamp }}</small>
+                    </li>
+                {% else %}
+                    <li data-log-empty="true">
+                        <span class="log-table">SYSTEM</span>
+                        <p>No activity available yet.</p>
+                        <small>N/A</small>
+                    </li>
+                {% endfor %}
+            </ul>
+            <p class="recent-log-empty" id="recent-log-empty" hidden>No logs for selected date.</p>
+        </article>
+    </section>
+
+    <section class="charts-grid">
+        <article class="chart-panel">
+            <header>
+                <h3>Equipment Status Distribution</h3>
+                <span>Pie chart</span>
+            </header>
+            <div class="pie-wrap">
+                <div class="pie" style="background: conic-gradient({{ statusPieGradient }});"></div>
+                <ul class="legend">
+                    {% for item in statusLegend %}
+                        <li>
+                            <span class="dot" style="background: {{ item.color }}"></span>
+                            <span>{{ item.label }} ({{ item.value }})</span>
+                            <strong>{{ item.percent }}%</strong>
+                        </li>
+                    {% else %}
+                        <li>No status data.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </article>
+
+        <article class="chart-panel">
+            <header>
+                <h3>Maintenance Type Distribution</h3>
+                <span>Pie chart</span>
+            </header>
+            <div class="pie-wrap">
+                <div class="pie" style="background: conic-gradient({{ maintenancePieGradient }});"></div>
+                <ul class="legend">
+                    {% for item in maintenanceLegend %}
+                        <li>
+                            <span class="dot" style="background: {{ item.color }}"></span>
+                            <span>{{ item.label }} ({{ item.value }})</span>
+                            <strong>{{ item.percent }}%</strong>
+                        </li>
+                    {% else %}
+                        <li>No maintenance data.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </article>
+
+        <article class="chart-panel chart-wide">
+            <header>
+                <h3>Maintenance Cost Trend</h3>
+                <span>Curve by maintenance date</span>
+            </header>
+            <svg viewBox="0 0 760 220" class="trend-svg" id="trend-chart" data-labels='{{ costTrendLabels|json_encode|e('html_attr') }}' data-values='{{ costTrendValues|json_encode|e('html_attr') }}'>
+                <defs>
+                    <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="rgba(129, 203, 153, 0.45)" />
+                        <stop offset="100%" stop-color="rgba(129, 203, 153, 0.04)" />
+                    </linearGradient>
+                </defs>
+                <g class="grid-lines"></g>
+                <path class="trend-area" d=""></path>
+                <path class="trend-line" d=""></path>
+                <g class="trend-points"></g>
+                <g class="trend-labels"></g>
+            </svg>
+        </article>
+    </section>
+
+    <div class="crud-grid" id="admin-management-panel">
+        <section class="crud-card">
+            <div class="card-head">
+                <span class="pill">EQUIPMENTS</span>
+                <h2>Create or update equipment</h2>
+            </div>
+            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="equipment-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}">
+                <input type="hidden" name="equipment_id" id="equipment_id">
+                <input type="hidden" name="target_user_id" value="{{ selectedUserId }}">
+                <input type="hidden" name="form_type" value="equipment">
+                <label>
+                    <span>Equipment Name</span>
+                    <input class="input" name="name" id="equipment_name" value="{{ equipment.name|default('') }}" required>
+                </label>
+                <label>
+                    <span>Type</span>
+                    <input class="input" name="type" id="equipment_type" value="{{ equipment.type|default('') }}" required>
+                </label>
+                <label>
+                    <span>Status</span>
+                    <input class="input" name="status" id="equipment_status" value="{{ equipment.status|default('Ready') }}" required>
+                </label>
+                <label>
+                    <span>Purchase Date</span>
+                    <input class="input" type="date" name="purchase_date" id="equipment_purchase_date" value="{{ equipment.purchaseDate is defined and equipment.purchaseDate ? equipment.purchaseDate|date('Y-m-d') : '' }}">
+                </label>
+                <div class="actions-row">
+                    <button class="primary" type="submit">Save equipment</button>
+                    <button class="ghost" type="button" id="equipment-reset">Clear</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="crud-card">
+            <div class="card-head">
+                <span class="pill">MAINTENANCE</span>
+                <h2>Create or update maintenance</h2>
+            </div>
+            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="maintenance-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}">
+                <input type="hidden" name="maintenance_id" id="maintenance_id">
+                <input type="hidden" name="target_user_id" value="{{ selectedUserId }}">
+                <input type="hidden" name="form_type" value="maintenance">
+                <label>
+                    <span>Equipment</span>
+                    <select class="input" name="equipment_id" id="maintenance_equipment_id" required>
+                        <option value="">Select equipment</option>
+                        {% for equipmentRow in equipments %}
+                            <option value="{{ equipmentRow.id }}" {% if maintenance.equipment.id|default(maintenance.equipmentId|default(maintenance.equipment|default(''))) == equipmentRow.id %}selected{% endif %}>
+                                #{{ equipmentRow.id }} - {{ equipmentRow.name }} ({{ equipmentRow.type }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>Maintenance Date</span>
+                    <input class="input" type="date" name="maintenance_date" id="maintenance_date" value="{{ maintenance.maintenanceDate is defined and maintenance.maintenanceDate ? maintenance.maintenanceDate|date('Y-m-d') : '' }}" required>
+                </label>
+                <label>
+                    <span>Maintenance Type</span>
+                    <input class="input" name="maintenance_type" id="maintenance_type" value="{{ maintenance.maintenanceType|default('Inspection') }}" placeholder="Inspection, Repair, Calibration" required>
+                </label>
+                <label>
+                    <span>Cost</span>
+                    <input class="input" name="cost" id="maintenance_cost" type="number" min="0" step="0.01" value="{{ maintenance.cost|default('0') }}" required>
+                </label>
+                <div class="actions-row">
+                    <button class="primary" type="submit">Save maintenance</button>
+                    <button class="ghost" type="button" id="maintenance-reset">Clear</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="crud-list" id="equipments-table-zone">
+            <div class="list-head">
+                <h3>EQUIPMENTS table</h3>
+                <input class="input" type="search" id="equipment-search" placeholder="Search by id, name, type, status, date">
+            </div>
+            <div class="table-wrap">
+                <table class="data-table" id="equipments-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Purchase Date</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for equipmentRow in equipments %}
+                        <tr>
+                            <td>{{ equipmentRow.id }}</td>
+                            <td>{{ equipmentRow.name }}</td>
+                            <td>{{ equipmentRow.type }}</td>
+                            <td>{{ equipmentRow.status }}</td>
+                            <td>{{ equipmentRow.purchaseDate ?: 'N/A' }}</td>
+                            <td>
+                                <button type="button"
+                                        class="ghost js-edit-equipment"
+                                        data-id="{{ equipmentRow.id }}"
+                                        data-name="{{ equipmentRow.name|e('html_attr') }}"
+                                        data-type="{{ equipmentRow.type|e('html_attr') }}"
+                                        data-status="{{ equipmentRow.status|e('html_attr') }}"
+                                        data-purchase-date="{{ equipmentRow.purchaseDate|default('') }}"
+                                        data-edit-url="{{ path('admin_management_equipments_edit', {'id': equipmentRow.id, 'user_id': selectedUserId}) }}">
+                                    Edit
+                                </button>
+                                <form method="post" action="{{ path('admin_management_equipments_delete', {'id': equipmentRow.id, 'user_id': selectedUserId}) }}" class="inline-delete js-ajax-delete">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_equipment_' ~ equipmentRow.id) }}">
+                                    <button type="submit" class="danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">No equipment records found.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="crud-list" id="maintenance-table-zone">
+            <div class="list-head">
+                <h3>MAINTENANCE table</h3>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table" id="maintenance-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Equipment ID</th>
+                        <th>Equipment Name</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Cost</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for maintenanceRow in maintenances %}
+                        <tr>
+                            <td>{{ maintenanceRow.id }}</td>
+                            <td>{{ maintenanceRow.equipmentId }}</td>
+                            <td>{{ maintenanceRow.equipmentName }}</td>
+                            <td>{{ maintenanceRow.maintenanceDate ?: 'N/A' }}</td>
+                            <td>{{ maintenanceRow.maintenanceType }}</td>
+                            <td>{{ maintenanceRow.cost }}</td>
+                            <td>
+                                <button type="button"
+                                        class="ghost js-edit-maintenance"
+                                        data-id="{{ maintenanceRow.id }}"
+                                        data-equipment-id="{{ maintenanceRow.equipmentId }}"
+                                        data-maintenance-date="{{ maintenanceRow.maintenanceDate|default('') }}"
+                                        data-maintenance-type="{{ maintenanceRow.maintenanceType|e('html_attr') }}"
+                                        data-cost="{{ maintenanceRow.cost|e('html_attr') }}"
+                                        data-edit-url="{{ path('admin_management_maintenance_edit', {'id': maintenanceRow.id, 'user_id': selectedUserId}) }}">
+                                    Edit
+                                </button>
+                                <form method="post" action="{{ path('admin_management_maintenance_delete', {'id': maintenanceRow.id, 'user_id': selectedUserId}) }}" class="inline-delete js-ajax-delete">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_maintenance_' ~ maintenanceRow.id) }}">
+                                    <button type="submit" class="danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7">No maintenance logs found.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function drawTrendCurve() {
+            const svg = document.getElementById('trend-chart');
+            if (!svg) {
+                return;
+            }
+
+            const labels = JSON.parse(svg.dataset.labels || '[]');
+            const values = JSON.parse(svg.dataset.values || '[]').map((v) => Number(v));
+            if (!Array.isArray(values) || values.length === 0) {
+                return;
+            }
+
+            const width = 760;
+            const height = 220;
+            const paddingX = 38;
+            const paddingTop = 22;
+            const paddingBottom = 36;
+            const chartHeight = height - paddingTop - paddingBottom;
+            const chartWidth = width - paddingX * 2;
+            const min = Math.min(...values, 0);
+            const max = Math.max(...values, 1);
+            const range = Math.max(max - min, 1);
+
+            const points = values.map((value, index) => {
+                const x = paddingX + (index * chartWidth) / Math.max(values.length - 1, 1);
+                const y = paddingTop + (1 - (value - min) / range) * chartHeight;
+                return { x, y, value, label: labels[index] || '' };
+            });
+
+            const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+            const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${(height - paddingBottom).toFixed(2)} L ${points[0].x.toFixed(2)} ${(height - paddingBottom).toFixed(2)} Z`;
+
+            const grid = svg.querySelector('.grid-lines');
+            const line = svg.querySelector('.trend-line');
+            const area = svg.querySelector('.trend-area');
+            const pointsGroup = svg.querySelector('.trend-points');
+            const labelsGroup = svg.querySelector('.trend-labels');
+
+            if (!grid || !line || !area || !pointsGroup || !labelsGroup) {
+                return;
+            }
+
+            let gridHtml = '';
+            for (let i = 0; i <= 4; i += 1) {
+                const y = paddingTop + (i * chartHeight) / 4;
+                gridHtml += `<line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}"></line>`;
+            }
+            grid.innerHTML = gridHtml;
+
+            line.setAttribute('d', linePath);
+            area.setAttribute('d', areaPath);
+
+            pointsGroup.innerHTML = points
+                .map((point) => `<circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="4"></circle>`)
+                .join('');
+
+            labelsGroup.innerHTML = points
+                .map((point) => {
+                    const shortLabel = point.label ? point.label.slice(5) : '';
+                    return `<text x="${point.x.toFixed(2)}" y="${height - 12}" text-anchor="middle">${shortLabel}</text>`;
+                })
+                .join('');
+        }
+
+        function wireAdminPanel() {
+            drawTrendCurve();
+
+            const equipmentForm = document.getElementById('equipment-form');
+            const maintenanceForm = document.getElementById('maintenance-form');
+            const equipmentIdInput = document.getElementById('equipment_id');
+            const equipmentNameInput = document.getElementById('equipment_name');
+            const equipmentTypeInput = document.getElementById('equipment_type');
+            const equipmentStatusInput = document.getElementById('equipment_status');
+            const equipmentPurchaseDateInput = document.getElementById('equipment_purchase_date');
+            const maintenanceIdInput = document.getElementById('maintenance_id');
+            const maintenanceEquipmentInput = document.getElementById('maintenance_equipment_id');
+            const maintenanceDateInput = document.getElementById('maintenance_date');
+            const maintenanceTypeInput = document.getElementById('maintenance_type');
+            const maintenanceCostInput = document.getElementById('maintenance_cost');
+
+            const equipmentReset = document.getElementById('equipment-reset');
+            const maintenanceReset = document.getElementById('maintenance-reset');
+            const searchInput = document.getElementById('equipment-search');
+            const equipmentRows = document.querySelectorAll('#equipments-table tbody tr');
+            const recentLogDateInput = document.getElementById('recent-log-date');
+            const recentLogResetButton = document.getElementById('recent-log-reset');
+            const recentLogRows = Array.from(document.querySelectorAll('.log-list li:not([data-log-empty="true"])'));
+            const recentLogEmpty = document.getElementById('recent-log-empty');
+
+            function applyRecentLogDateFilter() {
+                if (!recentLogDateInput || !recentLogEmpty || recentLogRows.length === 0) {
+                    return;
+                }
+
+                const selectedDate = recentLogDateInput.value;
+                let visibleCount = 0;
+
+                recentLogRows.forEach((row) => {
+                    const rowDate = (row.dataset.logDate || '').slice(0, 10);
+                    const shouldShow = selectedDate === '' || rowDate === selectedDate;
+                    row.style.display = shouldShow ? '' : 'none';
+                    if (shouldShow) {
+                        visibleCount += 1;
+                    }
+                });
+
+                recentLogEmpty.hidden = visibleCount !== 0;
+            }
+
+            document.querySelectorAll('.js-edit-equipment').forEach((button) => {
+                button.addEventListener('click', () => {
+                    equipmentIdInput.value = button.dataset.id || '';
+                    equipmentNameInput.value = button.dataset.name || '';
+                    equipmentTypeInput.value = button.dataset.type || '';
+                    equipmentStatusInput.value = button.dataset.status || '';
+                    equipmentPurchaseDateInput.value = button.dataset.purchaseDate || '';
+                    equipmentForm.action = button.dataset.editUrl || equipmentForm.dataset.createUrl;
+                    equipmentNameInput.focus();
+                });
+            });
+
+            document.querySelectorAll('.js-edit-maintenance').forEach((button) => {
+                button.addEventListener('click', () => {
+                    maintenanceIdInput.value = button.dataset.id || '';
+                    maintenanceEquipmentInput.value = button.dataset.equipmentId || '';
+                    maintenanceDateInput.value = button.dataset.maintenanceDate || '';
+                    maintenanceTypeInput.value = button.dataset.maintenanceType || '';
+                    maintenanceCostInput.value = button.dataset.cost || '';
+                    maintenanceForm.action = button.dataset.editUrl || maintenanceForm.dataset.createUrl;
+                    maintenanceDateInput.focus();
+                });
+            });
+
+            if (equipmentReset) {
+                equipmentReset.addEventListener('click', () => {
+                    equipmentForm.reset();
+                    equipmentIdInput.value = '';
+                    equipmentForm.action = equipmentForm.dataset.createUrl;
+                });
+            }
+
+            if (maintenanceReset) {
+                maintenanceReset.addEventListener('click', () => {
+                    maintenanceForm.reset();
+                    maintenanceIdInput.value = '';
+                    maintenanceForm.action = maintenanceForm.dataset.createUrl;
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const term = searchInput.value.trim().toLowerCase();
+                    equipmentRows.forEach((row) => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(term) ? '' : 'none';
+                    });
+                });
+            }
+
+            if (recentLogDateInput) {
+                recentLogDateInput.addEventListener('input', applyRecentLogDateFilter);
+                recentLogDateInput.addEventListener('change', applyRecentLogDateFilter);
+            }
+
+            if (recentLogResetButton && recentLogDateInput) {
+                recentLogResetButton.addEventListener('click', () => {
+                    recentLogDateInput.value = '';
+                    applyRecentLogDateFilter();
+                });
+            }
+
+            applyRecentLogDateFilter();
+
+            document.querySelectorAll('.js-ajax-delete').forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                });
+            });
+
+            [equipmentForm, maintenanceForm].forEach((form) => {
+                if (!form) {
+                    return;
+                }
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                });
+            });
+        }
+
+        wireAdminPanel();
+    </script>
+{% endblock %}

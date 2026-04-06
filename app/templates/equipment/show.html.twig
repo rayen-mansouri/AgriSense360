@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Equipment Details</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/equipment.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Equipment Details</p>
+                <h1>{{ equipment.name }}</h1>
+            </div>
+            <div class="actions">
+                <a class="btn ghost" href="{{ path('equipment_edit', {'id': equipment.id}) }}">Edit</a>
+                {% include 'equipment/_delete_form.html.twig' %}
+            </div>
+        </header>
+
+        <section class="card">
+            <dl class="details">
+                <div>
+                    <dt>ID</dt>
+                    <dd>{{ equipment.id }}</dd>
+                </div>
+                <div>
+                    <dt>Name</dt>
+                    <dd>{{ equipment.name }}</dd>
+                </div>
+                <div>
+                    <dt>Type</dt>
+                    <dd>{{ equipment.type }}</dd>
+                </div>
+                <div>
+                    <dt>Status</dt>
+                    <dd>{{ equipment.status }}</dd>
+                </div>
+                <div>
+                    <dt>Purchase Date</dt>
+                    <dd>{{ equipment.purchaseDate ? equipment.purchaseDate|date('Y-m-d') : '-' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <a class="link" href="{{ path('equipment_index') }}">Back to list</a>
+    </div>
+</body>
+</html>
