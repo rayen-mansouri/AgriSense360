@@ -11,6 +11,20 @@ final class HomeController extends AbstractController
     #[Route('/', name: 'home')]
     public function index(): Response
     {
-        return $this->render('home/index.html.twig');
+        return $this->render('home/index.html.twig', [
+            'dashboardMode' => 'user',
+            'switchTarget' => 'admin_home',
+            'switchLabel' => 'Open Admin',
+        ]);
+    }
+
+    #[Route('/admin', name: 'admin_home')]
+    public function admin(): Response
+    {
+        return $this->render('home/index.html.twig', [
+            'dashboardMode' => 'admin',
+            'switchTarget' => 'home',
+            'switchLabel' => 'Open User',
+        ]);
     }
 }

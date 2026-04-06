@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Admin Dashboard{% endblock %} | AgriSense 360</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/home.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/styles/admin.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="admin-mode admin-panel sidebar-collapsed">
+    <div class="page">
+        <aside class="sidebar" aria-label="Admin primary" id="sidebar">
+            <div class="brand">
+                <img src="{{ asset('assets/images/agrisense-logo.png') }}" alt="AgriSense 360 logo" class="brand-logo">
+                <div class="brand-text">
+                    <span class="brand-name">AgriSense 360</span>
+                    <span class="brand-tagline">Smart AI Companion for Farms</span>
+                </div>
+            </div>
+            <nav class="managements">
+                <p class="nav-title">Managements</p>
+                <ul>
+                    <li class="{% if active == 'home' %}active{% endif %}">
+                        <a class="nav-link" href="{{ path('admin_home') }}">
+                            <span class="nav-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M4 12l8-7 8 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M7 12v7h10v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </span>
+                            <span class="nav-label">Admin Home</span>
+                        </a>
+                    </li>
+                    <li class="{% if active == 'equipments' %}active{% endif %}">
+                        <a class="nav-link" href="{{ path('admin_management_equipments') }}">
+                            <span class="nav-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M4 15h16l-2-6H6l-2 6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                    <circle cx="8" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                                    <circle cx="16" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </span>
+                            <span class="nav-label">Equipment & Maintenance</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-foot">
+                <span class="pulse-dot"></span>
+                <span>Connected to field data in real time</span>
+            </div>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div class="topbar-title">
+                    <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="false">
+                        <span class="toggle-icon"></span>
+                        <span class="toggle-text">Toggle menu</span>
+                    </button>
+                    <p class="eyebrow">{% block eyebrow %}Admin{% endblock %}</p>
+                    <h1>{% block heading %}{% endblock %}</h1>
+                    <p class="subhead">{% block subhead %}{% endblock %}</p>
+                </div>
+                <div class="topbar-actions">
+                    <a class="ghost" href="{{ path('home') }}">Open User Home</a>
+                    <a class="primary" href="{{ path('admin_home') }}">Open Admin Home</a>
+                </div>
+            </header>
+
+            {% block body %}{% endblock %}
+        </main>
+    </div>
+    <script>
+        const toggle = document.querySelector('.sidebar-toggle');
+        const body = document.body;
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                const isCollapsed = body.classList.toggle('sidebar-collapsed');
+                toggle.setAttribute('aria-expanded', String(!isCollapsed));
+            });
+        }
+    </script>
+</body>
+</html>

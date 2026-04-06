@@ -185,8 +185,9 @@ SQL;
 
     public function deleteEquipment(int $id): void
     {
-        $sql = "DELETE FROM EQUIPMENTS WHERE ID = {$id}";
-        $this->execute($sql);
+        // Keep user/admin behavior consistent by removing dependent maintenance rows first.
+        $this->execute("DELETE FROM MAINTENANCE WHERE EQUIPMENT_ID = {$id}");
+        $this->execute("DELETE FROM EQUIPMENTS WHERE ID = {$id}");
     }
 
     /**

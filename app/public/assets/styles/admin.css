@@ -1,0 +1,400 @@
+@import url('management.css');
+
+:root {
+    --admin-ink: #efe8d7;
+    --admin-muted: rgba(239, 232, 215, 0.72);
+    --admin-stroke: rgba(212, 193, 154, 0.22);
+    --admin-panel: rgba(24, 30, 24, 0.86);
+    --admin-panel-strong: rgba(18, 24, 20, 0.9);
+    --admin-chip: rgba(101, 151, 102, 0.22);
+    --admin-shadow: 0 24px 50px rgba(0, 0, 0, 0.28);
+}
+
+body.admin-panel {
+    background:
+        radial-gradient(circle at 16% 12%, rgba(80, 121, 80, 0.2), transparent 48%),
+        radial-gradient(circle at 88% 16%, rgba(170, 133, 79, 0.18), transparent 45%),
+        linear-gradient(145deg, #1a2019 0%, #222a22 46%, #2b2b23 100%);
+    color: var(--admin-ink);
+}
+
+.admin-panel .content {
+    gap: 34px;
+    padding-top: 52px;
+    padding-bottom: 88px;
+}
+
+.admin-panel .topbar,
+.admin-panel .telemetry-panel,
+.admin-panel .chart-panel,
+.admin-panel .crud-card,
+.admin-panel .crud-list,
+.admin-panel .crud-form {
+    border: 1px solid var(--admin-stroke);
+    background: linear-gradient(165deg, rgba(36, 41, 34, 0.86), rgba(25, 31, 25, 0.9));
+    color: var(--admin-ink);
+    box-shadow: var(--admin-shadow);
+}
+
+.admin-panel .topbar {
+    border-radius: 22px;
+    padding: 24px 26px;
+    backdrop-filter: blur(10px);
+}
+
+.admin-panel .topbar h1,
+.admin-panel .card-head h2,
+.admin-panel .chart-panel h3,
+.admin-panel .telemetry-panel h3 {
+    color: #f5ebd9;
+}
+
+.admin-panel .eyebrow,
+.admin-panel .subhead,
+.admin-panel small,
+.admin-panel .tag,
+.admin-panel dt,
+.admin-panel .legend span,
+.admin-panel .log-list small,
+.admin-panel .list-head {
+    color: var(--admin-muted);
+}
+
+.admin-panel .stats-rail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px;
+}
+
+.admin-panel .stat-tile {
+    border: 1px solid var(--admin-stroke);
+    border-radius: 14px;
+    background: linear-gradient(150deg, rgba(24, 31, 24, 0.96), rgba(16, 21, 17, 0.92));
+    padding: 18px 18px;
+    display: grid;
+    gap: 10px;
+}
+
+.admin-panel .stat-tile .k {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(221, 205, 177, 0.72);
+}
+
+.admin-panel .stat-tile .v {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f6ecd7;
+}
+
+.admin-panel .telemetry-grid,
+.admin-panel .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.admin-panel .telemetry-panel,
+.admin-panel .chart-panel {
+    border-radius: 18px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.admin-panel .recent-activity-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.admin-panel .recent-activity-panel header {
+    flex-shrink: 0;
+}
+
+.admin-panel .telemetry-panel header,
+.admin-panel .chart-panel header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.admin-panel .tag {
+    border: 1px solid rgba(167, 207, 167, 0.26);
+    background: rgba(70, 100, 70, 0.22);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.admin-panel .kv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.admin-panel .kv-grid div {
+    border: 1px solid rgba(171, 156, 126, 0.2);
+    border-radius: 12px;
+    padding: 13px;
+    background: rgba(19, 25, 20, 0.75);
+}
+
+.admin-panel dt {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+
+.admin-panel dd {
+    margin: 0;
+    font-size: 18px;
+    color: #f4ead7;
+    font-weight: 700;
+}
+
+.admin-panel .log-list {
+    list-style: none;
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0 4px 0 0;
+    min-height: 0;
+    max-height: none;
+    height: auto;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(178, 165, 137, 0.5) rgba(18, 24, 19, 0.3);
+}
+
+.admin-panel .log-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.admin-panel .log-list::-webkit-scrollbar-track {
+    background: rgba(18, 24, 19, 0.3);
+    border-radius: 999px;
+}
+
+.admin-panel .log-list::-webkit-scrollbar-thumb {
+    background: rgba(178, 165, 137, 0.5);
+    border-radius: 999px;
+    border: 1px solid rgba(18, 24, 19, 0.45);
+}
+
+.admin-panel .log-list li {
+    border: 1px solid rgba(177, 162, 134, 0.2);
+    background: rgba(16, 21, 17, 0.78);
+    border-radius: 11px;
+    padding: 12px;
+    display: grid;
+    gap: 5px;
+}
+
+.admin-panel .log-table {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    border: 1px solid rgba(154, 189, 159, 0.25);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #d5e7cf;
+    background: rgba(53, 82, 56, 0.3);
+}
+
+.admin-panel .pie-wrap {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 20px;
+    align-items: center;
+}
+
+.admin-panel .pie {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 0 0 14px rgba(18, 24, 20, 0.72);
+}
+
+.admin-panel .legend {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-panel .legend li {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+}
+
+.admin-panel .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.admin-panel .chart-wide {
+    grid-column: 1 / -1;
+}
+
+.admin-panel .trend-svg {
+    width: 100%;
+    height: 220px;
+    display: block;
+    border-radius: 12px;
+    background: rgba(14, 19, 16, 0.76);
+    border: 1px solid rgba(157, 187, 158, 0.2);
+}
+
+.admin-panel .trend-svg .grid-lines line {
+    stroke: rgba(236, 225, 202, 0.16);
+    stroke-width: 1;
+}
+
+.admin-panel .trend-line {
+    fill: none;
+    stroke: #84cb9a;
+    stroke-width: 3;
+}
+
+.admin-panel .trend-area {
+    fill: url(#trend-fill);
+}
+
+.admin-panel .trend-points circle {
+    fill: #f4cd88;
+    stroke: rgba(20, 26, 21, 0.92);
+    stroke-width: 2;
+}
+
+.admin-panel .trend-labels text {
+    fill: rgba(233, 221, 198, 0.72);
+    font-size: 11px;
+}
+
+.admin-panel .crud-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+}
+
+.admin-panel .crud-card,
+.admin-panel .crud-list {
+    padding: 22px;
+}
+
+.admin-panel .crud-form {
+    display: grid;
+    gap: 14px;
+}
+
+.admin-panel .crud-form label {
+    display: grid;
+    gap: 8px;
+}
+
+.admin-panel .actions-row {
+    margin-top: 8px;
+}
+
+.admin-panel .list-head {
+    margin-bottom: 12px;
+}
+
+.admin-panel .data-table th,
+.admin-panel .data-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.admin-panel #equipments-table-zone,
+.admin-panel #maintenance-table-zone {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-panel #equipments-table-zone .table-wrap,
+.admin-panel #maintenance-table-zone .table-wrap {
+    flex: 1;
+    min-height: 0;
+    max-height: 520px;
+    overflow: auto;
+}
+
+.admin-panel .pill {
+    border: 1px solid rgba(167, 206, 164, 0.23);
+    background: var(--admin-chip);
+    color: #d7eccc;
+}
+
+.admin-panel .data-table th,
+.admin-panel .data-table td {
+    border-color: rgba(190, 173, 141, 0.24);
+}
+
+.admin-panel .input,
+.admin-panel select,
+.admin-panel input,
+.admin-panel textarea,
+.admin-panel .ghost {
+    background: rgba(18, 24, 19, 0.84);
+    color: #f2ead8;
+    border-color: rgba(182, 163, 131, 0.28);
+}
+
+.admin-panel .primary {
+    background: linear-gradient(135deg, #4f8655, #5f9b5d);
+    border-color: rgba(169, 212, 165, 0.26);
+    color: #f1efdf;
+}
+
+.admin-panel .danger {
+    background: linear-gradient(135deg, #914141, #aa5353);
+    color: #fff2f0;
+    border: 1px solid rgba(220, 150, 150, 0.25);
+}
+
+.admin-panel .sidebar-collapsed .page,
+.admin-panel.sidebar-collapsed .page {
+    grid-template-columns: 96px 1fr;
+}
+
+@media (max-width: 1080px) {
+    .admin-panel .telemetry-grid,
+    .admin-panel .charts-grid,
+    .admin-panel .crud-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-panel #equipments-table-zone .table-wrap,
+    .admin-panel #maintenance-table-zone .table-wrap {
+        max-height: none;
+    }
+
+    .admin-panel .pie-wrap {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+
+    .admin-panel .kv-grid {
+        grid-template-columns: 1fr;
+    }
+}
