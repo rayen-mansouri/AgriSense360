@@ -630,12 +630,26 @@ final class ManagementController extends AbstractController
             $formType = (string) $request->request->get('form_type', 'affectation');
 
             try {
+                // Server-side validation: Verify CSRF token
+                $tokenName = $formType === 'evaluation' ? 'create_evaluation' : 'create_affectation';
+                if (!$this->isCsrfTokenValid($tokenName, (string) $request->request->get('_token'))) {
+                    throw new \InvalidArgumentException('Invalid CSRF token.');
+                }
+
                 if ($formType === 'evaluation') {
-                    $crudService->createEvaluation($this->evaluationDataFromRequest($request));
+                    // Server-side validation: Validate evaluation data
+                    $evaluationData = $this->evaluationDataFromRequest($request);
+                    $this->validateEvaluationData($evaluationData);
+                    $crudService->createEvaluation($evaluationData);
                 } else {
-                    $crudService->createAffectation($this->affectationDataFromRequest($request));
+                    // Server-side validation: Validate affectation data
+                    $affectationData = $this->affectationDataFromRequest($request);
+                    $this->validateAffectationData($affectationData);
+                    $crudService->createAffectation($affectationData);
                 }
                 $this->addFlash('success', 'Entry created successfully.');
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', 'Validation error: ' . $e->getMessage());
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
             }
@@ -666,6 +680,14 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('auth_login', ['mode' => 'user']);
         }
 
+        // Server-side validation: Verify record exists and is accessible
+        try {
+            $this->validateAffectationAccess($id, $currentUserId, $crudService);
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            $this->addFlash('error', 'Unable to access affectation: ' . $e->getMessage());
+            return $this->redirectToRoute('management_workers');
+        }
+
         $affectation = $crudService->findAffectation($id);
         if (!$affectation) {
             throw $this->createNotFoundException('Affectation not found.');
@@ -673,8 +695,19 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             try {
-                $crudService->updateAffectation($id, $this->affectationDataFromRequest($request));
+                // Server-side validation: Verify CSRF token
+                if (!$this->isCsrfTokenValid('edit_affectation_' . $id, (string) $request->request->get('_token'))) {
+                    throw new \InvalidArgumentException('Invalid CSRF token.');
+                }
+
+                // Server-side validation: Validate affectation data
+                $affectationData = $this->affectationDataFromRequest($request);
+                $this->validateAffectationData($affectationData);
+
+                $crudService->updateAffectation($id, $affectationData);
                 $this->addFlash('success', 'Affectation updated successfully.');
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', 'Validation error: ' . $e->getMessage());
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update affectation: ' . $e->getMessage());
             }
@@ -712,8 +745,17 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('auth_login', ['mode' => 'user']);
         }
 
+        // Server-side validation: Verify CSRF token
         if (!$this->isCsrfTokenValid('delete_affectation_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        // Server-side validation: Verify record exists and is accessible
+        try {
+            $this->validateAffectationAccess($id, $currentUserId, $crudService);
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            $this->addFlash('error', 'Unable to delete affectation: ' . $e->getMessage());
+            return $this->redirectToRoute('management_workers');
         }
 
         try {
@@ -734,6 +776,14 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('auth_login', ['mode' => 'user']);
         }
 
+        // Server-side validation: Verify record exists and is accessible
+        try {
+            $this->validateEvaluationAccess($id, $currentUserId, $crudService);
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            $this->addFlash('error', 'Unable to access evaluation: ' . $e->getMessage());
+            return $this->redirectToRoute('management_workers');
+        }
+
         $evaluation = $crudService->findEvaluation($id);
         if (!$evaluation) {
             throw $this->createNotFoundException('Evaluation not found.');
@@ -741,8 +791,19 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             try {
-                $crudService->updateEvaluation($id, $this->evaluationDataFromRequest($request));
+                // Server-side validation: Verify CSRF token
+                if (!$this->isCsrfTokenValid('edit_evaluation_' . $id, (string) $request->request->get('_token'))) {
+                    throw new \InvalidArgumentException('Invalid CSRF token.');
+                }
+
+                // Server-side validation: Validate evaluation data
+                $evaluationData = $this->evaluationDataFromRequest($request);
+                $this->validateEvaluationData($evaluationData);
+
+                $crudService->updateEvaluation($id, $evaluationData);
                 $this->addFlash('success', 'Evaluation updated successfully.');
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('error', 'Validation error: ' . $e->getMessage());
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update evaluation: ' . $e->getMessage());
             }
@@ -780,8 +841,17 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('auth_login', ['mode' => 'user']);
         }
 
+        // Server-side validation: Verify CSRF token
         if (!$this->isCsrfTokenValid('delete_evaluation_' . $id, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        // Server-side validation: Verify record exists and is accessible
+        try {
+            $this->validateEvaluationAccess($id, $currentUserId, $crudService);
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            $this->addFlash('error', 'Unable to delete evaluation: ' . $e->getMessage());
+            return $this->redirectToRoute('management_workers');
         }
 
         try {
@@ -1287,6 +1357,119 @@ final class ManagementController extends AbstractController
     /**
      * @return array{typeTravail:?string,dateDebut:?string,dateFin:?string,zoneTravail:?string,statut:?string}
      */
+    /**
+     * Validate ownership and existence of affectation for user access
+     */
+    private function validateAffectationAccess(int $affectationId, int $userId, PdoCrudService $crudService): void
+    {
+        $affectation = $crudService->findAffectation($affectationId);
+        if (!$affectation) {
+            throw $this->createAccessDeniedException('Access denied: Affectation not found or not accessible.');
+        }
+    }
+
+    /**
+     * Validate ownership and existence of evaluation for user access
+     */
+    private function validateEvaluationAccess(int $evaluationId, int $userId, PdoCrudService $crudService): void
+    {
+        $evaluation = $crudService->findEvaluation($evaluationId);
+        if (!$evaluation) {
+            throw $this->createAccessDeniedException('Access denied: Evaluation not found or not accessible.');
+        }
+    }
+
+    /**
+     * Validate affectation data from request
+     */
+    private function validateAffectationData(array $data): void
+    {
+        $requiredFields = ['typeTravail', 'zoneTravail', 'dateDebut', 'dateFin', 'statut'];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                throw new \InvalidArgumentException("Missing required field: $field");
+            }
+        }
+
+        // Validate minimum character length
+        $typeTravail = trim($data['typeTravail'] ?? '');
+        if (strlen($typeTravail) < 3) {
+            throw new \InvalidArgumentException('Type de travail must be at least 3 characters');
+        }
+
+        $zoneTravail = trim($data['zoneTravail'] ?? '');
+        if (strlen($zoneTravail) < 3) {
+            throw new \InvalidArgumentException('Zone de travail must be at least 3 characters');
+        }
+
+        // Validate dates
+        try {
+            $startDate = new \DateTime($data['dateDebut']);
+            $endDate = new \DateTime($data['dateFin']);
+            if ($endDate < $startDate) {
+                throw new \InvalidArgumentException('End date must be after or equal to start date');
+            }
+        } catch (\Exception $e) {
+            throw new \InvalidArgumentException('Invalid date format: ' . $e->getMessage());
+        }
+
+        // Validate status
+        $validStatuses = ['En attente', 'En cours', 'Complété', 'Suspendu', 'Annulé'];
+        if (!in_array($data['statut'], $validStatuses, true)) {
+            throw new \InvalidArgumentException('Invalid status value');
+        }
+    }
+
+    /**
+     * Validate evaluation data from request
+     */
+    private function validateEvaluationData(array $data): void
+    {
+        $requiredFields = ['affectationId', 'note', 'qualite', 'commentaire', 'dateEvaluation'];
+        foreach ($requiredFields as $field) {
+            if (empty($data[$field])) {
+                throw new \InvalidArgumentException("Missing required field: $field");
+            }
+        }
+
+        // Validate affectation ID
+        if ((int) $data['affectationId'] <= 0) {
+            throw new \InvalidArgumentException('Valid affectation must be selected');
+        }
+
+        // Validate note is numeric and in range
+        $note = (int) $data['note'];
+        if ($note < 0 || $note > 20) {
+            throw new \InvalidArgumentException('Note must be between 0 and 20');
+        }
+
+        // Validate quality
+        $validQualities = ['Excellent', 'Très bon', 'Bon', 'Acceptable', 'Insuffisant'];
+        if (!in_array($data['qualite'], $validQualities, true)) {
+            throw new \InvalidArgumentException('Invalid quality value');
+        }
+
+        // Validate comment minimum length
+        $commentaire = trim($data['commentaire'] ?? '');
+        if (strlen($commentaire) < 5) {
+            throw new \InvalidArgumentException('Comment must be at least 5 characters');
+        }
+
+        // Validate evaluation date
+        try {
+            $evaluationDate = new \DateTime($data['dateEvaluation']);
+            $today = new \DateTime('today');
+
+            if ($evaluationDate > $today) {
+                throw new \InvalidArgumentException('Evaluation date cannot be in the future (must be today or earlier)');
+            }
+        } catch (\InvalidArgumentException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            throw new \InvalidArgumentException('Invalid date format: ' . $e->getMessage());
+        }
+    }
+
     private function affectationDataFromRequest(Request $request): array
     {
         $typeTravail = trim((string) $request->request->get('type_travail'));

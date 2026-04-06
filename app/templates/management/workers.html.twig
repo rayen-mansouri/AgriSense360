@@ -315,6 +315,31 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endif %}
 
 <section class="crud-section">
+    <!-- Flash Messages Section -->
+    {% for message in app.flashes('error') %}
+        <div style="background-color: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 16px; margin-bottom: 20px; color: #c33; font-weight: 500;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">⚠️</span>
+                <div>
+                    <strong>Erreur de validation</strong>
+                    <p style="margin: 8px 0 0 0; font-weight: 400;">{{ message }}</p>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    {% for message in app.flashes('success') %}
+        <div style="background-color: #efe; border: 1px solid #cfc; border-radius: 8px; padding: 16px; margin-bottom: 20px; color: #3c3; font-weight: 500;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">✅</span>
+                <div>
+                    <strong>Succès</strong>
+                    <p style="margin: 8px 0 0 0; font-weight: 400;">{{ message }}</p>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
     <!-- Affectation (Task Assignments) Card -->
     <div class="crud-card">
         <div class="crud-head">
@@ -336,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Id</th>
+                            {% if adminMode %}<th>Id</th>{% endif %}
                             <th>Type</th>
                             <th>Zone</th>
                             <th>Start Date</th>
@@ -349,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% if affectations|length > 0 %}
                             {% for aff in affectations %}
                                 <tr>
-                                    <td>#AF-{{ "%02d"|format(aff.id|default(0)) }}</td>
+                                    {% if adminMode %}<td>#AF-{{ "%02d"|format(aff.id|default(0)) }}</td>{% endif %}
                                     <td>{{ aff.typeTravail|default('N/A') }}</td>
                                     <td>{{ aff.zoneTravail|default('N/A') }}</td>
                                     <td>{{ aff.dateDebut|date('Y-m-d')|default('N/A') }}</td>
@@ -376,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" style="text-align:center; padding:20px">No affectations found</td>
+                                <td colspan="{% if adminMode %}7{% else %}6{% endif %}" style="text-align:center; padding:20px">No affectations found</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -388,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>{{ affectationEditing ? 'Edit affectation' : 'Create affectation' }}</h3>
                 <form method="POST" data-form-type="affectation">
                     <input type="hidden" name="form_type" value="affectation">
+                    <input type="hidden" name="_token" value="{{ csrf_token(affectationEditing ? 'edit_affectation_' ~ affectation.id : 'create_affectation') }}">
                     {% if affectationEditing %}
                         <input type="hidden" name="affectation_id" value="{{ affectation.id|default('') }}">
                     {% endif %}
@@ -395,19 +421,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="form-grid">
                         <label class="field">
                             <span>Type de travail *</span>
-                            <input class="input" type="text" name="type_travail" placeholder="Ex: Récolte, Labour, Plantage" value="{{ affectation.typeTravail|default('') }}" required>
+                            <input class="input" type="text" name="type_travail" placeholder="Ex: Récolte, Labour, Plantage" value="{{ affectation.typeTravail|default('') }}" minlength="3" maxlength="100" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Minimum 3 caractères requis</small>
                         </label>
                         <label class="field">
                             <span>Zone de travail *</span>
-                            <input class="input" type="text" name="zone_travail" placeholder="Ex: Champ Nord" value="{{ affectation.zoneTravail|default('') }}" required>
+                            <input class="input" type="text" name="zone_travail" placeholder="Ex: Champ Nord" value="{{ affectation.zoneTravail|default('') }}" minlength="3" maxlength="100" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Minimum 3 caractères requis</small>
                         </label>
                         <label class="field">
                             <span>Date début *</span>
                             <input class="input" type="date" name="date_debut" value="{{ affectation.dateDebut|date('Y-m-d')|default('') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Requis</small>
                         </label>
                         <label class="field">
                             <span>Date fin *</span>
                             <input class="input" type="date" name="date_fin" value="{{ affectation.dateFin|date('Y-m-d')|default('') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Doit être >= à la date début</small>
                         </label>
                         <label class="field" style="grid-column: 1 / -1">
                             <span>Statut *</span>
@@ -451,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Id</th>
+                            {% if adminMode %}<th>Id</th>{% endif %}
                             <th>Affectation</th>
                             <th>Note</th>
                             <th>Quality</th>
@@ -463,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% if evaluations|length > 0 %}
                             {% for eval in evaluations %}
                                 <tr>
-                                    <td>#EV-{{ "%02d"|format(eval.id|default(0)) }}</td>
+                                    {% if adminMode %}<td>#EV-{{ "%02d"|format(eval.id|default(0)) }}</td>{% endif %}
                                     <td>#AF-{{ "%02d"|format(eval.affectationId|default(0)) }}</td>
                                     <td>{{ eval.note|default('N/A') }}/20</td>
                                     <td>
@@ -491,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" style="text-align:center; padding:20px">No evaluations found</td>
+                                <td colspan="{% if adminMode %}6{% else %}5{% endif %}" style="text-align:center; padding:20px">No evaluations found</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -503,6 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>{{ evaluationEditing ? 'Edit evaluation' : 'Create evaluation' }}</h3>
                 <form method="POST" data-form-type="evaluation">
                     <input type="hidden" name="form_type" value="evaluation">
+                    <input type="hidden" name="_token" value="{{ csrf_token(evaluationEditing ? 'edit_evaluation_' ~ evaluation.id : 'create_evaluation') }}">
                     {% if evaluationEditing %}
                         <input type="hidden" name="evaluation_id" value="{{ evaluation.id|default('') }}">
                     {% endif %}
@@ -518,10 +549,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </option>
                                 {% endfor %}
                             </select>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Une affectation valide est requise</small>
                         </label>
                         <label class="field">
                             <span>Note (0-20) *</span>
                             <input class="input" type="number" name="note" min="0" max="20" placeholder="Ex: 15" value="{{ evaluation.note|default('') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Entre 0 et 20</small>
                         </label>
                         <label class="field">
                             <span>Qualité *</span>
@@ -533,14 +566,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <option value="Acceptable" {% if evaluation.qualite == 'Acceptable' %}selected{% endif %}>Acceptable</option>
                                 <option value="Insuffisant" {% if evaluation.qualite == 'Insuffisant' %}selected{% endif %}>Insuffisant</option>
                             </select>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Requis</small>
                         </label>
                         <label class="field" style="grid-column: 1 / -1">
                             <span>Date d'évaluation *</span>
-                            <input class="input" type="date" name="date_evaluation" value="{{ evaluation.dateEvaluation|date('Y-m-d')|default('') }}" required>
+                            <input class="input" type="date" name="date_evaluation" value="{{ evaluation.dateEvaluation|date('Y-m-d')|default('') }}" max="{{ 'now'|date('Y-m-d') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Doit être aujourd'hui ou antérieure (pas de date future)</small>
                         </label>
                         <label class="field" style="grid-column: 1 / -1">
                             <span>Commentaires *</span>
-                            <textarea class="input" name="commentaire" placeholder="Add your comments..." rows="4" style="font-family: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px;" required>{{ evaluation.commentaire|default('') }}</textarea>
+                            <textarea class="input" name="commentaire" placeholder="Add your comments..." rows="4" minlength="5" maxlength="500" style="font-family: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px;" required>{{ evaluation.commentaire|default('') }}</textarea>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Minimum 5 caractères requis</small>
                         </label>
                     </div>
                     <div class="form-actions">
@@ -552,4 +588,165 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </section>
+
+<!-- Client-side Validation Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validate affectation date range
+    const affectationForm = document.querySelector('form[data-form-type="affectation"]');
+    if (affectationForm) {
+        const dateDebut = affectationForm.querySelector('input[name="date_debut"]');
+        const dateFin = affectationForm.querySelector('input[name="date_fin"]');
+
+        affectationForm.addEventListener('submit', function(e) {
+            if (dateDebut.value && dateFin.value) {
+                const start = new Date(dateDebut.value);
+                const end = new Date(dateFin.value);
+
+                if (end < start) {
+                    e.preventDefault();
+                    alert('❌ Erreur: La date fin doit être supérieure ou égale à la date début');
+                    dateFin.focus();
+                    dateFin.style.borderColor = '#d86a5b';
+                    return false;
+                }
+            }
+        });
+
+        // Real-time validation feedback
+        dateFin.addEventListener('change', function() {
+            if (dateDebut.value && this.value) {
+                const start = new Date(dateDebut.value);
+                const end = new Date(this.value);
+
+                if (end < start) {
+                    this.style.borderColor = '#d86a5b';
+                } else {
+                    this.style.borderColor = '';
+                }
+            }
+        });
+    }
+
+    // Validate note range
+    const evaluationForm = document.querySelector('form[data-form-type="evaluation"]');
+    if (evaluationForm) {
+        const affectationSelect = evaluationForm.querySelector('select[name="affectation_id"]');
+        const noteInput = evaluationForm.querySelector('input[name="note"]');
+        const dateEvaluationInput = evaluationForm.querySelector('input[name="date_evaluation"]');
+
+        // Validate affectation selection
+        affectationSelect.addEventListener('change', function() {
+            if (this.value === '' || parseInt(this.value) <= 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+
+        // Validate note range
+        noteInput.addEventListener('change', function() {
+            const value = parseInt(this.value);
+            if (value < 0 || value > 20) {
+                this.style.borderColor = '#d86a5b';
+                alert('❌ Erreur: La note doit être entre 0 et 20');
+                this.value = '';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+
+        // Validate evaluation date on change
+        dateEvaluationInput.addEventListener('change', function() {
+            if (this.value) {
+                const evaluationDate = new Date(this.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                evaluationDate.setHours(0, 0, 0, 0);
+
+                if (evaluationDate > today) {
+                    this.style.borderColor = '#d86a5b';
+                    alert('❌ Erreur: La date d\'évaluation ne peut pas être dans le futur');
+                    this.value = '';
+                } else {
+                    this.style.borderColor = '';
+                }
+            }
+        });
+
+        // Validate on form submit
+        evaluationForm.addEventListener('submit', function(e) {
+            let isValid = true;
+
+            // Check affectation selection
+            if (affectationSelect.value === '' || parseInt(affectationSelect.value) <= 0) {
+                e.preventDefault();
+                alert('❌ Erreur: Vous devez sélectionner une affectation');
+                affectationSelect.focus();
+                affectationSelect.style.borderColor = '#d86a5b';
+                isValid = false;
+            }
+
+            // Check evaluation date
+            if (isValid && dateEvaluationInput.value) {
+                const evaluationDate = new Date(dateEvaluationInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                evaluationDate.setHours(0, 0, 0, 0);
+
+                if (evaluationDate > today) {
+                    e.preventDefault();
+                    alert('❌ Erreur: La date d\'évaluation ne peut pas être dans le futur');
+                    dateEvaluationInput.focus();
+                    dateEvaluationInput.style.borderColor = '#d86a5b';
+                    isValid = false;
+                }
+            }
+
+            return isValid;
+        });
+    }
+
+    // Character count feedback
+    const typeInput = document.querySelector('input[name="type_travail"]');
+    const zoneInput = document.querySelector('input[name="zone_travail"]');
+    const commentaires = document.querySelector('textarea[name="commentaire"]');
+
+    if (typeInput) {
+        typeInput.addEventListener('input', function() {
+            if (this.value.length < 3 && this.value.length > 0) {
+                this.style.borderColor = '#f0b75f';
+            } else if (this.value.length === 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+
+    if (zoneInput) {
+        zoneInput.addEventListener('input', function() {
+            if (this.value.length < 3 && this.value.length > 0) {
+                this.style.borderColor = '#f0b75f';
+            } else if (this.value.length === 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+
+    if (commentaires) {
+        commentaires.addEventListener('input', function() {
+            if (this.value.length < 5 && this.value.length > 0) {
+                this.style.borderColor = '#f0b75f';
+            } else if (this.value.length === 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
