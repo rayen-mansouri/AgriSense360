@@ -1,13 +1,18 @@
 {% extends adminMode|default(false) ? 'admin/layout.html.twig' : 'management/layout.html.twig' %}
 
-{% block title %}User Management{% endblock %}
+{% block title %}{% if adminMode|default(false) %}User Management{% else %}Profile{% endif %}{% endblock %}
 {% block body_state_class %}{% if adminMode|default(false) %} users-management-view{% endif %}{% endblock %}
-{% block eyebrow %}User Management{% endblock %}
+{% block eyebrow %}{% if adminMode|default(false) %}User Management{% else %}Profile{% endif %}{% endblock %}
 {% block heading %}{% if adminMode|default(false) %}Users, access, and roles{% else %}My account profile{% endif %}{% endblock %}
 {% block subhead %}{% if adminMode|default(false) %}Manage all user accounts, role assignments, and status analytics from one console.{% else %}View and update your account information.{% endif %}{% endblock %}
 
 {% block body %}
 <section class="crud-section">
+    {% for errors in app.flashes('errors') %}
+        {% for message in errors %}
+            <div class="form-warning">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
     {% for message in app.flashes('error') %}
         <div class="crud-card" style="border-color: rgba(216, 74, 74, 0.35);">
             <p style="color:#8c2121; font-weight:600;">{{ message }}</p>
@@ -23,7 +28,7 @@
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>My Account</h2>
+                <h2>My Profile</h2>
                 <p>General profile information and credentials.</p>
             </div>
         </div>
@@ -59,7 +64,7 @@
             </div>
             <div class="crud-form">
                 <h3>Update My Profile</h3>
-                <form method="post">
+                <form method="post" novalidate>
                     <div class="form-grid">
                         <label class="field">
                             <span>Nom</span>
@@ -175,7 +180,7 @@
                 </table>
             </div>
             <div class="crud-form" style="display:flex; align-items:center;">
-                <p>Admin profile is managed from the authentication flow. Use the section below to manage all users and role permissions.</p>
+                <p>Admin profile is managed from the dedicated profile page. Use the section below to manage all users and role permissions.</p>
             </div>
         </div>
     </div>
@@ -190,6 +195,16 @@
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
+                    <input class="input" id="users-search" type="search" placeholder="Search users" autocomplete="off">
+                    <select class="input" id="users-search-column">
+                        <option value="all">All columns</option>
+                        <option value="id">Id</option>
+                        <option value="lastName">Nom</option>
+                        <option value="firstName">Prenom</option>
+                        <option value="email">Email</option>
+                        <option value="status">Statut</option>
+                        <option value="role">Role</option>
+                    </select>
                     <span class="pill">{{ users|length }} records</span>
                 </div>
                 <div class="table-scroll users-table-scroll">
@@ -205,9 +220,9 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="users-table-body">
                             {% for user in users|default([]) %}
-                                <tr>
+                                <tr data-id="{{ user.id|default('')|e('html_attr') }}" data-last-name="{{ user.lastName|default('')|lower|e('html_attr') }}" data-first-name="{{ user.firstName|default('')|lower|e('html_attr') }}" data-email="{{ user.email|default('')|lower|e('html_attr') }}" data-status="{{ user.status|default('')|lower|e('html_attr') }}" data-role="{{ user.roleName|default('')|lower|e('html_attr') }}">
                                     <td>#US-{{ user.id }}</td>
                                     <td>{{ user.lastName }}</td>
                                     <td>{{ user.firstName }}</td>
@@ -244,7 +259,7 @@
             </div>
             <div class="crud-form">
                 <h3>Create / Update user</h3>
-                <form method="post" id="user-account-form">
+                <form method="post" id="user-account-form" novalidate>
                     <div class="form-grid">
                         <label class="field">
                             <span>User ID (for update)</span>
@@ -312,6 +327,33 @@
             const statusSelect = document.getElementById('user-form-status');
             const roleSelect = document.getElementById('user-form-role');
             const updateButton = document.getElementById('user-update-button');
+            const usersSearchInput = document.getElementById('users-search');
+            const usersSearchColumn = document.getElementById('users-search-column');
+            const usersRows = Array.from(document.querySelectorAll('#users-table-body tr'));
+
+            function applyUsersSearch() {
+                if (!usersSearchInput || !usersRows.length) {
+                    return;
+                }
+
+                const query = usersSearchInput.value.trim().toLowerCase();
+                const column = usersSearchColumn ? usersSearchColumn.value : 'all';
+
+                usersRows.forEach((row) => {
+                    const haystack = column === 'all'
+                        ? row.textContent.toLowerCase()
+                        : String(row.dataset[column] || '').toLowerCase();
+                    row.style.display = haystack.includes(query) ? '' : 'none';
+                });
+            }
+
+            if (usersSearchInput) {
+                usersSearchInput.addEventListener('input', applyUsersSearch);
+            }
+
+            if (usersSearchColumn) {
+                usersSearchColumn.addEventListener('change', applyUsersSearch);
+            }
 
             document.querySelectorAll('[data-edit-user]').forEach((btn) => {
                 btn.addEventListener('click', () => {
