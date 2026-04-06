@@ -33,42 +33,42 @@ final class AuthController extends AbstractController
             $password = (string) $request->request->get('password');
 
             if ($email === '' || $password === '') {
-                $this->addFlash('error', 'Email and password are required.');
-
-                return $this->redirectToRoute('auth_login', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
+                    'email' => $email,
+                ], 'Email and password are required.');
             }
 
             try {
                 $user = $oracleCrud->findUserByEmail($email);
             } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to access user database: ' . $e->getMessage());
-
-                return $this->redirectToRoute('auth_login', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
+                    'email' => $email,
+                ], 'Unable to access user database: ' . $e->getMessage());
             }
 
             if (!$user || !password_verify($password, (string) ($user['passwordHash'] ?? ''))) {
-                $this->addFlash('error', 'Invalid credentials.');
-
-                return $this->redirectToRoute('auth_login', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
+                    'email' => $email,
+                ], 'Invalid credentials.');
             }
 
             if (strtolower((string) ($user['status'] ?? 'active')) !== 'active') {
-                $this->addFlash('error', 'Account is not active.');
-
-                return $this->redirectToRoute('auth_login', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
+                    'email' => $email,
+                ], 'Account is not active.');
             }
 
             $isAdmin = $this->isAdminRole((string) ($user['roleName'] ?? 'user'));
             if ($mode === 'admin' && !$isAdmin) {
-                $this->addFlash('error', 'This account is not an admin account.');
-
-                return $this->redirectToRoute('auth_login', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
+                    'email' => $email,
+                ], 'This account is not an admin account.');
             }
 
             if ($mode === 'user' && $isAdmin) {
-                $this->addFlash('error', 'Use admin mode for this account.');
-
-                return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+                return $this->renderAuthForm('admin', 'login', 'Admin Login', 'User Login', 'Log In', [
+                    'email' => $email,
+                ], 'Use admin mode for this account.');
             }
 
             $session = $request->getSession();
@@ -79,12 +79,7 @@ final class AuthController extends AbstractController
             return $this->redirectToRoute($isAdmin ? 'admin_home' : 'home');
         }
 
-        return $this->render('auth/form.html.twig', [
-            'mode' => $mode,
-            'authType' => 'login',
-            'title' => $mode === 'admin' ? 'Admin Login' : 'User Login',
-            'submitLabel' => 'Log In',
-        ]);
+        return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In');
     }
 
     #[Route('/auth/signup', name: 'auth_signup', methods: ['GET', 'POST'])]
@@ -99,17 +94,21 @@ final class AuthController extends AbstractController
             $password = (string) $request->request->get('password');
 
             if ($firstName === '' || $lastName === '' || $email === '' || $password === '') {
-                $this->addFlash('error', 'All fields are required.');
-
-                return $this->redirectToRoute('auth_signup', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'signup', 'Admin Sign Up', 'User Sign Up', 'Sign Up', [
+                    'firstName' => $firstName,
+                    'lastName' => $lastName,
+                    'email' => $email,
+                ], 'All fields are required.');
             }
 
             try {
                 $existingUser = $oracleCrud->findUserByEmail($email);
                 if ($existingUser) {
-                    $this->addFlash('error', 'Email already exists.');
-
-                    return $this->redirectToRoute('auth_signup', ['mode' => $mode]);
+                    return $this->renderAuthForm($mode, 'signup', 'Admin Sign Up', 'User Sign Up', 'Sign Up', [
+                        'firstName' => $firstName,
+                        'lastName' => $lastName,
+                        'email' => $email,
+                    ], 'Email already exists.');
                 }
 
                 $roleName = $mode === 'admin' ? 'ADMIN' : 'USER';
@@ -135,18 +134,15 @@ final class AuthController extends AbstractController
 
                 return $this->redirectToRoute($isAdmin ? 'admin_home' : 'home');
             } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to create account: ' . $e->getMessage());
-
-                return $this->redirectToRoute('auth_signup', ['mode' => $mode]);
+                return $this->renderAuthForm($mode, 'signup', 'Admin Sign Up', 'User Sign Up', 'Sign Up', [
+                    'firstName' => $firstName,
+                    'lastName' => $lastName,
+                    'email' => $email,
+                ], 'Unable to create account: ' . $e->getMessage());
             }
         }
 
-        return $this->render('auth/form.html.twig', [
-            'mode' => $mode,
-            'authType' => 'signup',
-            'title' => $mode === 'admin' ? 'Admin Sign Up' : 'User Sign Up',
-            'submitLabel' => 'Sign Up',
-        ]);
+        return $this->renderAuthForm($mode, 'signup', 'Admin Sign Up', 'User Sign Up', 'Sign Up');
     }
 
     #[Route('/logout', name: 'auth_logout', methods: ['GET'])]
@@ -165,5 +161,27 @@ final class AuthController extends AbstractController
     private function isAdminRole(string $roleName): bool
     {
         return str_contains(strtoupper($roleName), 'ADMIN');
+    }
+
+    /**
+     * @param array{firstName?:string,lastName?:string,email?:string} $formValues
+     */
+    private function renderAuthForm(
+        string $mode,
+        string $authType,
+        string $adminTitle,
+        string $userTitle,
+        string $submitLabel,
+        array $formValues = [],
+        ?string $errorMessage = null
+    ): Response {
+        return $this->render('auth/form.html.twig', [
+            'mode' => $mode,
+            'authType' => $authType,
+            'title' => $mode === 'admin' ? $adminTitle : $userTitle,
+            'submitLabel' => $submitLabel,
+            'formValues' => $formValues,
+            'errorMessage' => $errorMessage,
+        ]);
     }
 }

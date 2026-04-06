@@ -946,6 +946,73 @@ body.admin-panel {
     margin-right: 8px;
 }
 
+.admin-panel.profile-management-view .profile-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.admin-panel.profile-management-view .profile-summary-card,
+.admin-panel.profile-management-view .profile-technical-card {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.admin-panel.profile-management-view .profile-summary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.admin-panel.profile-management-view .profile-summary-list,
+.admin-panel.profile-management-view .profile-form-card,
+.admin-panel.profile-management-view .profile-technical-list {
+    min-width: 0;
+}
+
+.admin-panel.profile-management-view .profile-summary-table,
+.admin-panel.profile-management-view .profile-technical-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.admin-panel.profile-management-view .profile-summary-table th,
+.admin-panel.profile-management-view .profile-technical-table th {
+    width: 38%;
+    white-space: normal;
+}
+
+.admin-panel.profile-management-view .profile-summary-table td,
+.admin-panel.profile-management-view .profile-technical-table td {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.admin-panel.profile-management-view .profile-form {
+    width: 100%;
+}
+
+.admin-panel.profile-management-view .profile-field-wide {
+    min-width: 0;
+}
+
+.admin-panel.profile-management-view .profile-field-wide .input {
+    width: 100%;
+}
+
+@media (max-width: 1080px) {
+    .admin-panel.profile-management-view .profile-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-panel.profile-management-view .profile-summary-table th,
+    .admin-panel.profile-management-view .profile-technical-table th {
+        width: auto;
+    }
+}
+
 @media (max-width: 1080px) {
     .admin-panel .ops-grid {
         grid-template-columns: 1fr;

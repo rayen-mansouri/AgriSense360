@@ -492,8 +492,77 @@ final class ManagementController extends AbstractController
         }
 
         return $this->render('management/users.html.twig', [
-            'active' => 'users',
+            'active' => 'profile',
             'currentUser' => $currentUser,
+        ]);
+    }
+
+    #[Route('/admin/profile', name: 'admin_profile', methods: ['GET', 'POST'])]
+    public function adminProfile(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        $session = $request->getSession();
+        $currentUserId = (int) $session->get('auth_user_id', 0);
+
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $currentUser = $oracleCrud->findUser($currentUserId);
+            $allUsers = $oracleCrud->listUsers();
+            $equipments = $oracleCrud->listEquipments();
+            $maintenances = $oracleCrud->listMaintenances();
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to load admin profile: ' . $e->getMessage());
+            $currentUser = null;
+            $allUsers = [];
+            $equipments = [];
+            $maintenances = [];
+        }
+
+        if (!$currentUser) {
+            return $this->redirectToRoute('auth_logout');
+        }
+
+        if ($request->isMethod('POST')) {
+            try {
+                $payload = [
+                    'lastName' => trim((string) $request->request->get('last_name')),
+                    'firstName' => trim((string) $request->request->get('first_name')),
+                    'email' => trim((string) $request->request->get('email')),
+                    'passwordHash' => null,
+                    'status' => (string) ($currentUser['status'] ?? 'Active'),
+                    'roleName' => (string) ($currentUser['roleName'] ?? 'ADMIN'),
+                ];
+
+                $newPassword = trim((string) $request->request->get('password'));
+                if ($newPassword !== '') {
+                    $payload['passwordHash'] = password_hash($newPassword, PASSWORD_BCRYPT);
+                }
+
+                $oracleCrud->updateUser($currentUserId, $payload);
+                $this->addFlash('success', 'Admin profile updated.');
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to update admin profile: ' . $e->getMessage());
+            }
+
+            return $this->redirectToRoute('admin_profile');
+        }
+
+        $roleLabel = strtoupper((string) ($currentUser['roleName'] ?? 'ADMIN'));
+
+        return $this->render('admin/profile.html.twig', [
+            'active' => 'profile',
+            'currentUser' => $currentUser,
+            'technicalInfo' => [
+                'roleLabel' => $roleLabel,
+                'userCount' => count($allUsers),
+                'equipmentCount' => count($equipments),
+                'maintenanceCount' => count($maintenances),
+                'sessionRole' => (string) $session->get('auth_role', 'admin'),
+                'sessionUserId' => $currentUserId,
+                'profileAge' => $currentUser['createdAt'] instanceof \DateTimeInterface ? $currentUser['createdAt']->format('Y-m-d') : '-',
+            ],
         ]);
     }
 

@@ -1,8 +1,8 @@
 {% extends adminMode|default(false) ? 'admin/layout.html.twig' : 'management/layout.html.twig' %}
 
-{% block title %}User Management{% endblock %}
+{% block title %}{% if adminMode|default(false) %}User Management{% else %}Profile{% endif %}{% endblock %}
 {% block body_state_class %}{% if adminMode|default(false) %} users-management-view{% endif %}{% endblock %}
-{% block eyebrow %}User Management{% endblock %}
+{% block eyebrow %}{% if adminMode|default(false) %}User Management{% else %}Profile{% endif %}{% endblock %}
 {% block heading %}{% if adminMode|default(false) %}Users, access, and roles{% else %}My account profile{% endif %}{% endblock %}
 {% block subhead %}{% if adminMode|default(false) %}Manage all user accounts, role assignments, and status analytics from one console.{% else %}View and update your account information.{% endif %}{% endblock %}
 
@@ -23,7 +23,7 @@
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>My Account</h2>
+                <h2>My Profile</h2>
                 <p>General profile information and credentials.</p>
             </div>
         </div>
@@ -175,7 +175,7 @@
                 </table>
             </div>
             <div class="crud-form" style="display:flex; align-items:center;">
-                <p>Admin profile is managed from the authentication flow. Use the section below to manage all users and role permissions.</p>
+                <p>Admin profile is managed from the dedicated profile page. Use the section below to manage all users and role permissions.</p>
             </div>
         </div>
     </div>

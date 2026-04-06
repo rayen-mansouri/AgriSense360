@@ -2,13 +2,14 @@
 
 namespace App\Service;
 
+use Doctrine\DBAL\Connection;
+
 class OracleSqlPlusCrudService
 {
-    private string $connectionString;
+    private bool $schemaInitialized = false;
 
-    public function __construct(string $databaseUrl)
+    public function __construct(private readonly Connection $connection)
     {
-        $this->connectionString = $this->buildConnectionString($databaseUrl);
     }
 
     /**
@@ -16,34 +17,26 @@ class OracleSqlPlusCrudService
      */
     public function listEquipments(?int $ownerUserId = null): array
     {
-        $whereClause = '';
+        $this->ensureSchema();
+
+        $sql = 'SELECT id, user_id, name, type, status, purchase_date FROM EQUIPMENTS';
+        $params = [];
         if ($ownerUserId !== null) {
-            $whereClause = 'WHERE USER_ID = ' . (int) $ownerUserId;
+            $sql .= ' WHERE user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
         }
+        $sql .= ' ORDER BY id DESC';
 
-        $sql = <<<SQL
-SELECT
-    ID,
-    USER_ID,
-    NAME,
-    TYPE,
-    STATUS,
-    TO_CHAR(PURCHASE_DATE, 'YYYY-MM-DD') AS PURCHASE_DATE
-FROM EQUIPMENTS
-{$whereClause}
-ORDER BY ID DESC
-SQL;
-
-        $rows = $this->query($sql, ['ID', 'USER_ID', 'NAME', 'TYPE', 'STATUS', 'PURCHASE_DATE']);
+        $rows = $this->connection->fetchAllAssociative($sql, $params);
 
         return array_map(function (array $row): array {
             return [
-                'id' => (int) $row['ID'],
-                'userId' => (int) $row['USER_ID'],
-                'name' => $row['NAME'],
-                'type' => $row['TYPE'],
-                'status' => $row['STATUS'],
-                'purchaseDate' => $this->toDateTime($row['PURCHASE_DATE']),
+                'id' => (int) ($row['id'] ?? 0),
+                'userId' => (int) ($row['user_id'] ?? 0),
+                'name' => (string) ($row['name'] ?? ''),
+                'type' => (string) ($row['type'] ?? ''),
+                'status' => (string) ($row['status'] ?? ''),
+                'purchaseDate' => $this->toDateTime((string) ($row['purchase_date'] ?? '')),
             ];
         }, $rows);
     }
@@ -53,39 +46,29 @@ SQL;
      */
     public function listMaintenances(?int $ownerUserId = null): array
     {
-        $whereClause = '';
+        $this->ensureSchema();
+
+        $sql = "SELECT m.id, m.user_id, m.equipment_id, COALESCE(e.name, '') AS equipment_name, m.maintenance_date, m.maintenance_type, m.cost FROM MAINTENANCE m LEFT JOIN EQUIPMENTS e ON e.id = m.equipment_id";
+        $params = [];
         if ($ownerUserId !== null) {
-            $whereClause = 'WHERE m.USER_ID = ' . (int) $ownerUserId;
+            $sql .= ' WHERE m.user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
         }
+        $sql .= ' ORDER BY m.id DESC';
 
-        $sql = <<<SQL
-SELECT
-    m.ID,
-    m.USER_ID,
-    m.EQUIPMENT_ID,
-    NVL(e.NAME, '') AS EQUIPMENT_NAME,
-    TO_CHAR(m.MAINTENANCE_DATE, 'YYYY-MM-DD') AS MAINTENANCE_DATE,
-    m.MAINTENANCE_TYPE,
-    TO_CHAR(m.COST) AS COST
-FROM MAINTENANCE m
-LEFT JOIN EQUIPMENTS e ON e.ID = m.EQUIPMENT_ID
-{$whereClause}
-ORDER BY m.ID DESC
-SQL;
-
-        $rows = $this->query($sql, ['ID', 'USER_ID', 'EQUIPMENT_ID', 'EQUIPMENT_NAME', 'MAINTENANCE_DATE', 'MAINTENANCE_TYPE', 'COST']);
+        $rows = $this->connection->fetchAllAssociative($sql, $params);
 
         return array_map(function (array $row): array {
             return [
-                'id' => (int) $row['ID'],
-                'userId' => (int) $row['USER_ID'],
+                'id' => (int) ($row['id'] ?? 0),
+                'userId' => (int) ($row['user_id'] ?? 0),
                 'equipment' => [
-                    'id' => (int) $row['EQUIPMENT_ID'],
-                    'name' => $row['EQUIPMENT_NAME'],
+                    'id' => (int) ($row['equipment_id'] ?? 0),
+                    'name' => (string) ($row['equipment_name'] ?? ''),
                 ],
-                'maintenanceDate' => $this->toDateTime($row['MAINTENANCE_DATE']),
-                'maintenanceType' => $row['MAINTENANCE_TYPE'],
-                'cost' => $row['COST'],
+                'maintenanceDate' => $this->toDateTime((string) ($row['maintenance_date'] ?? '')),
+                'maintenanceType' => (string) ($row['maintenance_type'] ?? ''),
+                'cost' => (string) ($row['cost'] ?? '0'),
             ];
         }, $rows);
     }
@@ -95,21 +78,16 @@ SQL;
      */
     public function findEquipment(int $id, ?int $ownerUserId = null): ?array
     {
-        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
+        $this->ensureSchema();
 
-        $sql = <<<SQL
-SELECT
-    ID,
-    USER_ID,
-    NAME,
-    TYPE,
-    STATUS,
-    TO_CHAR(PURCHASE_DATE, 'YYYY-MM-DD') AS PURCHASE_DATE
-FROM EQUIPMENTS
-WHERE ID = {$id}{$ownerCondition}
-SQL;
+        $sql = 'SELECT id, user_id, name, type, status, purchase_date FROM EQUIPMENTS WHERE id = :id';
+        $params = ['id' => $id];
+        if ($ownerUserId !== null) {
+            $sql .= ' AND user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
+        }
 
-        $rows = $this->query($sql, ['ID', 'USER_ID', 'NAME', 'TYPE', 'STATUS', 'PURCHASE_DATE']);
+        $rows = $this->connection->fetchAllAssociative($sql, $params);
         if ($rows === []) {
             return null;
         }
@@ -117,12 +95,12 @@ SQL;
         $row = $rows[0];
 
         return [
-            'id' => (int) $row['ID'],
-            'userId' => (int) $row['USER_ID'],
-            'name' => $row['NAME'],
-            'type' => $row['TYPE'],
-            'status' => $row['STATUS'],
-            'purchaseDate' => $this->toDateTime($row['PURCHASE_DATE']),
+            'id' => (int) ($row['id'] ?? 0),
+            'userId' => (int) ($row['user_id'] ?? 0),
+            'name' => (string) ($row['name'] ?? ''),
+            'type' => (string) ($row['type'] ?? ''),
+            'status' => (string) ($row['status'] ?? ''),
+            'purchaseDate' => $this->toDateTime((string) ($row['purchase_date'] ?? '')),
         ];
     }
 
@@ -131,23 +109,16 @@ SQL;
      */
     public function findMaintenance(int $id, ?int $ownerUserId = null): ?array
     {
-        $ownerCondition = $ownerUserId !== null ? ' AND m.USER_ID = ' . (int) $ownerUserId : '';
+        $this->ensureSchema();
 
-        $sql = <<<SQL
-SELECT
-    m.ID,
-    m.USER_ID,
-    m.EQUIPMENT_ID,
-    NVL(e.NAME, '') AS EQUIPMENT_NAME,
-    TO_CHAR(m.MAINTENANCE_DATE, 'YYYY-MM-DD') AS MAINTENANCE_DATE,
-    m.MAINTENANCE_TYPE,
-    TO_CHAR(m.COST) AS COST
-FROM MAINTENANCE m
-LEFT JOIN EQUIPMENTS e ON e.ID = m.EQUIPMENT_ID
-WHERE m.ID = {$id}{$ownerCondition}
-SQL;
+        $sql = "SELECT m.id, m.user_id, m.equipment_id, COALESCE(e.name, '') AS equipment_name, m.maintenance_date, m.maintenance_type, m.cost FROM MAINTENANCE m LEFT JOIN EQUIPMENTS e ON e.id = m.equipment_id WHERE m.id = :id";
+        $params = ['id' => $id];
+        if ($ownerUserId !== null) {
+            $sql .= ' AND m.user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
+        }
 
-        $rows = $this->query($sql, ['ID', 'USER_ID', 'EQUIPMENT_ID', 'EQUIPMENT_NAME', 'MAINTENANCE_DATE', 'MAINTENANCE_TYPE', 'COST']);
+        $rows = $this->connection->fetchAllAssociative($sql, $params);
         if ($rows === []) {
             return null;
         }
@@ -155,15 +126,15 @@ SQL;
         $row = $rows[0];
 
         return [
-            'id' => (int) $row['ID'],
-            'userId' => (int) $row['USER_ID'],
+            'id' => (int) ($row['id'] ?? 0),
+            'userId' => (int) ($row['user_id'] ?? 0),
             'equipment' => [
-                'id' => (int) $row['EQUIPMENT_ID'],
-                'name' => $row['EQUIPMENT_NAME'],
+                'id' => (int) ($row['equipment_id'] ?? 0),
+                'name' => (string) ($row['equipment_name'] ?? ''),
             ],
-            'maintenanceDate' => $this->toDateTime($row['MAINTENANCE_DATE']),
-            'maintenanceType' => $row['MAINTENANCE_TYPE'],
-            'cost' => $row['COST'],
+            'maintenanceDate' => $this->toDateTime((string) ($row['maintenance_date'] ?? '')),
+            'maintenanceType' => (string) ($row['maintenance_type'] ?? ''),
+            'cost' => (string) ($row['cost'] ?? '0'),
         ];
     }
 
@@ -172,18 +143,26 @@ SQL;
      */
     public function createEquipment(array $data, int $ownerUserId): void
     {
-        $name = $this->quoteOrNull($data['name']);
-        $type = $this->quoteOrNull($data['type']);
-        $status = $this->quoteOrNull($data['status']);
-        $purchaseDate = $this->toDateExpression($data['purchaseDate']);
-        $safeOwnerId = (int) $ownerUserId;
+        $this->ensureSchema();
 
-        $sql = <<<SQL
-INSERT INTO EQUIPMENTS (ID, USER_ID, NAME, TYPE, STATUS, PURCHASE_DATE)
-VALUES (EQUIPMENT_SEQ.NEXTVAL, {$safeOwnerId}, {$name}, {$type}, {$status}, {$purchaseDate})
-SQL;
+        $payload = [
+            'user_id' => (int) $ownerUserId,
+            'name' => $this->trimToNull($data['name']),
+            'type' => $this->trimToNull($data['type']),
+            'status' => $this->trimToNull($data['status']) ?? 'Ready',
+            'purchase_date' => $this->toDateString($data['purchaseDate']),
+        ];
 
-        $this->execute($sql);
+        if ($this->isOraclePlatform()) {
+            $this->connection->executeStatement(
+                "INSERT INTO EQUIPMENTS (ID, USER_ID, NAME, TYPE, STATUS, PURCHASE_DATE) VALUES (EQUIPMENT_SEQ.NEXTVAL, :user_id, :name, :type, :status, TO_DATE(:purchase_date, 'YYYY-MM-DD'))",
+                $payload
+            );
+
+            return;
+        }
+
+        $this->connection->insert('EQUIPMENTS', $payload);
     }
 
     /**
@@ -191,30 +170,52 @@ SQL;
      */
     public function updateEquipment(int $id, array $data, ?int $ownerUserId = null): void
     {
-        $name = $this->quoteOrNull($data['name']);
-        $type = $this->quoteOrNull($data['type']);
-        $status = $this->quoteOrNull($data['status']);
-        $purchaseDate = $this->toDateExpression($data['purchaseDate']);
-        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
+        $this->ensureSchema();
 
-        $sql = <<<SQL
-UPDATE EQUIPMENTS
-SET NAME = {$name},
-    TYPE = {$type},
-    STATUS = {$status},
-    PURCHASE_DATE = {$purchaseDate}
-WHERE ID = {$id}{$ownerCondition}
-SQL;
+        $sql = 'UPDATE EQUIPMENTS SET name = :name, type = :type, status = :status, purchase_date = :purchaseDate WHERE id = :id';
+        $params = [
+            'name' => $this->trimToNull($data['name']),
+            'type' => $this->trimToNull($data['type']),
+            'status' => $this->trimToNull($data['status']) ?? 'Ready',
+            'purchaseDate' => $this->toDateString($data['purchaseDate']),
+            'id' => $id,
+        ];
 
-        $this->execute($sql);
+        if ($this->isOraclePlatform()) {
+            $sql = "UPDATE EQUIPMENTS SET name = :name, type = :type, status = :status, purchase_date = TO_DATE(:purchaseDate, 'YYYY-MM-DD') WHERE id = :id";
+        }
+
+        if ($ownerUserId !== null) {
+            $sql .= ' AND user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
+        }
+
+        $this->connection->executeStatement($sql, $params);
     }
 
     public function deleteEquipment(int $id, ?int $ownerUserId = null): void
     {
-        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
-        // Keep user/admin behavior consistent by removing dependent maintenance rows first.
-        $this->execute("DELETE FROM MAINTENANCE WHERE EQUIPMENT_ID = {$id}{$ownerCondition}");
-        $this->execute("DELETE FROM EQUIPMENTS WHERE ID = {$id}{$ownerCondition}");
+        $this->ensureSchema();
+
+        $this->connection->beginTransaction();
+        try {
+            $maintenanceSql = 'DELETE FROM MAINTENANCE WHERE equipment_id = :id';
+            $equipmentSql = 'DELETE FROM EQUIPMENTS WHERE id = :id';
+            $params = ['id' => $id];
+            if ($ownerUserId !== null) {
+                $maintenanceSql .= ' AND user_id = :ownerUserId';
+                $equipmentSql .= ' AND user_id = :ownerUserId';
+                $params['ownerUserId'] = (int) $ownerUserId;
+            }
+
+            $this->connection->executeStatement($maintenanceSql, $params);
+            $this->connection->executeStatement($equipmentSql, $params);
+
+            $this->connection->commit();
+        } catch (\Throwable $e) {
+            $this->connection->rollBack();
+            throw $e;
+        }
     }
 
     /**
@@ -222,9 +223,11 @@ SQL;
      */
     public function createMaintenance(array $data, int $ownerUserId): void
     {
+        $this->ensureSchema();
+
         $equipmentId = (int) $data['equipmentId'];
-        $maintenanceDate = $this->toDateExpression($data['maintenanceDate']);
-        $maintenanceType = $this->quoteOrNull($data['maintenanceType']);
+        $maintenanceDate = $this->toDateString($data['maintenanceDate']);
+        $maintenanceType = $this->trimToNull($data['maintenanceType']);
         $cost = $this->numericOrZero($data['cost']);
         $safeOwnerId = (int) $ownerUserId;
 
@@ -233,12 +236,28 @@ SQL;
             throw new \RuntimeException('Selected equipment does not belong to this user.');
         }
 
-        $sql = <<<SQL
-INSERT INTO MAINTENANCE (ID, USER_ID, EQUIPMENT_ID, MAINTENANCE_DATE, MAINTENANCE_TYPE, COST)
-VALUES (MAINTENANCE_SEQ.NEXTVAL, {$safeOwnerId}, {$equipmentId}, {$maintenanceDate}, {$maintenanceType}, {$cost})
-SQL;
+        if ($this->isOraclePlatform()) {
+            $this->connection->executeStatement(
+                "INSERT INTO MAINTENANCE (ID, USER_ID, EQUIPMENT_ID, MAINTENANCE_DATE, MAINTENANCE_TYPE, COST) VALUES (MAINTENANCE_SEQ.NEXTVAL, :user_id, :equipment_id, TO_DATE(:maintenance_date, 'YYYY-MM-DD'), :maintenance_type, :cost)",
+                [
+                    'user_id' => $safeOwnerId,
+                    'equipment_id' => $equipmentId,
+                    'maintenance_date' => $maintenanceDate,
+                    'maintenance_type' => $maintenanceType,
+                    'cost' => $cost,
+                ]
+            );
 
-        $this->execute($sql);
+            return;
+        }
+
+        $this->connection->insert('MAINTENANCE', [
+            'user_id' => $safeOwnerId,
+            'equipment_id' => $equipmentId,
+            'maintenance_date' => $maintenanceDate,
+            'maintenance_type' => $maintenanceType,
+            'cost' => $cost,
+        ]);
     }
 
     /**
@@ -246,29 +265,44 @@ SQL;
      */
     public function updateMaintenance(int $id, array $data, ?int $ownerUserId = null): void
     {
+        $this->ensureSchema();
+
         $equipmentId = (int) $data['equipmentId'];
-        $maintenanceDate = $this->toDateExpression($data['maintenanceDate']);
-        $maintenanceType = $this->quoteOrNull($data['maintenanceType']);
+        $maintenanceDate = $this->toDateString($data['maintenanceDate']);
+        $maintenanceType = $this->trimToNull($data['maintenanceType']);
         $cost = $this->numericOrZero($data['cost']);
-        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
 
-        $sql = <<<SQL
-UPDATE MAINTENANCE
-SET EQUIPMENT_ID = {$equipmentId},
-    MAINTENANCE_DATE = {$maintenanceDate},
-    MAINTENANCE_TYPE = {$maintenanceType},
-    COST = {$cost}
-WHERE ID = {$id}{$ownerCondition}
-SQL;
+        $sql = 'UPDATE MAINTENANCE SET equipment_id = :equipmentId, maintenance_date = :maintenanceDate, maintenance_type = :maintenanceType, cost = :cost WHERE id = :id';
+        $params = [
+            'equipmentId' => $equipmentId,
+            'maintenanceDate' => $maintenanceDate,
+            'maintenanceType' => $maintenanceType,
+            'cost' => $cost,
+            'id' => $id,
+        ];
+        if ($this->isOraclePlatform()) {
+            $sql = "UPDATE MAINTENANCE SET equipment_id = :equipmentId, maintenance_date = TO_DATE(:maintenanceDate, 'YYYY-MM-DD'), maintenance_type = :maintenanceType, cost = :cost WHERE id = :id";
+        }
+        if ($ownerUserId !== null) {
+            $sql .= ' AND user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
+        }
 
-        $this->execute($sql);
+        $this->connection->executeStatement($sql, $params);
     }
 
     public function deleteMaintenance(int $id, ?int $ownerUserId = null): void
     {
-        $ownerCondition = $ownerUserId !== null ? ' AND USER_ID = ' . (int) $ownerUserId : '';
-        $sql = "DELETE FROM MAINTENANCE WHERE ID = {$id}{$ownerCondition}";
-        $this->execute($sql);
+        $this->ensureSchema();
+
+        $sql = 'DELETE FROM MAINTENANCE WHERE id = :id';
+        $params = ['id' => $id];
+        if ($ownerUserId !== null) {
+            $sql .= ' AND user_id = :ownerUserId';
+            $params['ownerUserId'] = (int) $ownerUserId;
+        }
+
+        $this->connection->executeStatement($sql, $params);
     }
 
     /**
@@ -276,32 +310,22 @@ SQL;
      */
     public function listUsers(): array
     {
-        $sql = <<<SQL
-SELECT
-    ID,
-    LAST_NAME,
-    FIRST_NAME,
-    EMAIL,
-    PASSWORD_HASH,
-    STATUS,
-    ROLE_NAME,
-    TO_CHAR(CREATED_AT, 'YYYY-MM-DD') AS CREATED_AT
-FROM USERS
-ORDER BY ID DESC
-SQL;
+        $this->ensureSchema();
 
-        $rows = $this->query($sql, ['ID', 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'PASSWORD_HASH', 'STATUS', 'ROLE_NAME', 'CREATED_AT']);
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, last_name, first_name, email, password_hash, status, role_name, created_at FROM USERS ORDER BY id DESC'
+        );
 
         return array_map(function (array $row): array {
             return [
-                'id' => (int) $row['ID'],
-                'lastName' => $row['LAST_NAME'],
-                'firstName' => $row['FIRST_NAME'],
-                'email' => $row['EMAIL'],
-                'passwordHash' => $row['PASSWORD_HASH'],
-                'status' => $row['STATUS'],
-                'roleName' => $row['ROLE_NAME'],
-                'createdAt' => $this->toDateTime($row['CREATED_AT']),
+                'id' => (int) ($row['id'] ?? 0),
+                'lastName' => (string) ($row['last_name'] ?? ''),
+                'firstName' => (string) ($row['first_name'] ?? ''),
+                'email' => (string) ($row['email'] ?? ''),
+                'passwordHash' => (string) ($row['password_hash'] ?? ''),
+                'status' => (string) ($row['status'] ?? ''),
+                'roleName' => (string) ($row['role_name'] ?? ''),
+                'createdAt' => $this->toDateTime((string) ($row['created_at'] ?? '')),
             ];
         }, $rows);
     }
@@ -311,21 +335,12 @@ SQL;
      */
     public function findUser(int $id): ?array
     {
-        $sql = <<<SQL
-SELECT
-    ID,
-    LAST_NAME,
-    FIRST_NAME,
-    EMAIL,
-    PASSWORD_HASH,
-    STATUS,
-    ROLE_NAME,
-    TO_CHAR(CREATED_AT, 'YYYY-MM-DD') AS CREATED_AT
-FROM USERS
-WHERE ID = {$id}
-SQL;
+        $this->ensureSchema();
 
-        $rows = $this->query($sql, ['ID', 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'PASSWORD_HASH', 'STATUS', 'ROLE_NAME', 'CREATED_AT']);
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, last_name, first_name, email, password_hash, status, role_name, created_at FROM USERS WHERE id = :id',
+            ['id' => $id]
+        );
         if ($rows === []) {
             return null;
         }
@@ -333,14 +348,14 @@ SQL;
         $row = $rows[0];
 
         return [
-            'id' => (int) $row['ID'],
-            'lastName' => $row['LAST_NAME'],
-            'firstName' => $row['FIRST_NAME'],
-            'email' => $row['EMAIL'],
-            'passwordHash' => $row['PASSWORD_HASH'],
-            'status' => $row['STATUS'],
-            'roleName' => $row['ROLE_NAME'],
-            'createdAt' => $this->toDateTime($row['CREATED_AT']),
+            'id' => (int) ($row['id'] ?? 0),
+            'lastName' => (string) ($row['last_name'] ?? ''),
+            'firstName' => (string) ($row['first_name'] ?? ''),
+            'email' => (string) ($row['email'] ?? ''),
+            'passwordHash' => (string) ($row['password_hash'] ?? ''),
+            'status' => (string) ($row['status'] ?? ''),
+            'roleName' => (string) ($row['role_name'] ?? ''),
+            'createdAt' => $this->toDateTime((string) ($row['created_at'] ?? '')),
         ];
     }
 
@@ -349,22 +364,12 @@ SQL;
      */
     public function findUserByEmail(string $email): ?array
     {
-        $emailExpr = $this->quoteOrNull($email);
-        $sql = <<<SQL
-SELECT
-    ID,
-    LAST_NAME,
-    FIRST_NAME,
-    EMAIL,
-    PASSWORD_HASH,
-    STATUS,
-    ROLE_NAME,
-    TO_CHAR(CREATED_AT, 'YYYY-MM-DD') AS CREATED_AT
-FROM USERS
-WHERE LOWER(EMAIL) = LOWER({$emailExpr})
-SQL;
+        $this->ensureSchema();
 
-        $rows = $this->query($sql, ['ID', 'LAST_NAME', 'FIRST_NAME', 'EMAIL', 'PASSWORD_HASH', 'STATUS', 'ROLE_NAME', 'CREATED_AT']);
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, last_name, first_name, email, password_hash, status, role_name, created_at FROM USERS WHERE LOWER(email) = LOWER(:email)',
+            ['email' => trim($email)]
+        );
         if ($rows === []) {
             return null;
         }
@@ -372,14 +377,14 @@ SQL;
         $row = $rows[0];
 
         return [
-            'id' => (int) $row['ID'],
-            'lastName' => $row['LAST_NAME'],
-            'firstName' => $row['FIRST_NAME'],
-            'email' => $row['EMAIL'],
-            'passwordHash' => $row['PASSWORD_HASH'],
-            'status' => $row['STATUS'],
-            'roleName' => $row['ROLE_NAME'],
-            'createdAt' => $this->toDateTime($row['CREATED_AT']),
+            'id' => (int) ($row['id'] ?? 0),
+            'lastName' => (string) ($row['last_name'] ?? ''),
+            'firstName' => (string) ($row['first_name'] ?? ''),
+            'email' => (string) ($row['email'] ?? ''),
+            'passwordHash' => (string) ($row['password_hash'] ?? ''),
+            'status' => (string) ($row['status'] ?? ''),
+            'roleName' => (string) ($row['role_name'] ?? ''),
+            'createdAt' => $this->toDateTime((string) ($row['created_at'] ?? '')),
         ];
     }
 
@@ -388,19 +393,33 @@ SQL;
      */
     public function createUser(array $data): void
     {
-        $lastName = $this->quoteOrNull($data['lastName']);
-        $firstName = $this->quoteOrNull($data['firstName']);
-        $email = $this->quoteOrNull($data['email']);
-        $passwordHash = $this->quoteOrNull($data['passwordHash']);
-        $status = $this->quoteOrNull($data['status']);
-        $roleName = $this->quoteOrNull($data['roleName']);
+        $this->ensureSchema();
 
-        $sql = <<<SQL
-INSERT INTO USERS (ID, LAST_NAME, FIRST_NAME, EMAIL, PASSWORD_HASH, STATUS, ROLE_NAME, CREATED_AT)
-VALUES (USER_SEQ.NEXTVAL, {$lastName}, {$firstName}, {$email}, {$passwordHash}, {$status}, {$roleName}, SYSDATE)
-SQL;
+        if ($this->isOraclePlatform()) {
+            $this->connection->executeStatement(
+                'INSERT INTO USERS (ID, LAST_NAME, FIRST_NAME, EMAIL, PASSWORD_HASH, STATUS, ROLE_NAME, CREATED_AT) VALUES (USER_SEQ.NEXTVAL, :last_name, :first_name, :email, :password_hash, :status, :role_name, SYSDATE)',
+                [
+                    'last_name' => $this->trimToNull($data['lastName']),
+                    'first_name' => $this->trimToNull($data['firstName']),
+                    'email' => $this->trimToNull($data['email']),
+                    'password_hash' => $this->trimToNull($data['passwordHash']),
+                    'status' => $this->trimToNull($data['status']) ?? 'Active',
+                    'role_name' => $this->trimToNull($data['roleName']) ?? 'USER',
+                ]
+            );
 
-        $this->execute($sql);
+            return;
+        }
+
+        $this->connection->insert('USERS', [
+            'last_name' => $this->trimToNull($data['lastName']),
+            'first_name' => $this->trimToNull($data['firstName']),
+            'email' => $this->trimToNull($data['email']),
+            'password_hash' => $this->trimToNull($data['passwordHash']),
+            'status' => $this->trimToNull($data['status']) ?? 'Active',
+            'role_name' => $this->trimToNull($data['roleName']) ?? 'USER',
+            'created_at' => (new \DateTimeImmutable())->format('Y-m-d'),
+        ]);
     }
 
     /**
@@ -408,205 +427,247 @@ SQL;
      */
     public function updateUser(int $id, array $data): void
     {
-        $lastName = $this->quoteOrNull($data['lastName']);
-        $firstName = $this->quoteOrNull($data['firstName']);
-        $email = $this->quoteOrNull($data['email']);
-        $status = $this->quoteOrNull($data['status']);
-        $roleName = $this->quoteOrNull($data['roleName']);
+        $this->ensureSchema();
 
-        $setClauses = [
-            "LAST_NAME = {$lastName}",
-            "FIRST_NAME = {$firstName}",
-            "EMAIL = {$email}",
-            "STATUS = {$status}",
-            "ROLE_NAME = {$roleName}",
+        $fields = [
+            'last_name' => $this->trimToNull($data['lastName']),
+            'first_name' => $this->trimToNull($data['firstName']),
+            'email' => $this->trimToNull($data['email']),
+            'status' => $this->trimToNull($data['status']),
+            'role_name' => $this->trimToNull($data['roleName']),
         ];
 
         if (($data['passwordHash'] ?? null) !== null && trim((string) $data['passwordHash']) !== '') {
-            $setClauses[] = 'PASSWORD_HASH = ' . $this->quoteOrNull($data['passwordHash']);
+            $fields['password_hash'] = trim((string) $data['passwordHash']);
         }
 
-        $sql = "UPDATE USERS SET " . implode(', ', $setClauses) . " WHERE ID = {$id}";
-        $this->execute($sql);
+        $this->connection->update('USERS', $fields, ['id' => $id]);
     }
 
     public function deleteUser(int $id): void
     {
-        $this->execute("DELETE FROM USERS WHERE ID = {$id}");
+        $this->ensureSchema();
+        $this->connection->executeStatement('DELETE FROM USERS WHERE id = :id', ['id' => $id]);
     }
 
-    private function buildConnectionString(string $databaseUrl): string
+    private function ensureSchema(): void
     {
-        $parts = parse_url($databaseUrl);
-        if ($parts === false) {
-            throw new \RuntimeException('Invalid DATABASE_URL format.');
+        if ($this->schemaInitialized) {
+            return;
         }
 
-        $user = $parts['user'] ?? null;
-        $pass = $parts['pass'] ?? null;
-        $host = $parts['host'] ?? 'localhost';
-        $port = $parts['port'] ?? 1521;
-        $query = [];
+        $platform = strtolower(get_class($this->connection->getDatabasePlatform()));
 
-        parse_str($parts['query'] ?? '', $query);
-        $serviceName = $query['service_name'] ?? 'XE';
+        if (str_contains($platform, 'sqlite')) {
+            $this->connection->executeStatement('PRAGMA foreign_keys = ON');
+            $this->connection->executeStatement('CREATE TABLE IF NOT EXISTS USERS (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_name TEXT NOT NULL,
+                first_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                status TEXT NOT NULL,
+                role_name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )');
+            $this->connection->executeStatement('CREATE TABLE IF NOT EXISTS EQUIPMENTS (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                purchase_date TEXT DEFAULT NULL,
+                FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE
+            )');
+            $this->connection->executeStatement('CREATE TABLE IF NOT EXISTS MAINTENANCE (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                equipment_id INTEGER NOT NULL,
+                maintenance_date TEXT DEFAULT NULL,
+                maintenance_type TEXT NOT NULL,
+                cost REAL NOT NULL DEFAULT 0,
+                FOREIGN KEY (equipment_id) REFERENCES EQUIPMENTS(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE
+            )');
+            $this->schemaInitialized = true;
 
-        if (!$user || $pass === null) {
-            throw new \RuntimeException('DATABASE_URL must contain Oracle user and password.');
+            return;
         }
 
-        return sprintf('%s/%s@//%s:%d/%s', $user, $pass, $host, $port, $serviceName);
+        if (str_contains($platform, 'mysql')) {
+            $this->connection->executeStatement('CREATE TABLE IF NOT EXISTS USERS (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                last_name VARCHAR(120) NOT NULL,
+                first_name VARCHAR(120) NOT NULL,
+                email VARCHAR(180) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                role_name VARCHAR(80) NOT NULL,
+                created_at DATE NOT NULL
+            )');
+            $this->connection->executeStatement('CREATE TABLE IF NOT EXISTS EQUIPMENTS (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                name VARCHAR(120) NOT NULL,
+                type VARCHAR(80) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                purchase_date DATE NULL,
+                CONSTRAINT fk_equipments_user FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE
+            )');
+            $this->connection->executeStatement('CREATE TABLE IF NOT EXISTS MAINTENANCE (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                equipment_id INT NOT NULL,
+                maintenance_date DATE NULL,
+                maintenance_type VARCHAR(80) NOT NULL,
+                cost DECIMAL(10,2) NOT NULL DEFAULT 0,
+                CONSTRAINT fk_maintenance_equipment FOREIGN KEY (equipment_id) REFERENCES EQUIPMENTS(id) ON DELETE CASCADE,
+                CONSTRAINT fk_maintenance_user FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE
+            )');
+
+            $this->schemaInitialized = true;
+
+            return;
+        }
+
+        if (str_contains($platform, 'oracle')) {
+            $this->connection->executeStatement(<<<'SQL'
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE SEQUENCE USER_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 AND SQLCODE != -2289 THEN
+            RAISE;
+        END IF;
+END;
+SQL);
+            $this->connection->executeStatement(<<<'SQL'
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE SEQUENCE EQUIPMENT_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 AND SQLCODE != -2289 THEN
+            RAISE;
+        END IF;
+END;
+SQL);
+            $this->connection->executeStatement(<<<'SQL'
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE SEQUENCE MAINTENANCE_SEQ START WITH 1 INCREMENT BY 1 NOCACHE NOCYCLE';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 AND SQLCODE != -2289 THEN
+            RAISE;
+        END IF;
+END;
+SQL);
+            $this->connection->executeStatement(<<<'SQL'
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE TABLE USERS (
+        ID NUMBER(10) NOT NULL,
+        LAST_NAME VARCHAR2(120) NOT NULL,
+        FIRST_NAME VARCHAR2(120) NOT NULL,
+        EMAIL VARCHAR2(180) NOT NULL,
+        PASSWORD_HASH VARCHAR2(255) NOT NULL,
+        STATUS VARCHAR2(30) NOT NULL,
+        ROLE_NAME VARCHAR2(80) NOT NULL,
+        CREATED_AT DATE DEFAULT SYSDATE NOT NULL,
+        CONSTRAINT PK_USERS PRIMARY KEY (ID),
+        CONSTRAINT UQ_USERS_EMAIL UNIQUE (EMAIL)
+    )';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN
+            RAISE;
+        END IF;
+END;
+SQL);
+            $this->connection->executeStatement(<<<'SQL'
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE TABLE EQUIPMENTS (
+        ID NUMBER(10) NOT NULL,
+        USER_ID NUMBER(10) NOT NULL,
+        NAME VARCHAR2(120) NOT NULL,
+        TYPE VARCHAR2(80) NOT NULL,
+        STATUS VARCHAR2(30) NOT NULL,
+        PURCHASE_DATE DATE,
+        CONSTRAINT PK_EQUIPMENTS PRIMARY KEY (ID),
+        CONSTRAINT FK_EQUIPMENTS_USER FOREIGN KEY (USER_ID) REFERENCES USERS(ID) ON DELETE CASCADE
+    )';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN
+            RAISE;
+        END IF;
+END;
+SQL);
+            $this->connection->executeStatement(<<<'SQL'
+BEGIN
+    EXECUTE IMMEDIATE 'CREATE TABLE MAINTENANCE (
+        ID NUMBER(10) NOT NULL,
+        USER_ID NUMBER(10) NOT NULL,
+        EQUIPMENT_ID NUMBER(10) NOT NULL,
+        MAINTENANCE_DATE DATE,
+        MAINTENANCE_TYPE VARCHAR2(80) NOT NULL,
+        COST NUMBER(10, 2) NOT NULL,
+        CONSTRAINT PK_MAINTENANCE PRIMARY KEY (ID),
+        CONSTRAINT FK_MAINTENANCE_EQUIPMENT FOREIGN KEY (EQUIPMENT_ID) REFERENCES EQUIPMENTS(ID) ON DELETE CASCADE,
+        CONSTRAINT FK_MAINTENANCE_USER FOREIGN KEY (USER_ID) REFERENCES USERS(ID) ON DELETE CASCADE
+    )';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -955 THEN
+            RAISE;
+        END IF;
+END;
+SQL);
+
+            $this->schemaInitialized = true;
+
+            return;
+        }
+
+        throw new \RuntimeException('Unsupported database platform: ' . $platform);
     }
 
-    /**
-     * @param list<string> $columns
-     * @return array<int, array<string, string>>
-     */
-    private function query(string $sql, array $columns): array
+    private function isOraclePlatform(): bool
     {
-        $script = <<<SQL
-SET PAGESIZE 50000
-SET LINESIZE 32767
-SET FEEDBACK OFF
-SET HEADING OFF
-SET VERIFY OFF
-SET ECHO OFF
-SET TERMOUT ON
-SET TRIMSPOOL ON
-SET TAB OFF
-SET COLSEP '||'
-ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD';
-{$sql};
-EXIT;
-SQL;
-
-        $output = $this->runSqlPlusScript($script);
-        $lines = preg_split('/\r\n|\r|\n/', $output) ?: [];
-        $rows = [];
-
-        foreach ($lines as $line) {
-            $trimmed = trim($line);
-            if ($trimmed === '' || str_starts_with($trimmed, 'ALTER SESSION')) {
-                continue;
-            }
-
-            $parts = array_map('trim', explode('||', $line));
-            if (count($parts) < count($columns)) {
-                continue;
-            }
-
-            $row = [];
-            foreach ($columns as $index => $column) {
-                $row[$column] = $parts[$index] ?? '';
-            }
-
-            $rows[] = $row;
-        }
-
-        return $rows;
+        return str_contains(strtolower(get_class($this->connection->getDatabasePlatform())), 'oracle');
     }
 
-    private function execute(string $sql): void
-    {
-        $script = <<<SQL
-WHENEVER SQLERROR EXIT SQL.SQLCODE
-SET FEEDBACK OFF
-SET HEADING OFF
-SET VERIFY OFF
-SET ECHO OFF
-ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD';
-{$sql};
-COMMIT;
-EXIT;
-SQL;
-
-        $this->runSqlPlusScript($script);
-    }
-
-    private function runSqlPlusScript(string $script): string
-    {
-        $tmpFile = tempnam(sys_get_temp_dir(), 'agrisense_sql_');
-        if ($tmpFile === false) {
-            throw new \RuntimeException('Unable to create temporary SQL file.');
-        }
-
-        try {
-            file_put_contents($tmpFile, $script);
-            $command = ['sqlplus', '-S', $this->connectionString, '@' . $tmpFile];
-            $descriptors = [
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ];
-
-            $process = proc_open(
-                $command,
-                $descriptors,
-                $pipes,
-                null,
-                null,
-                ['bypass_shell' => true]
-            );
-
-            if (!is_resource($process)) {
-                throw new \RuntimeException('SQL*Plus execution failed to start.');
-            }
-
-            $stdout = stream_get_contents($pipes[1]);
-            $stderr = stream_get_contents($pipes[2]);
-
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-
-            $exitCode = proc_close($process);
-            $output = trim((string) $stdout . PHP_EOL . (string) $stderr);
-
-            if ($exitCode !== 0 && $output === '') {
-                throw new \RuntimeException('SQL*Plus execution failed.');
-            }
-
-            if (stripos($output, 'ORA-') !== false || stripos($output, 'SP2-') !== false) {
-                throw new \RuntimeException(trim($output));
-            }
-
-            return $output;
-        } finally {
-            if (is_file($tmpFile)) {
-                @unlink($tmpFile);
-            }
-        }
-    }
-
-    private function quoteOrNull(?string $value): string
+    private function trimToNull(?string $value): ?string
     {
         if ($value === null || trim($value) === '') {
-            return 'NULL';
+            return null;
         }
 
-        return "'" . str_replace("'", "''", trim($value)) . "'";
+        return trim($value);
     }
 
-    private function toDateExpression(?string $value): string
+    private function toDateString(?string $value): ?string
     {
-        if ($value === null || trim($value) === '') {
-            return 'NULL';
+        $trimmed = $this->trimToNull($value);
+        if ($trimmed === null) {
+            return null;
         }
 
-        $date = trim($value);
-        return "TO_DATE('" . str_replace("'", "''", $date) . "', 'YYYY-MM-DD')";
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $trimmed);
+
+        return $date ? $date->format('Y-m-d') : null;
     }
 
-    private function numericOrZero(?string $value): string
+    private function numericOrZero(?string $value): float
     {
         if ($value === null || trim($value) === '') {
-            return '0';
+            return 0.0;
         }
 
         $normalized = str_replace(',', '.', trim($value));
         if (!is_numeric($normalized)) {
-            return '0';
+            return 0.0;
         }
 
-        return $normalized;
+        return (float) $normalized;
     }
 
     private function toDateTime(string $value): ?\DateTimeImmutable
