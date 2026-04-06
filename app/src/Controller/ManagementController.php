@@ -1797,4 +1797,74 @@ final class ManagementController extends AbstractController
                 : 0,
         ];
     }
+
+    /**
+     * Build equipment and maintenance insights for user dashboard
+     * @return array{stats: array, statusLegend: array, maintenanceLegend: array}
+     */
+    private function buildUserEquipmentInsights(array $equipments, array $maintenances): array
+    {
+        // Status distribution
+        $statusCounts = [
+            'Ready' => 0,
+            'Service' => 0,
+            'Offline' => 0,
+        ];
+
+        foreach ($equipments as $equipment) {
+            $status = (string) ($equipment['status'] ?? 'Offline');
+            if (!array_key_exists($status, $statusCounts)) {
+                $statusCounts[$status] = 0;
+            }
+            $statusCounts[$status]++;
+        }
+
+        // Maintenance type distribution
+        $maintenanceTypes = [];
+        foreach ($maintenances as $maintenance) {
+            $type = (string) ($maintenance['maintenanceType'] ?? 'Unknown');
+            $maintenanceTypes[$type] = ($maintenanceTypes[$type] ?? 0) + 1;
+        }
+
+        // Build legends
+        $statusLegend = [];
+        $statusPalette = ['#76b82d', '#f5a623', '#d9534f'];
+        $statusIndex = 0;
+        foreach ($statusCounts as $status => $count) {
+            if ($count > 0) {
+                $statusLegend[] = [
+                    'label' => $status,
+                    'value' => $count,
+                    'percent' => count($equipments) > 0 ? round(($count / count($equipments)) * 100, 1) : 0,
+                    'color' => $statusPalette[$statusIndex % count($statusPalette)],
+                ];
+                $statusIndex++;
+            }
+        }
+
+        $maintenanceLegend = [];
+        $maintenancePalette = ['#7fc6ff', '#f5cc7c', '#f28d8d', '#98d7b8', '#9ca9ff', '#d7a5ec'];
+        $maintenanceIndex = 0;
+        foreach ($maintenanceTypes as $type => $count) {
+            $maintenanceLegend[] = [
+                'label' => $type,
+                'value' => $count,
+                'percent' => count($maintenances) > 0 ? round(($count / count($maintenances)) * 100, 1) : 0,
+                'color' => $maintenancePalette[$maintenanceIndex % count($maintenancePalette)],
+            ];
+            $maintenanceIndex++;
+        }
+
+        return [
+            'stats' => [
+                'equipmentCount' => count($equipments),
+                'maintenanceCount' => count($maintenances),
+                'readyCount' => $statusCounts['Ready'] ?? 0,
+                'serviceCount' => $statusCounts['Service'] ?? 0,
+                'offlineCount' => $statusCounts['Offline'] ?? 0,
+            ],
+            'statusLegend' => $statusLegend,
+            'maintenanceLegend' => $maintenanceLegend,
+        ];
+    }
 }
