@@ -163,13 +163,28 @@
         finished = true;
         progress = 1;
         targetProgress = 1;
+        body.classList.add('intro-reveal');
         overlay.classList.add('is-complete');
         detachLockEvents();
         unlockPage();
 
+        // Start reveal shortly after overlay fade begins so content animation remains visible.
+        window.requestAnimationFrame(function () {
+            window.setTimeout(function () {
+                body.classList.add('intro-content-in');
+                body.classList.remove('intro-pending');
+            }, 260);
+        });
+
         window.setTimeout(function () {
             overlay.style.display = 'none';
         }, 900);
+
+        window.setTimeout(function () {
+            body.classList.remove('intro-reveal');
+            body.classList.remove('intro-content-in');
+            body.classList.remove('intro-page');
+        }, 1400);
     }
 
     function updateOverlayUi() {

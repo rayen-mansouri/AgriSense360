@@ -533,19 +533,21 @@
     }
 }
 
-/* Consistency lock: keep menu spacing identical across all pages with a sidebar. */
-body .page > .sidebar {
+/* Consistency lock: use the admin dashboard menu skin everywhere after intro. */
+body:not(.intro-locked) .page > .sidebar {
+    background: linear-gradient(180deg, rgba(32, 61, 28, 0.98) 0%, rgba(24, 44, 20, 0.98) 100%);
+    color: #f6f6f2;
     padding: 36px 28px;
     gap: 36px;
 }
 
-body .page > .sidebar .managements {
+body:not(.intro-locked) .page > .sidebar .managements {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
-body .page > .sidebar .managements ul {
+body:not(.intro-locked) .page > .sidebar .managements ul {
     list-style: none;
     display: flex;
     flex-direction: column;
@@ -555,33 +557,57 @@ body .page > .sidebar .managements ul {
     align-content: stretch;
 }
 
-body .page > .sidebar .managements li {
+body:not(.intro-locked) .page > .sidebar .managements li {
     border-radius: var(--radius-sm);
     font-size: 15px;
     letter-spacing: 0.2px;
 }
 
-body .page > .sidebar .managements .nav-link {
+body:not(.intro-locked) .page > .sidebar .managements .nav-link {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-sm);
     padding: 12px 16px;
     gap: 12px;
 }
 
-body .page > .sidebar .nav-icon {
-    width: 26px;
-    height: 26px;
+body:not(.intro-locked) .page > .sidebar .managements li.active .nav-link,
+body:not(.intro-locked) .page > .sidebar .managements .nav-link:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.26);
+    transform: translateX(5px) scale(1.025);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
-body .page > .sidebar .sidebar-foot {
+body:not(.intro-locked) .page > .sidebar .managements .nav-link:active {
+    transform: translateX(2px) scale(0.975);
+    transition-duration: 0.12s;
+}
+
+body:not(.intro-locked) .page > .sidebar .nav-icon {
+    width: 26px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+}
+
+body:not(.intro-locked) .page > .sidebar .managements .nav-link:hover .nav-icon {
+    background: rgba(255, 255, 255, 0.22);
+    transform: scale(1.18) rotate(10deg);
+    border-radius: 14px;
+}
+
+body:not(.intro-locked) .page > .sidebar .sidebar-foot {
     margin-top: auto;
     font-size: 13px;
     gap: 10px;
 }
 
-body[data-collapsed="true"] .page > .sidebar {
+body:not(.intro-locked)[data-collapsed="true"] .page > .sidebar {
     padding: 24px 10px;
 }
 
-body[data-collapsed="true"] .page > .sidebar .managements .nav-link {
+body:not(.intro-locked)[data-collapsed="true"] .page > .sidebar .managements .nav-link {
     width: 54px;
     height: 54px;
     padding: 0;
@@ -589,8 +615,9 @@ body[data-collapsed="true"] .page > .sidebar .managements .nav-link {
     border-radius: 16px;
 }
 
-body[data-collapsed="true"] .page > .sidebar .nav-icon {
+body:not(.intro-locked)[data-collapsed="true"] .page > .sidebar .nav-icon {
     width: 34px;
     height: 34px;
     border-radius: 14px;
 }
+

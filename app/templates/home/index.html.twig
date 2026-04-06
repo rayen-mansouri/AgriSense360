@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if dashboardMode == 'admin' %}Admin Dashboard{% else %}AgriSense 360{% endif %}</title>
     <link rel="stylesheet" href="{{ asset('assets/styles/home.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/styles/menu.css') }}">
+    {% if dashboardMode == 'user' %}
+        <link rel="stylesheet" href="{{ asset('assets/styles/management.css') }}">
+    {% else %}
+        <link rel="stylesheet" href="{{ asset('assets/styles/menu.css') }}">
+    {% endif %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="{% if dashboardMode == 'admin' %}admin-mode{% endif %}" data-collapsed="true">
+<body class="{% if dashboardMode == 'user' %}user-home {% endif %}intro-page intro-pending intro-locked {% if dashboardMode == 'admin' %}admin-mode{% endif %}" data-collapsed="true">
 
     <section class="plant-intro-overlay" id="plant-intro-overlay" aria-label="AgriSense intro animation">
         <canvas id="plant-intro-canvas" aria-hidden="true"></canvas>
