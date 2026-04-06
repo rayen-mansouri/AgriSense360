@@ -435,6 +435,250 @@ SQL;
         $this->execute("DELETE FROM USERS WHERE ID = {$id}");
     }
 
+    // ======================== AFFECTATION_TRAVAIL CRUD METHODS ========================
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listAffectations(): array
+    {
+        $sql = <<<SQL
+SELECT
+    ID_AFFECTATION,
+    TYPE_TRAVAIL,
+    TO_CHAR(DATE_DEBUT, 'YYYY-MM-DD') AS DATE_DEBUT,
+    TO_CHAR(DATE_FIN, 'YYYY-MM-DD') AS DATE_FIN,
+    ZONE_TRAVAIL,
+    STATUT
+FROM AFFECTATION_TRAVAIL
+ORDER BY ID_AFFECTATION DESC
+SQL;
+
+        $rows = $this->query($sql, ['ID_AFFECTATION', 'TYPE_TRAVAIL', 'DATE_DEBUT', 'DATE_FIN', 'ZONE_TRAVAIL', 'STATUT']);
+
+        return array_map(function (array $row): array {
+            return [
+                'id' => (int) $row['ID_AFFECTATION'],
+                'typeTravail' => $row['TYPE_TRAVAIL'],
+                'dateDebut' => $this->toDateTime($row['DATE_DEBUT']),
+                'dateFin' => $this->toDateTime($row['DATE_FIN']),
+                'zoneTravail' => $row['ZONE_TRAVAIL'],
+                'statut' => $row['STATUT'],
+            ];
+        }, $rows);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findAffectation(int $id): ?array
+    {
+        $sql = <<<SQL
+SELECT
+    ID_AFFECTATION,
+    TYPE_TRAVAIL,
+    TO_CHAR(DATE_DEBUT, 'YYYY-MM-DD') AS DATE_DEBUT,
+    TO_CHAR(DATE_FIN, 'YYYY-MM-DD') AS DATE_FIN,
+    ZONE_TRAVAIL,
+    STATUT
+FROM AFFECTATION_TRAVAIL
+WHERE ID_AFFECTATION = {$id}
+SQL;
+
+        $rows = $this->query($sql, ['ID_AFFECTATION', 'TYPE_TRAVAIL', 'DATE_DEBUT', 'DATE_FIN', 'ZONE_TRAVAIL', 'STATUT']);
+        if ($rows === []) {
+            return null;
+        }
+
+        $row = $rows[0];
+
+        return [
+            'id' => (int) $row['ID_AFFECTATION'],
+            'typeTravail' => $row['TYPE_TRAVAIL'],
+            'dateDebut' => $this->toDateTime($row['DATE_DEBUT']),
+            'dateFin' => $this->toDateTime($row['DATE_FIN']),
+            'zoneTravail' => $row['ZONE_TRAVAIL'],
+            'statut' => $row['STATUT'],
+        ];
+    }
+
+    /**
+     * @param array{typeTravail:?string,dateDebut:?string,dateFin:?string,zoneTravail:?string,statut:?string} $data
+     */
+    public function createAffectation(array $data): void
+    {
+        $typeTravail = $this->quoteOrNull($data['typeTravail']);
+        $dateDebut = $this->toDateExpression($data['dateDebut']);
+        $dateFin = $this->toDateExpression($data['dateFin']);
+        $zoneTravail = $this->quoteOrNull($data['zoneTravail']);
+        $statut = $this->quoteOrNull($data['statut']);
+
+        $sql = <<<SQL
+INSERT INTO AFFECTATION_TRAVAIL (ID_AFFECTATION, TYPE_TRAVAIL, DATE_DEBUT, DATE_FIN, ZONE_TRAVAIL, STATUT)
+VALUES (AFFECTATION_TRAVAIL_SEQ.NEXTVAL, {$typeTravail}, {$dateDebut}, {$dateFin}, {$zoneTravail}, {$statut})
+SQL;
+
+        $this->execute($sql);
+    }
+
+    /**
+     * @param array{typeTravail:?string,dateDebut:?string,dateFin:?string,zoneTravail:?string,statut:?string} $data
+     */
+    public function updateAffectation(int $id, array $data): void
+    {
+        $typeTravail = $this->quoteOrNull($data['typeTravail']);
+        $dateDebut = $this->toDateExpression($data['dateDebut']);
+        $dateFin = $this->toDateExpression($data['dateFin']);
+        $zoneTravail = $this->quoteOrNull($data['zoneTravail']);
+        $statut = $this->quoteOrNull($data['statut']);
+
+        $sql = <<<SQL
+UPDATE AFFECTATION_TRAVAIL
+SET TYPE_TRAVAIL = {$typeTravail},
+    DATE_DEBUT = {$dateDebut},
+    DATE_FIN = {$dateFin},
+    ZONE_TRAVAIL = {$zoneTravail},
+    STATUT = {$statut}
+WHERE ID_AFFECTATION = {$id}
+SQL;
+
+        $this->execute($sql);
+    }
+
+    public function deleteAffectation(int $id): void
+    {
+        // Delete evaluations first (ON DELETE CASCADE would handle this in DB)
+        $this->execute("DELETE FROM EVALUATION_PERFORMANCE WHERE ID_AFFECTATION = {$id}");
+        $this->execute("DELETE FROM AFFECTATION_TRAVAIL WHERE ID_AFFECTATION = {$id}");
+    }
+
+    // ======================== EVALUATION_PERFORMANCE CRUD METHODS ========================
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listEvaluations(?int $affectationId = null): array
+    {
+        $whereClause = '';
+        if ($affectationId !== null) {
+            $whereClause = 'WHERE ID_AFFECTATION = ' . (int) $affectationId;
+        }
+
+        $sql = <<<SQL
+SELECT
+    ID_EVALUATION,
+    ID_AFFECTATION,
+    NOTE,
+    QUALITE,
+    COMMENTAIRE,
+    TO_CHAR(DATE_EVALUATION, 'YYYY-MM-DD') AS DATE_EVALUATION
+FROM EVALUATION_PERFORMANCE
+{$whereClause}
+ORDER BY ID_EVALUATION DESC
+SQL;
+
+        $rows = $this->query($sql, ['ID_EVALUATION', 'ID_AFFECTATION', 'NOTE', 'QUALITE', 'COMMENTAIRE', 'DATE_EVALUATION']);
+
+        return array_map(function (array $row): array {
+            return [
+                'id' => (int) $row['ID_EVALUATION'],
+                'affectationId' => (int) $row['ID_AFFECTATION'],
+                'note' => (int) $row['NOTE'],
+                'qualite' => $row['QUALITE'],
+                'commentaire' => $row['COMMENTAIRE'],
+                'dateEvaluation' => $this->toDateTime($row['DATE_EVALUATION']),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findEvaluation(int $id): ?array
+    {
+        $sql = <<<SQL
+SELECT
+    ID_EVALUATION,
+    ID_AFFECTATION,
+    NOTE,
+    QUALITE,
+    COMMENTAIRE,
+    TO_CHAR(DATE_EVALUATION, 'YYYY-MM-DD') AS DATE_EVALUATION
+FROM EVALUATION_PERFORMANCE
+WHERE ID_EVALUATION = {$id}
+SQL;
+
+        $rows = $this->query($sql, ['ID_EVALUATION', 'ID_AFFECTATION', 'NOTE', 'QUALITE', 'COMMENTAIRE', 'DATE_EVALUATION']);
+        if ($rows === []) {
+            return null;
+        }
+
+        $row = $rows[0];
+
+        return [
+            'id' => (int) $row['ID_EVALUATION'],
+            'affectationId' => (int) $row['ID_AFFECTATION'],
+            'note' => (int) $row['NOTE'],
+            'qualite' => $row['QUALITE'],
+            'commentaire' => $row['COMMENTAIRE'],
+            'dateEvaluation' => $this->toDateTime($row['DATE_EVALUATION']),
+        ];
+    }
+
+    /**
+     * @param array{affectationId:int,note:?string,qualite:?string,commentaire:?string,dateEvaluation:?string} $data
+     */
+    public function createEvaluation(array $data): void
+    {
+        $affectationId = (int) $data['affectationId'];
+        $note = $this->numericOrZero($data['note']);
+        $qualite = $this->quoteOrNull($data['qualite']);
+        $commentaire = $this->quoteOrNull($data['commentaire']);
+        $dateEvaluation = $this->toDateExpression($data['dateEvaluation']);
+
+        // Verify affectation exists
+        $affectation = $this->findAffectation($affectationId);
+        if ($affectation === null) {
+            throw new \RuntimeException('Selected affectation does not exist.');
+        }
+
+        $sql = <<<SQL
+INSERT INTO EVALUATION_PERFORMANCE (ID_EVALUATION, ID_AFFECTATION, NOTE, QUALITE, COMMENTAIRE, DATE_EVALUATION)
+VALUES (EVALUATION_PERFORMANCE_SEQ.NEXTVAL, {$affectationId}, {$note}, {$qualite}, {$commentaire}, {$dateEvaluation})
+SQL;
+
+        $this->execute($sql);
+    }
+
+    /**
+     * @param array{affectationId:int,note:?string,qualite:?string,commentaire:?string,dateEvaluation:?string} $data
+     */
+    public function updateEvaluation(int $id, array $data): void
+    {
+        $affectationId = (int) $data['affectationId'];
+        $note = $this->numericOrZero($data['note']);
+        $qualite = $this->quoteOrNull($data['qualite']);
+        $commentaire = $this->quoteOrNull($data['commentaire']);
+        $dateEvaluation = $this->toDateExpression($data['dateEvaluation']);
+
+        $sql = <<<SQL
+UPDATE EVALUATION_PERFORMANCE
+SET ID_AFFECTATION = {$affectationId},
+    NOTE = {$note},
+    QUALITE = {$qualite},
+    COMMENTAIRE = {$commentaire},
+    DATE_EVALUATION = {$dateEvaluation}
+WHERE ID_EVALUATION = {$id}
+SQL;
+
+        $this->execute($sql);
+    }
+
+    public function deleteEvaluation(int $id): void
+    {
+        $this->execute("DELETE FROM EVALUATION_PERFORMANCE WHERE ID_EVALUATION = {$id}");
+    }
+
     private function buildConnectionString(string $databaseUrl): string
     {
         $parts = parse_url($databaseUrl);

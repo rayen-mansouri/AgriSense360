@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Service\OracleSqlPlusCrudService;
+use App\Service\PdoCrudService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -16,11 +16,11 @@ final class HomeController extends AbstractController
     }
 
     #[Route('/admin/home', name: 'admin_home')]
-    public function admin(OracleSqlPlusCrudService $oracleCrud): Response
+    public function admin(PdoCrudService $crudService): Response
     {
         try {
-            $equipments = $oracleCrud->listEquipments();
-            $maintenances = $oracleCrud->listMaintenances();
+            $equipments = $crudService->listEquipments();
+            $maintenances = $crudService->listMaintenances();
         } catch (\Throwable) {
             $equipments = [];
             $maintenances = [];

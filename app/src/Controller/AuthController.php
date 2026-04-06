@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Service\OracleSqlPlusCrudService;
+use App\Service\PdoCrudService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,7 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/auth/login', name: 'auth_login', methods: ['GET', 'POST'])]
-    public function login(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
+    public function login(Request $request, PdoCrudService $crudService): Response
     {
         $mode = $this->normalizeMode((string) $request->query->get('mode', 'user'));
 
@@ -39,7 +40,7 @@ final class AuthController extends AbstractController
             }
 
             try {
-                $user = $oracleCrud->findUserByEmail($email);
+                $user = $crudService->findUserByEmail($email);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to access user database: ' . $e->getMessage());
 
@@ -88,7 +89,7 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/auth/signup', name: 'auth_signup', methods: ['GET', 'POST'])]
-    public function signup(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
+    public function signup(Request $request, PdoCrudService $crudService): Response
     {
         $mode = $this->normalizeMode((string) $request->query->get('mode', 'user'));
 
@@ -105,7 +106,7 @@ final class AuthController extends AbstractController
             }
 
             try {
-                $existingUser = $oracleCrud->findUserByEmail($email);
+                $existingUser = $crudService->findUserByEmail($email);
                 if ($existingUser) {
                     $this->addFlash('error', 'Email already exists.');
 
@@ -113,7 +114,7 @@ final class AuthController extends AbstractController
                 }
 
                 $roleName = $mode === 'admin' ? 'ADMIN' : 'USER';
-                $oracleCrud->createUser([
+                $crudService->createUser([
                     'lastName' => $lastName,
                     'firstName' => $firstName,
                     'email' => $email,
@@ -122,7 +123,7 @@ final class AuthController extends AbstractController
                     'roleName' => $roleName,
                 ]);
 
-                $newUser = $oracleCrud->findUserByEmail($email);
+                $newUser = $crudService->findUserByEmail($email);
                 if (!$newUser) {
                     throw new \RuntimeException('Unable to load newly created account.');
                 }
