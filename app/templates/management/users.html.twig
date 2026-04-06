@@ -1,4 +1,4 @@
-{% extends 'management/layout.html.twig' %}
+{% extends adminMode|default(false) ? 'admin/layout.html.twig' : 'management/layout.html.twig' %}
 
 {% block title %}User Management{% endblock %}
 {% block eyebrow %}User Management{% endblock %}

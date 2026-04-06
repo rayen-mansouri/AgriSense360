@@ -18,6 +18,15 @@ final class ManagementController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/management/animals', name: 'admin_management_animals')]
+    public function adminAnimals(): Response
+    {
+        return $this->render('management/animals.html.twig', [
+            'active' => 'animals',
+            'adminMode' => true,
+        ]);
+    }
+
     #[Route('/management/equipments', name: 'management_equipments')]
     public function equipments(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
     {
@@ -314,11 +323,29 @@ final class ManagementController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/management/stock', name: 'admin_management_stock')]
+    public function adminStock(): Response
+    {
+        return $this->render('management/stock.html.twig', [
+            'active' => 'stock',
+            'adminMode' => true,
+        ]);
+    }
+
     #[Route('/management/culture', name: 'management_culture')]
     public function culture(): Response
     {
         return $this->render('management/culture.html.twig', [
             'active' => 'culture',
+        ]);
+    }
+
+    #[Route('/admin/management/culture', name: 'admin_management_culture')]
+    public function adminCulture(): Response
+    {
+        return $this->render('management/culture.html.twig', [
+            'active' => 'culture',
+            'adminMode' => true,
         ]);
     }
 
@@ -330,11 +357,29 @@ final class ManagementController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/management/users', name: 'admin_management_users')]
+    public function adminUsers(): Response
+    {
+        return $this->render('management/users.html.twig', [
+            'active' => 'users',
+            'adminMode' => true,
+        ]);
+    }
+
     #[Route('/management/workers', name: 'management_workers')]
     public function workers(): Response
     {
         return $this->render('management/workers.html.twig', [
             'active' => 'workers',
+        ]);
+    }
+
+    #[Route('/admin/management/workers', name: 'admin_management_workers')]
+    public function adminWorkers(): Response
+    {
+        return $this->render('management/workers.html.twig', [
+            'active' => 'workers',
+            'adminMode' => true,
         ]);
     }
 

@@ -27,6 +27,7 @@
     });
     const progressFill = document.getElementById('plant-intro-fill');
     const progressText = document.getElementById('plant-intro-text');
+    const diveButton = document.getElementById('plant-intro-dive');
 
     if (!overlay || !canvas) {
         return;
@@ -71,8 +72,21 @@
         targetProgress = clamp(targetProgress + amount);
     }
 
+    function updateDiveButtonVisibility() {
+        if (!diveButton) {
+            return;
+        }
+
+        if (progress >= 0.992) {
+            diveButton.classList.add('is-visible');
+        } else {
+            diveButton.classList.remove('is-visible');
+        }
+    }
+
     function onWheel(event) {
         if (finished) {
+            event.preventDefault();
             return;
         }
 
@@ -82,6 +96,7 @@
 
     function onKeyDown(event) {
         if (finished) {
+            event.preventDefault();
             return;
         }
 
@@ -172,7 +187,9 @@
                     ? 'sprouting...'
                     : progress < 0.75
                         ? 'growing...'
-                        : 'almost ready';
+                        : progress >= 0.992
+                            ? 'ready to enter'
+                            : 'almost ready';
         }
 
         const logoFade = 1 - clamp((progress - 0.06) / 0.45);
@@ -196,7 +213,9 @@
             subtitle.style.opacity = String(subtitleReveal * logoFade * 0.9);
         }
 
-        if (progress >= 0.995) {
+        updateDiveButtonVisibility();
+
+        if (!diveButton && progress >= 0.995) {
             completeIntro();
         }
     }
@@ -725,6 +744,13 @@
     }
 
     lockPage();
+
+    if (diveButton) {
+        diveButton.addEventListener('click', function () {
+            completeIntro();
+        });
+    }
+
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKeyDown, { passive: false });
     window.addEventListener('touchstart', onTouchStart, { passive: false });
