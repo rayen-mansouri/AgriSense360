@@ -1,0 +1,130 @@
+{% extends 'layout/front_base.html.twig' %}
+
+{% block title %}Accueil — Agrisens 360{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">🌱 Bienvenue sur Agrisens 360</h1>
+        <p class="hero-subtitle">Votre plateforme de gestion et de commande de produits agricoles — intelligente, rapide, fiable.</p>
+        <div class="hero-actions">
+            <a href="{{ path('produit_index') }}" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-store"></i> Voir le Catalogue
+            </a>
+            <a href="{{ path('admin') }}" class="btn btn-outline-light btn-lg">
+                <i class="fa-solid fa-cogs"></i> Backoffice
+            </a>
+        </div>
+        <div class="hero-stats">
+            <div><span class="hero-stat-val">{{ totalProduits }}</span><span class="hero-stat-lbl">Produits</span></div>
+            <div><span class="hero-stat-val">{{ totalCategories }}</span><span class="hero-stat-lbl">Catégories</span></div>
+            <div><span class="hero-stat-val">{{ totalStocks }}</span><span class="hero-stat-lbl">Références en stock</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- RECOMMANDATIONS IA -->
+{% if recommendations is not empty %}
+<div class="card">
+    <div class="section-header">
+        <h2 class="section-title">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            Recommandations pour vous
+        </h2>
+        <a href="{{ path('produit_index') }}" class="btn btn-ghost btn-sm">Tout voir →</a>
+    </div>
+    <div class="reco-grid">
+        {% for item in recommendations %}
+        {% set p = item.produit %}
+        {% set s = item.stock %}
+        <a href="{{ path('produit_show', {id: p.id}) }}" class="reco-card">
+            <div class="reco-card-header">
+                <div class="reco-card-img">
+                    {% if p.photoUrl %}
+                        <img src="{{ asset(p.photoUrl) }}" alt="{{ p.nom }}">
+                    {% else %}
+                        <div class="reco-card-img-ph"><i class="fa-solid fa-leaf"></i></div>
+                    {% endif %}
+                </div>
+                <span class="reco-score">★ Recommandé</span>
+            </div>
+            <div class="reco-card-name">{{ p.nom }}</div>
+            <div class="reco-card-cat"><i class="fa-solid fa-tag"></i> {{ p.categorie }}</div>
+            <div class="reco-card-price">{{ p.prixUnitaire }} DT</div>
+            <div class="reco-reason"><i class="fa-solid fa-lightbulb"></i> {{ item.reason }}</div>
+            <div class="reco-card-footer">
+                {% if s and s.quantiteActuelle > 0 %}
+                    <span class="item-qty {{ s.isEnAlerte ? 'qty-danger' : 'qty-ok' }}">
+                        {{ s.quantiteActuelle }} {{ s.uniteMesure }}
+                    </span>
+                {% else %}
+                    <span class="item-qty qty-danger">Non disponible</span>
+                {% endif %}
+                <span class="btn btn-primary btn-sm">Voir →</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- CATALOGUE APERÇU -->
+<div class="card">
+    <div class="section-header">
+        <h2 class="section-title"><i class="fa-solid fa-box"></i> Nos Produits</h2>
+        <a href="{{ path('produit_index') }}" class="btn btn-ghost btn-sm">Voir tout →</a>
+    </div>
+    
+    {% if produits is empty %}
+        <div class="empty-state">
+            <i class="fa-solid fa-box-open"></i>
+            <p>Aucun produit disponible.</p>
+            <a href="{{ path('produit_new') }}" class="btn btn-primary">Ajouter un produit</a>
+        </div>
+    {% else %}
+    <div class="catalogue-grid">
+        {% for produit in produits|slice(0,6) %}
+        {% set stock = produit.stockActuel %}
+        <a href="{{ path('produit_show', {id: produit.id}) }}" class="product-card">
+            <div class="product-card-img">
+                {% if produit.photoUrl %}
+                    <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}">
+                {% else %}
+                    <div class="product-img-placeholder"><i class="fa-solid fa-seedling"></i></div>
+                {% endif %}
+                <span class="product-card-badge">{{ produit.categorie ?: 'Autre' }}</span>
+            </div>
+            <div class="product-card-body">
+                <div class="product-card-name">{{ produit.nom }}</div>
+                {% if produit.description %}
+                    <div class="product-card-desc">{{ produit.description|slice(0,80) }}{% if produit.description|length > 80 %}…{% endif %}</div>
+                {% endif %}
+                <div class="product-card-price">{{ produit.prixUnitaire }} DT <span>/ unité</span></div>
+            </div>
+            <div class="product-card-footer">
+                <div class="stock-indicator">
+                    {% if stock %}
+                        {% if stock.quantiteActuelle == 0 %}
+                            <div class="stock-dot rupture"></div>
+                            <span style="color:#f44336">Rupture</span>
+                        {% elseif stock.isEnAlerte %}
+                            <div class="stock-dot low"></div>
+                            <span style="color:#ff9800">Stock limité</span>
+                        {% else %}
+                            <div class="stock-dot ok"></div>
+                            <span style="color:#2e7d32">En stock</span>
+                        {% endif %}
+                    {% else %}
+                        <div class="stock-dot rupture"></div>
+                        <span style="color:#9aaa8a">Non disponible</span>
+                    {% endif %}
+                </div>
+                <span class="btn btn-primary btn-sm">Voir →</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
