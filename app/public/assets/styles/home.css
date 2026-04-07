@@ -1736,6 +1736,14 @@ button > * {
     }
 }
 
+body.auth-entry .page,
+body.auth-entry .content,
+body.auth-entry .hero-banner,
+body.auth-entry .ops-kpi-grid,
+body.auth-entry .ops-grid {
+    animation: smoothScaleUp 0.5s ease;
+}
+
 .stats-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

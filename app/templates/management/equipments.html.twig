@@ -12,6 +12,15 @@
 {% set maintenanceAction = isMaintenanceEditing ? path('management_maintenance_edit', { id: maintenance.id }) : path('management_equipments') %}
 
 <section class="crud-section">
+    {% for errors in app.flashes('errors') %}
+        {% for message in errors %}
+            <div class="form-warning">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="form-warning">{{ message }}</div>
+    {% endfor %}
+
     <div class="crud-card">
         <div class="crud-head">
             <div>
@@ -24,10 +33,34 @@
             </div>
         </div>
 
+        {% set equipmentTotal = equipmentStats.equipmentCount|default(equipments|length) %}
+        {% set equipmentSafeTotal = equipmentTotal > 0 ? equipmentTotal : 1 %}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:14px;">
+            <div class="pill">Total equipments: {{ equipmentTotal }}</div>
+            <div class="pill">Ready: {{ equipmentStats.readyCount|default(0) }}</div>
+            <div class="pill">Service: {{ equipmentStats.serviceCount|default(0) }}</div>
+            <div class="pill">Offline: {{ equipmentStats.offlineCount|default(0) }}</div>
+        </div>
+        <div style="display:grid; gap:8px; margin-bottom:14px;">
+            {% for item in equipmentStatusLegend|default([]) %}
+                <div>
+                    <p style="margin:0 0 4px 0; font-size:0.85rem;">{{ item.label }} ({{ item.value }})</p>
+                    <div style="height:10px; background:#ece8de; border-radius:999px;"><span style="display:block; width:{{ ((item.value / equipmentSafeTotal) * 100)|round(1) }}%; height:10px; border-radius:999px; background:{{ item.color }};"></span></div>
+                </div>
+            {% endfor %}
+        </div>
+
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
                     <input class="input" id="equipment-search" type="search" placeholder="Search equipements" autocomplete="off">
+                    <select class="input" id="equipment-search-column">
+                        <option value="all">All columns</option>
+                        <option value="name">Nom</option>
+                        <option value="type">Type</option>
+                        <option value="status">Etat</option>
+                        <option value="purchaseDate">DateAchat</option>
+                    </select>
                     <span class="pill">{{ equipments|length }} records</span>
                 </div>
 
@@ -43,7 +76,7 @@
                     </thead>
                     <tbody id="equipment-table-body">
                         {% for row in equipments %}
-                            <tr>
+                            <tr data-name="{{ row.name|default('')|lower|e('html_attr') }}" data-type="{{ row.type|default('')|lower|e('html_attr') }}" data-status="{{ row.status|default('')|lower|e('html_attr') }}" data-purchase-date="{{ (row.purchaseDate ? row.purchaseDate|date('Y-m-d') : '')|lower|e('html_attr') }}">
                                 <td>{{ row.name }}</td>
                                 <td>{{ row.type }}</td>
                                 <td>
@@ -75,7 +108,7 @@
 
             <div class="crud-form" id="equipment-form">
                 <h3>Create / Edit equipement</h3>
-                <form method="post" action="{{ formAction }}" data-ajax-form="1">
+                <form method="post" action="{{ formAction }}" data-ajax-form="1" novalidate>
                     <input type="hidden" name="form_type" value="equipment">
                     <div class="form-grid">
                         <label class="field">
@@ -121,10 +154,33 @@
             </div>
         </div>
 
+        {% set maintenanceTotal = equipmentStats.maintenanceCount|default(maintenances|length) %}
+        {% set maintenanceSafeTotal = maintenanceTotal > 0 ? maintenanceTotal : 1 %}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:14px;">
+            <div class="pill">Total maintenances: {{ maintenanceTotal }}</div>
+            <div class="pill">Total cost: {{ equipmentStats.totalCost|default(0)|number_format(2, '.', ',') }}</div>
+            <div class="pill">Average cost: {{ equipmentStats.averageCost|default(0)|number_format(2, '.', ',') }}</div>
+        </div>
+        <div style="display:grid; gap:8px; margin-bottom:14px;">
+            {% for item in maintenanceTypeLegend|default([]) %}
+                <div>
+                    <p style="margin:0 0 4px 0; font-size:0.85rem;">{{ item.label }} ({{ item.value }})</p>
+                    <div style="height:10px; background:#ece8de; border-radius:999px;"><span style="display:block; width:{{ ((item.value / maintenanceSafeTotal) * 100)|round(1) }}%; height:10px; border-radius:999px; background:{{ item.color }};"></span></div>
+                </div>
+            {% endfor %}
+        </div>
+
         <div class="crud-grid">
             <div class="crud-list">
                 <div class="list-head">
                     <input class="input" id="maintenance-search" type="search" placeholder="Search maintenance" autocomplete="off">
+                    <select class="input" id="maintenance-search-column">
+                        <option value="all">All columns</option>
+                        <option value="equipment">Equipement</option>
+                        <option value="maintenanceDate">DateMaintenance</option>
+                        <option value="maintenanceType">TypeMaintenance</option>
+                        <option value="cost">Cout</option>
+                    </select>
                     <span class="pill">{{ maintenances|length }} records</span>
                 </div>
 
@@ -140,7 +196,7 @@
                     </thead>
                     <tbody id="maintenance-table-body">
                         {% for row in maintenances %}
-                            <tr>
+                            <tr data-equipment="{{ (row.equipment ? row.equipment.name : '-')|lower|e('html_attr') }}" data-maintenance-date="{{ (row.maintenanceDate ? row.maintenanceDate|date('Y-m-d') : '')|lower|e('html_attr') }}" data-maintenance-type="{{ row.maintenanceType|default('')|lower|e('html_attr') }}" data-cost="{{ row.cost|default('')|lower|e('html_attr') }}">
                                 <td>{{ row.equipment ? row.equipment.name : '-' }}</td>
                                 <td>{{ row.maintenanceDate ? row.maintenanceDate|date('Y-m-d') : '' }}</td>
                                 <td>{{ row.maintenanceType }}</td>
@@ -164,7 +220,7 @@
 
             <div class="crud-form" id="maintenance-form">
                 <h3>Create / Edit maintenance</h3>
-                <form method="post" action="{{ maintenanceAction }}" data-ajax-form="1">
+                <form method="post" action="{{ maintenanceAction }}" data-ajax-form="1" novalidate>
                     <input type="hidden" name="form_type" value="maintenance">
                     <div class="form-grid">
                         <label class="field">
@@ -243,7 +299,7 @@
         return response.text();
     }
 
-    function applySearchFilter(inputSelector, tbodySelector) {
+    function applySearchFilter(inputSelector, tbodySelector, columnSelector) {
         const input = document.querySelector(inputSelector);
         const tbody = document.querySelector(tbodySelector);
         if (!input || !tbody) {
@@ -252,9 +308,13 @@
 
         const rows = Array.from(tbody.querySelectorAll('tr'));
         const query = input.value.trim().toLowerCase();
+        const columnSelect = columnSelector ? document.querySelector(columnSelector) : null;
+        const column = columnSelect ? columnSelect.value : 'all';
 
         rows.forEach((row) => {
-            const text = row.textContent.toLowerCase();
+            const text = column && column !== 'all'
+                ? String(row.dataset[column] || '').toLowerCase()
+                : row.textContent.toLowerCase();
             row.style.display = text.includes(query) ? '' : 'none';
         });
     }
@@ -265,13 +325,27 @@
 
         if (equipmentSearch) {
             equipmentSearch.addEventListener('input', () => {
-                applySearchFilter('#equipment-search', '#equipment-table-body');
+                applySearchFilter('#equipment-search', '#equipment-table-body', '#equipment-search-column');
+            });
+        }
+
+        const equipmentSearchColumn = document.querySelector('#equipment-search-column');
+        if (equipmentSearchColumn) {
+            equipmentSearchColumn.addEventListener('change', () => {
+                applySearchFilter('#equipment-search', '#equipment-table-body', '#equipment-search-column');
             });
         }
 
         if (maintenanceSearch) {
             maintenanceSearch.addEventListener('input', () => {
-                applySearchFilter('#maintenance-search', '#maintenance-table-body');
+                applySearchFilter('#maintenance-search', '#maintenance-table-body', '#maintenance-search-column');
+            });
+        }
+
+        const maintenanceSearchColumn = document.querySelector('#maintenance-search-column');
+        if (maintenanceSearchColumn) {
+            maintenanceSearchColumn.addEventListener('change', () => {
+                applySearchFilter('#maintenance-search', '#maintenance-table-body', '#maintenance-search-column');
             });
         }
     }

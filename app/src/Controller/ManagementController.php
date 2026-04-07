@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Service\AnimalManagementService;
+use App\Service\AnimalValidationService;
 use App\Service\OracleSqlPlusCrudService;
-use App\Service\PdoCrudService;
+use App\Service\WorkerManagementService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,21 +13,16 @@ use Symfony\Component\Routing\Annotation\Route;
 
 final class ManagementController extends AbstractController
 {
-    #[Route('/management/animals', name: 'management_animals')]
-    public function animals(): Response
+    #[Route('/management/animals', name: 'management_animals', methods: ['GET'])]
+    public function animals(Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService): Response
     {
-        return $this->render('management/animals.html.twig', [
-            'active' => 'animals',
-        ]);
+        return $this->renderAnimalManagementPage($request, $oracleCrud, $animalService, false);
     }
 
-    #[Route('/admin/management/animals', name: 'admin_management_animals')]
-    public function adminAnimals(): Response
+    #[Route('/admin/management/animals', name: 'admin_management_animals', methods: ['GET'])]
+    public function adminAnimals(Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService): Response
     {
-        return $this->render('management/animals.html.twig', [
-            'active' => 'animals',
-            'adminMode' => true,
-        ]);
+        return $this->renderAnimalManagementPage($request, $oracleCrud, $animalService, true);
     }
 
     #[Route('/management/equipments', name: 'management_equipments')]
@@ -51,12 +48,25 @@ final class ManagementController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $formType = (string) $request->request->get('form_type', 'equipment');
+            $equipmentData = $this->equipmentDataFromRequest($request);
+            $maintenanceData = $this->maintenanceDataFromRequest($request);
+
+            if ($formType === 'maintenance') {
+                $errors = $this->validateMaintenanceData($maintenanceData);
+            } else {
+                $errors = $this->validateEquipmentData($equipmentData);
+            }
+
+            if ($errors !== []) {
+                $this->addFlash('errors', $errors);
+                return $this->redirectToRoute('management_equipments');
+            }
 
             try {
                 if ($formType === 'maintenance') {
-                    $crudService->createMaintenance($this->maintenanceDataFromRequest($request), $currentUserId);
+                    $oracleCrud->createMaintenance($maintenanceData, $currentUserId);
                 } else {
-                    $crudService->createEquipment($this->equipmentDataFromRequest($request), $currentUserId);
+                    $oracleCrud->createEquipment($equipmentData, $currentUserId);
                 }
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
@@ -65,8 +75,9 @@ final class ManagementController extends AbstractController
             return $this->redirectToRoute('management_equipments');
         }
 
-        $equipments = $crudService->listEquipments($currentUserId);
-        $maintenances = $crudService->listMaintenances($currentUserId);
+        $equipments = $oracleCrud->listEquipments($currentUserId);
+        $maintenances = $oracleCrud->listMaintenances($currentUserId);
+        $insights = $this->buildUserEquipmentInsights($equipments, $maintenances);
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -76,6 +87,9 @@ final class ManagementController extends AbstractController
             'maintenances' => $maintenances,
             'maintenance' => $maintenance,
             'maintenanceEditing' => false,
+            'equipmentStats' => $insights['stats'],
+            'equipmentStatusLegend' => $insights['statusLegend'],
+            'maintenanceTypeLegend' => $insights['maintenanceLegend'],
         ]);
     }
 
@@ -94,8 +108,15 @@ final class ManagementController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            $equipmentData = $this->equipmentDataFromRequest($request);
+            $errors = $this->validateEquipmentData($equipmentData);
+            if ($errors !== []) {
+                $this->addFlash('errors', $errors);
+                return $this->redirectToRoute('management_equipments_edit', ['id' => $id]);
+            }
+
             try {
-                $crudService->updateEquipment($id, $this->equipmentDataFromRequest($request), $currentUserId);
+                $oracleCrud->updateEquipment($id, $equipmentData, $currentUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update equipment: ' . $e->getMessage());
             }
@@ -110,7 +131,8 @@ final class ManagementController extends AbstractController
             'maintenanceType' => null,
             'cost' => null,
         ];
-        $maintenances = $crudService->listMaintenances($currentUserId);
+        $maintenances = $oracleCrud->listMaintenances($currentUserId);
+        $insights = $this->buildUserEquipmentInsights($equipments, $maintenances);
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -120,6 +142,9 @@ final class ManagementController extends AbstractController
             'maintenances' => $maintenances,
             'maintenance' => $maintenance,
             'maintenanceEditing' => false,
+            'equipmentStats' => $insights['stats'],
+            'equipmentStatusLegend' => $insights['statusLegend'],
+            'maintenanceTypeLegend' => $insights['maintenanceLegend'],
         ]);
     }
 
@@ -159,8 +184,15 @@ final class ManagementController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            $maintenanceData = $this->maintenanceDataFromRequest($request);
+            $errors = $this->validateMaintenanceData($maintenanceData);
+            if ($errors !== []) {
+                $this->addFlash('errors', $errors);
+                return $this->redirectToRoute('management_maintenance_edit', ['id' => $id]);
+            }
+
             try {
-                $crudService->updateMaintenance($id, $this->maintenanceDataFromRequest($request), $currentUserId);
+                $oracleCrud->updateMaintenance($id, $maintenanceData, $currentUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update maintenance: ' . $e->getMessage());
             }
@@ -176,6 +208,7 @@ final class ManagementController extends AbstractController
             'status' => 'Ready',
             'purchaseDate' => null,
         ];
+        $insights = $this->buildUserEquipmentInsights($equipments, $maintenances);
 
         return $this->render('management/equipments.html.twig', [
             'active' => 'equipments',
@@ -185,6 +218,9 @@ final class ManagementController extends AbstractController
             'maintenances' => $maintenances,
             'maintenance' => $maintenance,
             'maintenanceEditing' => true,
+            'equipmentStats' => $insights['stats'],
+            'equipmentStatusLegend' => $insights['statusLegend'],
+            'maintenanceTypeLegend' => $insights['maintenanceLegend'],
         ]);
     }
 
@@ -249,12 +285,24 @@ final class ManagementController extends AbstractController
             }
 
             $formType = (string) $request->request->get('form_type', 'equipment');
+            $equipmentData = $this->equipmentDataFromRequest($request);
+            $maintenanceData = $this->maintenanceDataFromRequest($request);
+            if ($formType === 'maintenance') {
+                $errors = $this->validateMaintenanceData($maintenanceData);
+            } else {
+                $errors = $this->validateEquipmentData($equipmentData);
+            }
+
+            if ($errors !== []) {
+                $this->addFlash('errors', $errors);
+                return $this->redirectToRoute('admin_management_equipments', ['user_id' => $selectedUserId]);
+            }
 
             try {
                 if ($formType === 'maintenance') {
-                    $crudService->createMaintenance($this->maintenanceDataFromRequest($request), $selectedUserId);
+                    $oracleCrud->createMaintenance($maintenanceData, $selectedUserId);
                 } else {
-                    $crudService->createEquipment($this->equipmentDataFromRequest($request), $selectedUserId);
+                    $oracleCrud->createEquipment($equipmentData, $selectedUserId);
                 }
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
@@ -293,8 +341,15 @@ final class ManagementController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            $equipmentData = $this->equipmentDataFromRequest($request);
+            $errors = $this->validateEquipmentData($equipmentData);
+            if ($errors !== []) {
+                $this->addFlash('errors', $errors);
+                return $this->redirectToRoute('admin_management_equipments_edit', ['id' => $id, 'user_id' => $selectedUserId]);
+            }
+
             try {
-                $crudService->updateEquipment($id, $this->equipmentDataFromRequest($request), $selectedUserId);
+                $oracleCrud->updateEquipment($id, $equipmentData, $selectedUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update equipment: ' . $e->getMessage());
             }
@@ -360,8 +415,15 @@ final class ManagementController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            $maintenanceData = $this->maintenanceDataFromRequest($request);
+            $errors = $this->validateMaintenanceData($maintenanceData);
+            if ($errors !== []) {
+                $this->addFlash('errors', $errors);
+                return $this->redirectToRoute('admin_management_maintenance_edit', ['id' => $id, 'user_id' => $selectedUserId]);
+            }
+
             try {
-                $crudService->updateMaintenance($id, $this->maintenanceDataFromRequest($request), $selectedUserId);
+                $oracleCrud->updateMaintenance($id, $maintenanceData, $selectedUserId);
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update maintenance: ' . $e->getMessage());
             }
@@ -483,7 +545,18 @@ final class ManagementController extends AbstractController
                     $payload['passwordHash'] = password_hash($newPassword, PASSWORD_BCRYPT);
                 }
 
-                $crudService->updateUser($currentUserId, $payload);
+                $errors = $this->validateProfileData(
+                    $payload['firstName'],
+                    $payload['lastName'],
+                    $payload['email'],
+                    $newPassword
+                );
+                if ($errors !== []) {
+                    $this->addFlash('errors', $errors);
+                    return $this->redirectToRoute('management_users');
+                }
+
+                $oracleCrud->updateUser($currentUserId, $payload);
                 $this->addFlash('success', 'Profile updated.');
             } catch (\Throwable $e) {
                 $this->addFlash('error', 'Unable to update profile: ' . $e->getMessage());
@@ -493,8 +566,88 @@ final class ManagementController extends AbstractController
         }
 
         return $this->render('management/users.html.twig', [
-            'active' => 'users',
+            'active' => 'profile',
             'currentUser' => $currentUser,
+        ]);
+    }
+
+    #[Route('/admin/profile', name: 'admin_profile', methods: ['GET', 'POST'])]
+    public function adminProfile(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        $session = $request->getSession();
+        $currentUserId = (int) $session->get('auth_user_id', 0);
+
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $currentUser = $oracleCrud->findUser($currentUserId);
+            $allUsers = $oracleCrud->listUsers();
+            $equipments = $oracleCrud->listEquipments();
+            $maintenances = $oracleCrud->listMaintenances();
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to load admin profile: ' . $e->getMessage());
+            $currentUser = null;
+            $allUsers = [];
+            $equipments = [];
+            $maintenances = [];
+        }
+
+        if (!$currentUser) {
+            return $this->redirectToRoute('auth_logout');
+        }
+
+        if ($request->isMethod('POST')) {
+            try {
+                $payload = [
+                    'lastName' => trim((string) $request->request->get('last_name')),
+                    'firstName' => trim((string) $request->request->get('first_name')),
+                    'email' => trim((string) $request->request->get('email')),
+                    'passwordHash' => null,
+                    'status' => (string) ($currentUser['status'] ?? 'Active'),
+                    'roleName' => (string) ($currentUser['roleName'] ?? 'ADMIN'),
+                ];
+
+                $newPassword = trim((string) $request->request->get('password'));
+                if ($newPassword !== '') {
+                    $payload['passwordHash'] = password_hash($newPassword, PASSWORD_BCRYPT);
+                }
+
+                $errors = $this->validateProfileData(
+                    $payload['firstName'],
+                    $payload['lastName'],
+                    $payload['email'],
+                    $newPassword
+                );
+                if ($errors !== []) {
+                    $this->addFlash('errors', $errors);
+                    return $this->redirectToRoute('admin_profile');
+                }
+
+                $oracleCrud->updateUser($currentUserId, $payload);
+                $this->addFlash('success', 'Admin profile updated.');
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to update admin profile: ' . $e->getMessage());
+            }
+
+            return $this->redirectToRoute('admin_profile');
+        }
+
+        $roleLabel = strtoupper((string) ($currentUser['roleName'] ?? 'ADMIN'));
+
+        return $this->render('admin/profile.html.twig', [
+            'active' => 'profile',
+            'currentUser' => $currentUser,
+            'technicalInfo' => [
+                'roleLabel' => $roleLabel,
+                'userCount' => count($allUsers),
+                'equipmentCount' => count($equipments),
+                'maintenanceCount' => count($maintenances),
+                'sessionRole' => (string) $session->get('auth_role', 'admin'),
+                'sessionUserId' => $currentUserId,
+                'profileAge' => $currentUser['createdAt'] instanceof \DateTimeInterface ? $currentUser['createdAt']->format('Y-m-d') : '-',
+            ],
         ]);
     }
 
@@ -531,6 +684,20 @@ final class ManagementController extends AbstractController
                     $password = trim((string) $request->request->get('password'));
                     if ($password !== '') {
                         $payload['passwordHash'] = password_hash($password, PASSWORD_BCRYPT);
+                    }
+
+                    $errors = $this->validateAdminUserData(
+                        $payload['firstName'],
+                        $payload['lastName'],
+                        $payload['email'],
+                        $payload['status'],
+                        $payload['roleName'],
+                        $password,
+                        $action === 'create'
+                    );
+                    if ($errors !== []) {
+                        $this->addFlash('errors', $errors);
+                        return $this->redirectToRoute('admin_management_users');
                     }
 
                     if ($action === 'update' && $id > 0) {
@@ -603,466 +770,1171 @@ final class ManagementController extends AbstractController
         ]);
     }
 
-    #[Route('/management/workers', name: 'management_workers', methods: ['GET', 'POST'])]
-    public function workers(Request $request, PdoCrudService $crudService): Response
+    #[Route('/management/workers', name: 'management_workers', methods: ['GET'])]
+    public function workers(Request $request, WorkerManagementService $workerService): Response
     {
-        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentUserId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
-        }
-
-        $affectation = [
-            'typeTravail' => null,
-            'dateDebut' => null,
-            'dateFin' => null,
-            'zoneTravail' => null,
-            'statut' => 'En attente',
-        ];
-        $evaluation = [
-            'affectationId' => null,
-            'note' => null,
-            'qualite' => null,
-            'commentaire' => null,
-            'dateEvaluation' => null,
-        ];
-
-        if ($request->isMethod('POST')) {
-            $formType = (string) $request->request->get('form_type', 'affectation');
-
-            try {
-                // Server-side validation: Verify CSRF token
-                $tokenName = $formType === 'evaluation' ? 'create_evaluation' : 'create_affectation';
-                if (!$this->isCsrfTokenValid($tokenName, (string) $request->request->get('_token'))) {
-                    throw new \InvalidArgumentException('Invalid CSRF token.');
-                }
-
-                if ($formType === 'evaluation') {
-                    // Server-side validation: Validate evaluation data
-                    $evaluationData = $this->evaluationDataFromRequest($request);
-                    $this->validateEvaluationData($evaluationData);
-                    $crudService->createEvaluation($evaluationData);
-                } else {
-                    // Server-side validation: Validate affectation data
-                    $affectationData = $this->affectationDataFromRequest($request);
-                    $this->validateAffectationData($affectationData);
-                    $crudService->createAffectation($affectationData);
-                }
-                $this->addFlash('success', 'Entry created successfully.');
-            } catch (\InvalidArgumentException $e) {
-                $this->addFlash('error', 'Validation error: ' . $e->getMessage());
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
-            }
-
-            return $this->redirectToRoute('management_workers');
-        }
-
-        $affectations = $crudService->listAffectations();
-        $evaluations = $crudService->listEvaluations();
-
-        return $this->render('management/workers.html.twig', [
-            'active' => 'workers',
-            'adminMode' => false,
-            'affectations' => $affectations,
-            'affectation' => $affectation,
-            'affectationEditing' => false,
-            'evaluations' => $evaluations,
-            'evaluation' => $evaluation,
-            'evaluationEditing' => false,
-        ]);
+        return $this->renderWorkersManagementPage($request, $workerService, null, false);
     }
 
-    #[Route('/management/workers/{id}/edit', name: 'management_workers_edit', methods: ['GET', 'POST'])]
-    public function editWorker(int $id, Request $request, PdoCrudService $crudService): Response
+    #[Route('/admin/management/workers', name: 'admin_management_workers', methods: ['GET'])]
+    public function adminWorkers(Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
     {
-        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentUserId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
-        }
-
-        // Server-side validation: Verify record exists and is accessible
-        try {
-            $this->validateAffectationAccess($id, $currentUserId, $crudService);
-        } catch (\InvalidArgumentException | \RuntimeException $e) {
-            $this->addFlash('error', 'Unable to access affectation: ' . $e->getMessage());
-            return $this->redirectToRoute('management_workers');
-        }
-
-        $affectation = $crudService->findAffectation($id);
-        if (!$affectation) {
-            throw $this->createNotFoundException('Affectation not found.');
-        }
-
-        if ($request->isMethod('POST')) {
-            try {
-                // Server-side validation: Verify CSRF token
-                if (!$this->isCsrfTokenValid('edit_affectation_' . $id, (string) $request->request->get('_token'))) {
-                    throw new \InvalidArgumentException('Invalid CSRF token.');
-                }
-
-                // Server-side validation: Validate affectation data
-                $affectationData = $this->affectationDataFromRequest($request);
-                $this->validateAffectationData($affectationData);
-
-                $crudService->updateAffectation($id, $affectationData);
-                $this->addFlash('success', 'Affectation updated successfully.');
-            } catch (\InvalidArgumentException $e) {
-                $this->addFlash('error', 'Validation error: ' . $e->getMessage());
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to update affectation: ' . $e->getMessage());
-            }
-
-            return $this->redirectToRoute('management_workers');
-        }
-
-        $affectations = $crudService->listAffectations();
-        $evaluation = [
-            'affectationId' => null,
-            'note' => null,
-            'qualite' => null,
-            'commentaire' => null,
-            'dateEvaluation' => null,
-        ];
-        $evaluations = $crudService->listEvaluations();
-
-        return $this->render('management/workers.html.twig', [
-            'active' => 'workers',
-            'adminMode' => false,
-            'affectations' => $affectations,
-            'affectation' => $affectation,
-            'affectationEditing' => true,
-            'evaluations' => $evaluations,
-            'evaluation' => $evaluation,
-            'evaluationEditing' => false,
-        ]);
+        return $this->renderWorkersManagementPage($request, $workerService, $oracleCrud, true);
     }
 
-    #[Route('/management/workers/{id}/delete', name: 'management_workers_delete', methods: ['POST'])]
-    public function deleteWorker(int $id, Request $request, PdoCrudService $crudService): Response
+    #[Route('/management/workers/save-worker', name: 'management_workers_save_worker', methods: ['POST'])]
+    public function saveWorker(Request $request, WorkerManagementService $workerService): Response
     {
+        return $this->handleWorkerSave($request, $workerService, null, false);
+    }
+
+    #[Route('/admin/management/workers/save-worker', name: 'admin_management_workers_save_worker', methods: ['POST'])]
+    public function adminSaveWorker(Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        return $this->handleWorkerSave($request, $workerService, $oracleCrud, true);
+    }
+
+    #[Route('/management/workers/{id}/delete-worker', name: 'management_workers_delete_worker', methods: ['POST'])]
+    public function deleteWorker(int $id, Request $request, WorkerManagementService $workerService): Response
+    {
+        return $this->handleWorkerDelete($id, $request, $workerService, null, false);
+    }
+
+    #[Route('/admin/management/workers/{id}/delete-worker', name: 'admin_management_workers_delete_worker', methods: ['POST'])]
+    public function adminDeleteWorker(int $id, Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        return $this->handleWorkerDelete($id, $request, $workerService, $oracleCrud, true);
+    }
+
+    #[Route('/management/workers/save-assignment', name: 'management_workers_save_assignment', methods: ['POST'])]
+    public function saveAssignment(Request $request, WorkerManagementService $workerService): Response
+    {
+        return $this->handleAssignmentSave($request, $workerService, null, false);
+    }
+
+    #[Route('/admin/management/workers/save-assignment', name: 'admin_management_workers_save_assignment', methods: ['POST'])]
+    public function adminSaveAssignment(Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        return $this->handleAssignmentSave($request, $workerService, $oracleCrud, true);
+    }
+
+    #[Route('/management/workers/{id}/delete-assignment', name: 'management_workers_delete_assignment', methods: ['POST'])]
+    public function deleteAssignment(int $id, Request $request, WorkerManagementService $workerService): Response
+    {
+        return $this->handleAssignmentDelete($id, $request, $workerService, null, false);
+    }
+
+    #[Route('/admin/management/workers/{id}/delete-assignment', name: 'admin_management_workers_delete_assignment', methods: ['POST'])]
+    public function adminDeleteAssignment(int $id, Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        return $this->handleAssignmentDelete($id, $request, $workerService, $oracleCrud, true);
+    }
+
+    #[Route('/management/workers/save-payment', name: 'management_workers_save_payment', methods: ['POST'])]
+    public function savePayment(Request $request, WorkerManagementService $workerService): Response
+    {
+        return $this->handlePaymentSave($request, $workerService, null, false);
+    }
+
+    #[Route('/admin/management/workers/save-payment', name: 'admin_management_workers_save_payment', methods: ['POST'])]
+    public function adminSavePayment(Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        return $this->handlePaymentSave($request, $workerService, $oracleCrud, true);
+    }
+
+    #[Route('/management/workers/{id}/delete-payment', name: 'management_workers_delete_payment', methods: ['POST'])]
+    public function deletePayment(int $id, Request $request, WorkerManagementService $workerService): Response
+    {
+        return $this->handlePaymentDelete($id, $request, $workerService, null, false);
+    }
+
+    #[Route('/admin/management/workers/{id}/delete-payment', name: 'admin_management_workers_delete_payment', methods: ['POST'])]
+    public function adminDeletePayment(int $id, Request $request, WorkerManagementService $workerService, OracleSqlPlusCrudService $oracleCrud): Response
+    {
+        return $this->handlePaymentDelete($id, $request, $workerService, $oracleCrud, true);
+    }
+
+    #[Route('/management/animals/save', name: 'management_animals_save', methods: ['POST'])]
+    public function saveAnimal(Request $request, AnimalManagementService $animalService, AnimalValidationService $validationService): Response
+    {
+        $animalService->ensureSchema();
+
         $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
         if ($currentUserId <= 0) {
             return $this->redirectToRoute('auth_login', ['mode' => 'user']);
         }
 
-        // Server-side validation: Verify CSRF token
-        if (!$this->isCsrfTokenValid('delete_affectation_' . $id, (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        $data = $this->buildAnimalDataFromRequest($request);
+        $errors = $validationService->validateAnimal($data, $animalService->getTypeOptions(), $animalService->getLocationOptions());
+        $animalId = (int) $request->request->get('id', 0);
+
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute('management_animals', [
+                'animalId' => (int) ($request->request->get('animal_id', $animalId) ?: $animalId),
+                'editAnimalId' => $animalId,
+            ]);
         }
 
-        // Server-side validation: Verify record exists and is accessible
         try {
-            $this->validateAffectationAccess($id, $currentUserId, $crudService);
-        } catch (\InvalidArgumentException | \RuntimeException $e) {
-            $this->addFlash('error', 'Unable to delete affectation: ' . $e->getMessage());
-            return $this->redirectToRoute('management_workers');
-        }
+            if ($animalId > 0) {
+                if ($animalService->findAnimal($animalId, $currentUserId) === null) {
+                    throw new \RuntimeException('Animal not found.');
+                }
 
-        try {
-            $crudService->deleteAffectation($id);
-            $this->addFlash('success', 'Affectation deleted successfully.');
+                $animalService->updateAnimal($animalId, $data, $currentUserId);
+                $this->addFlash('success', 'Animal updated.');
+            } else {
+                $animalId = $animalService->createAnimal($data, $currentUserId);
+                $this->addFlash('success', 'Animal added successfully.');
+            }
         } catch (\Throwable $e) {
-            $this->addFlash('error', 'Unable to delete affectation: ' . $e->getMessage());
+            $this->addFlash('error', 'Unable to save animal: ' . $e->getMessage());
         }
 
-        return $this->redirectToRoute('management_workers');
-    }
-
-    #[Route('/management/workers/evaluation/{id}/edit', name: 'management_evaluation_edit', methods: ['GET', 'POST'])]
-    public function editEvaluation(int $id, Request $request, PdoCrudService $crudService): Response
-    {
-        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentUserId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
-        }
-
-        // Server-side validation: Verify record exists and is accessible
-        try {
-            $this->validateEvaluationAccess($id, $currentUserId, $crudService);
-        } catch (\InvalidArgumentException | \RuntimeException $e) {
-            $this->addFlash('error', 'Unable to access evaluation: ' . $e->getMessage());
-            return $this->redirectToRoute('management_workers');
-        }
-
-        $evaluation = $crudService->findEvaluation($id);
-        if (!$evaluation) {
-            throw $this->createNotFoundException('Evaluation not found.');
-        }
-
-        if ($request->isMethod('POST')) {
-            try {
-                // Server-side validation: Verify CSRF token
-                if (!$this->isCsrfTokenValid('edit_evaluation_' . $id, (string) $request->request->get('_token'))) {
-                    throw new \InvalidArgumentException('Invalid CSRF token.');
-                }
-
-                // Server-side validation: Validate evaluation data
-                $evaluationData = $this->evaluationDataFromRequest($request);
-                $this->validateEvaluationData($evaluationData);
-
-                $crudService->updateEvaluation($id, $evaluationData);
-                $this->addFlash('success', 'Evaluation updated successfully.');
-            } catch (\InvalidArgumentException $e) {
-                $this->addFlash('error', 'Validation error: ' . $e->getMessage());
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to update evaluation: ' . $e->getMessage());
-            }
-
-            return $this->redirectToRoute('management_workers');
-        }
-
-        $affectations = $crudService->listAffectations();
-        $evaluations = $crudService->listEvaluations();
-        $affectation = [
-            'typeTravail' => null,
-            'dateDebut' => null,
-            'dateFin' => null,
-            'zoneTravail' => null,
-            'statut' => 'En attente',
-        ];
-
-        return $this->render('management/workers.html.twig', [
-            'active' => 'workers',
-            'adminMode' => false,
-            'affectations' => $affectations,
-            'affectation' => $affectation,
-            'affectationEditing' => false,
-            'evaluations' => $evaluations,
-            'evaluation' => $evaluation,
-            'evaluationEditing' => true,
+        return $this->redirectToRoute('management_animals', [
+            'animalId' => (int) ($request->request->get('animal_id', $animalId) ?: $animalId),
         ]);
     }
 
-    #[Route('/management/workers/evaluation/{id}/delete', name: 'management_evaluation_delete', methods: ['POST'])]
-    public function deleteEvaluation(int $id, Request $request, PdoCrudService $crudService): Response
+    #[Route('/admin/management/animals/save', name: 'admin_management_animals_save', methods: ['POST'])]
+    public function adminSaveAnimal(Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService, AnimalValidationService $validationService): Response
     {
-        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentUserId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
-        }
+        $animalService->ensureSchema();
 
-        // Server-side validation: Verify CSRF token
-        if (!$this->isCsrfTokenValid('delete_evaluation_' . $id, (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
-        }
-
-        // Server-side validation: Verify record exists and is accessible
-        try {
-            $this->validateEvaluationAccess($id, $currentUserId, $crudService);
-        } catch (\InvalidArgumentException | \RuntimeException $e) {
-            $this->addFlash('error', 'Unable to delete evaluation: ' . $e->getMessage());
-            return $this->redirectToRoute('management_workers');
-        }
-
-        try {
-            $crudService->deleteEvaluation($id);
-            $this->addFlash('success', 'Evaluation deleted successfully.');
-        } catch (\Throwable $e) {
-            $this->addFlash('error', 'Unable to delete evaluation: ' . $e->getMessage());
-        }
-
-        return $this->redirectToRoute('management_workers');
-    }
-
-    #[Route('/admin/management/workers', name: 'admin_management_workers', methods: ['GET', 'POST'])]
-    public function adminWorkers(Request $request, PdoCrudService $crudService): Response
-    {
         $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
         if ($currentAdminId <= 0) {
             return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
         }
 
-        // Get available users for scope selection
-        $availableUsers = $crudService->listUsers();
-        $selectedUserId = (int) $request->query->get('user_id', $currentAdminId);
+        $selectedUserId = $this->resolveAdminSelectedUserId($request, $oracleCrud, $currentAdminId);
+        $data = $this->buildAnimalDataFromRequest($request);
+        $errors = $validationService->validateAnimal($data, $animalService->getTypeOptions(), $animalService->getLocationOptions());
+        $animalId = (int) $request->request->get('id', 0);
 
-        $affectation = [
-            'typeTravail' => null,
-            'dateDebut' => null,
-            'dateFin' => null,
-            'zoneTravail' => null,
-            'statut' => 'En attente',
-        ];
-        $evaluation = [
-            'affectationId' => null,
-            'note' => null,
-            'qualite' => null,
-            'commentaire' => null,
-            'dateEvaluation' => null,
-        ];
-
-        if ($request->isMethod('POST')) {
-            $formType = (string) $request->request->get('form_type', 'affectation');
-
-            try {
-                if ($formType === 'evaluation') {
-                    $crudService->createEvaluation($this->evaluationDataFromRequest($request));
-                } else {
-                    $crudService->createAffectation($this->affectationDataFromRequest($request));
-                }
-                $this->addFlash('success', 'Entry created successfully.');
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to save data: ' . $e->getMessage());
-            }
-
-            return $this->redirectToRoute('admin_management_workers', ['user_id' => $selectedUserId]);
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute('admin_management_animals', [
+                'user_id' => $selectedUserId,
+                'animalId' => (int) ($request->request->get('animal_id', $animalId) ?: $animalId),
+                'editAnimalId' => $animalId,
+            ]);
         }
 
-        $affectations = $crudService->listAffectations();
-        $evaluations = $crudService->listEvaluations();
+        try {
+            if ($animalId > 0) {
+                if ($animalService->findAnimal($animalId, $selectedUserId) === null) {
+                    throw new \RuntimeException('Animal not found.');
+                }
 
-        // Calculate statistics for admin dashboard
-        $stats = $this->calculateWorkerStats($affectations, $evaluations);
+                $animalService->updateAnimal($animalId, $data, $selectedUserId);
+                $this->addFlash('success', 'Animal updated.');
+            } else {
+                $animalId = $animalService->createAnimal($data, $selectedUserId);
+                $this->addFlash('success', 'Animal added successfully.');
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to save animal: ' . $e->getMessage());
+        }
 
-        return $this->render('management/workers.html.twig', [
-            'active' => 'workers',
-            'adminMode' => true,
-            'affectations' => $affectations,
-            'affectation' => $affectation,
-            'affectationEditing' => false,
-            'evaluations' => $evaluations,
-            'evaluation' => $evaluation,
-            'evaluationEditing' => false,
-            'stats' => $stats,
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => $selectedUserId,
+            'animalId' => (int) ($request->request->get('animal_id', $animalId) ?: $animalId),
+        ]);
+    }
+
+    #[Route('/management/animals/{id}/delete', name: 'management_animals_delete', methods: ['POST'])]
+    public function deleteAnimal(int $id, Request $request, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        try {
+            $animalService->deleteAnimal($id, $currentUserId);
+            $this->addFlash('success', 'Animal deleted.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete animal: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('management_animals', [
+            'animalId' => (int) $request->request->get('animal_id', 0),
+        ]);
+    }
+
+    #[Route('/admin/management/animals/{id}/delete', name: 'admin_management_animals_delete', methods: ['POST'])]
+    public function adminDeleteAnimal(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        $selectedUserId = $this->resolveAdminSelectedUserId($request, $oracleCrud, $currentAdminId);
+
+        try {
+            $animalService->deleteAnimal($id, $selectedUserId);
+            $this->addFlash('success', 'Animal deleted.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete animal: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => $selectedUserId,
+            'animalId' => (int) $request->request->get('animal_id', 0),
+        ]);
+    }
+
+    #[Route('/management/animals/records/save', name: 'management_animal_record_save', methods: ['POST'])]
+    public function saveAnimalRecord(Request $request, AnimalManagementService $animalService, AnimalValidationService $validationService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        $data = $this->buildRecordDataFromRequest($request);
+        $errors = $validationService->validateRecord($data, ['HEALTHY', 'SICK', 'INJURED', 'CRITICAL']);
+        $recordId = (int) $request->request->get('id', 0);
+
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute('management_animals', [
+                'animalId' => (int) ($data['animalId'] ?? 0),
+                'editRecordId' => $recordId,
+            ]);
+        }
+
+        try {
+            if ($recordId > 0) {
+                $animalService->updateRecord($recordId, $data, $currentUserId);
+                $this->addFlash('success', 'Health record updated.');
+            } else {
+                $recordId = $animalService->createRecord($data, $currentUserId);
+                $this->addFlash('success', 'Health record added.');
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to save health record: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('management_animals', [
+            'animalId' => (int) ($data['animalId'] ?? 0),
+        ]);
+    }
+
+    #[Route('/admin/management/animals/records/save', name: 'admin_management_animal_record_save', methods: ['POST'])]
+    public function adminSaveAnimalRecord(Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService, AnimalValidationService $validationService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        $selectedUserId = $this->resolveAdminSelectedUserId($request, $oracleCrud, $currentAdminId);
+        $data = $this->buildRecordDataFromRequest($request);
+        $errors = $validationService->validateRecord($data, ['HEALTHY', 'SICK', 'INJURED', 'CRITICAL']);
+        $recordId = (int) $request->request->get('id', 0);
+
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute('admin_management_animals', [
+                'user_id' => $selectedUserId,
+                'animalId' => (int) ($data['animalId'] ?? 0),
+                'editRecordId' => $recordId,
+            ]);
+        }
+
+        try {
+            if ($recordId > 0) {
+                $animalService->updateRecord($recordId, $data, $selectedUserId);
+                $this->addFlash('success', 'Health record updated.');
+            } else {
+                $recordId = $animalService->createRecord($data, $selectedUserId);
+                $this->addFlash('success', 'Health record added.');
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to save health record: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => $selectedUserId,
+            'animalId' => (int) ($data['animalId'] ?? 0),
+        ]);
+    }
+
+    #[Route('/management/animals/records/{id}/delete', name: 'management_animal_record_delete', methods: ['POST'])]
+    public function deleteAnimalRecord(int $id, Request $request, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        $animalId = (int) $request->request->get('animal_id', 0);
+
+        try {
+            $animalService->deleteRecord($id, $currentUserId);
+            $this->addFlash('success', 'Health record deleted.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete health record: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('management_animals', [
+            'animalId' => $animalId,
+        ]);
+    }
+
+    #[Route('/admin/management/animals/records/{id}/delete', name: 'admin_management_animal_record_delete', methods: ['POST'])]
+    public function adminDeleteAnimalRecord(int $id, Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        $selectedUserId = $this->resolveAdminSelectedUserId($request, $oracleCrud, $currentAdminId);
+        $animalId = (int) $request->request->get('animal_id', 0);
+
+        try {
+            $animalService->deleteRecord($id, $selectedUserId);
+            $this->addFlash('success', 'Health record deleted.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete health record: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => $selectedUserId,
+            'animalId' => $animalId,
+        ]);
+    }
+
+    #[Route('/admin/management/animals/types/add', name: 'admin_management_animal_type_add', methods: ['POST'])]
+    public function adminAddAnimalType(Request $request, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $animalService->addType((string) $request->request->get('value'));
+            $this->addFlash('success', 'Type added.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => (int) $request->request->get('user_id', 0),
+        ]);
+    }
+
+    #[Route('/admin/management/animals/types/delete', name: 'admin_management_animal_type_delete', methods: ['POST'])]
+    public function adminDeleteAnimalType(Request $request, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $animalService->deleteType((string) $request->request->get('value'));
+            $this->addFlash('success', 'Type removed.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => (int) $request->request->get('user_id', 0),
+        ]);
+    }
+
+    #[Route('/admin/management/animals/locations/add', name: 'admin_management_animal_location_add', methods: ['POST'])]
+    public function adminAddAnimalLocation(Request $request, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $animalService->addLocation((string) $request->request->get('value'));
+            $this->addFlash('success', 'Location added.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => (int) $request->request->get('user_id', 0),
+        ]);
+    }
+
+    #[Route('/admin/management/animals/locations/delete', name: 'admin_management_animal_location_delete', methods: ['POST'])]
+    public function adminDeleteAnimalLocation(Request $request, AnimalManagementService $animalService): Response
+    {
+        $animalService->ensureSchema();
+
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $animalService->deleteLocation((string) $request->request->get('value'));
+            $this->addFlash('success', 'Location removed.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_management_animals', [
+            'user_id' => (int) $request->request->get('user_id', 0),
+        ]);
+    }
+
+    /**
+     * @return array{earTag:?string,type:?string,weight:?string,birthDate:?string,entryDate:?string,origin:?string,vaccinated:bool,location:?string}
+     */
+    private function buildAnimalDataFromRequest(Request $request): array
+    {
+        return [
+            'earTag' => trim((string) $request->request->get('ear_tag')),
+            'type' => trim((string) $request->request->get('type')),
+            'weight' => trim((string) $request->request->get('weight')),
+            'birthDate' => trim((string) $request->request->get('birth_date')),
+            'entryDate' => trim((string) $request->request->get('entry_date')),
+            'origin' => trim((string) $request->request->get('origin')),
+            'vaccinated' => $request->request->getBoolean('vaccinated'),
+            'location' => trim((string) $request->request->get('location')),
+        ];
+    }
+
+    /**
+     * @return array{animalId:int,recordDate:?string,weight:?string,appetite:?string,conditionStatus:?string,production:?string,notes:?string}
+     */
+    private function buildRecordDataFromRequest(Request $request): array
+    {
+        return [
+            'animalId' => (int) $request->request->get('animal_id', 0),
+            'recordDate' => trim((string) $request->request->get('record_date')),
+            'weight' => trim((string) $request->request->get('weight')),
+            'appetite' => trim((string) $request->request->get('appetite')),
+            'conditionStatus' => trim((string) $request->request->get('condition_status')),
+            'production' => trim((string) $request->request->get('production')),
+            'notes' => trim((string) $request->request->get('notes')),
+        ];
+    }
+
+    private function resolveAdminSelectedUserId(Request $request, OracleSqlPlusCrudService $oracleCrud, int $fallbackUserId): int
+    {
+        $selectedUserId = (int) $request->request->get('user_id', $request->query->get('user_id', 0));
+        if ($selectedUserId > 0) {
+            return $selectedUserId;
+        }
+
+        try {
+            $users = $oracleCrud->listUsers();
+        } catch (\Throwable) {
+            return $fallbackUserId;
+        }
+
+        foreach ($users as $user) {
+            if (!$this->isAdminRole((string) ($user['roleName'] ?? ''))) {
+                return (int) ($user['id'] ?? $fallbackUserId);
+            }
+        }
+
+        return (int) ($users[0]['id'] ?? $fallbackUserId);
+    }
+
+    private function renderAnimalManagementPage(Request $request, OracleSqlPlusCrudService $oracleCrud, AnimalManagementService $animalService, bool $adminMode): Response
+    {
+        $animalService->ensureSchema();
+
+        $session = $request->getSession();
+        $currentUserId = (int) $session->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        $availableUsers = [];
+        $selectedUserId = $currentUserId;
+        $selectedUser = null;
+
+        if ($adminMode) {
+            try {
+                $availableUsers = $oracleCrud->listUsers();
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to load users: ' . $e->getMessage());
+                $availableUsers = [];
+            }
+
+            $selectedUserId = $this->resolveAdminSelectedUserId($request, $oracleCrud, $currentUserId);
+            foreach ($availableUsers as $user) {
+                if ((int) ($user['id'] ?? 0) === $selectedUserId) {
+                    $selectedUser = $user;
+                    break;
+                }
+            }
+        }
+
+        $animals = $animalService->listAnimals($selectedUserId);
+        $selectedAnimalId = (int) $request->query->get('animalId', $request->query->get('animal_id', 0));
+        if ($selectedAnimalId <= 0 && $animals !== []) {
+            $selectedAnimalId = (int) ($animals[0]['id'] ?? 0);
+        }
+
+        $selectedAnimal = $selectedAnimalId > 0 ? $animalService->findAnimal($selectedAnimalId, $selectedUserId) : null;
+        if ($selectedAnimal === null && $animals !== []) {
+            $selectedAnimal = $animals[0];
+            $selectedAnimalId = (int) ($selectedAnimal['id'] ?? 0);
+        }
+
+        $records = $selectedAnimalId > 0 ? $animalService->listRecords($selectedAnimalId, $selectedUserId) : [];
+        $animalInsights = $this->buildAnimalInsights($animals, $records);
+
+        $editingAnimal = null;
+        $editAnimalId = (int) $request->query->get('editAnimalId', 0);
+        foreach ($animals as $animal) {
+            if ((int) ($animal['id'] ?? 0) === $editAnimalId) {
+                $editingAnimal = $animal;
+                break;
+            }
+        }
+
+        $editingRecord = null;
+        $editRecordId = (int) $request->query->get('editRecordId', 0);
+        foreach ($records as $record) {
+            if ((int) ($record['id'] ?? 0) === $editRecordId) {
+                $editingRecord = $record;
+                break;
+            }
+        }
+
+        return $this->render('management/animals.html.twig', [
+            'active' => 'animals',
+            'adminMode' => $adminMode,
             'availableUsers' => $availableUsers,
             'selectedUserId' => $selectedUserId,
+            'selectedUser' => $selectedUser,
+            'animals' => $animals,
+            'selectedAnimal' => $selectedAnimal,
+            'records' => $records,
+            'editingAnimal' => $editingAnimal,
+            'editingRecord' => $editingRecord,
+            'types' => $animalService->getTypeOptions(),
+            'locations' => $animalService->getLocationOptions(),
+            'origins' => ['BORN_IN_FARM', 'OUTSIDE'],
+            'appetites' => ['LOW', 'NORMAL', 'HIGH', 'NONE'],
+            'conditions' => ['HEALTHY', 'SICK', 'INJURED', 'CRITICAL'],
+            'animalCount' => $animalService->countAnimals($selectedUserId),
+            'recordCount' => $animalService->countRecords($selectedUserId),
+            'animalInsights' => $animalInsights,
         ]);
     }
 
-    #[Route('/admin/management/workers/{id}/edit', name: 'admin_management_workers_edit', methods: ['GET', 'POST'])]
-    public function adminEditWorker(int $id, Request $request, PdoCrudService $crudService): Response
+    /**
+     * @param array<int, array<string, mixed>> $equipments
+     * @param array<int, array<string, mixed>> $maintenances
+     * @return array{stats:array<string, mixed>,statusLegend:array<int, array<string, mixed>>,maintenanceLegend:array<int, array<string, mixed>>}
+     */
+    private function buildUserEquipmentInsights(array $equipments, array $maintenances): array
     {
-        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentAdminId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        $statusDistribution = [];
+        foreach ($equipments as $row) {
+            $statusKey = trim((string) ($row['status'] ?? 'Unknown'));
+            $statusDistribution[$statusKey] = ($statusDistribution[$statusKey] ?? 0) + 1;
         }
 
-        $affectation = $crudService->findAffectation($id);
-        if (!$affectation) {
-            throw $this->createNotFoundException('Affectation not found.');
+        $maintenanceTypeDistribution = [];
+        $totalCost = 0.0;
+        foreach ($maintenances as $row) {
+            $maintenanceTypeKey = trim((string) ($row['maintenanceType'] ?? 'Unknown'));
+            $maintenanceTypeDistribution[$maintenanceTypeKey] = ($maintenanceTypeDistribution[$maintenanceTypeKey] ?? 0) + 1;
+            $totalCost += (float) ($row['cost'] ?? 0);
         }
 
-        if ($request->isMethod('POST')) {
-            try {
-                $crudService->updateAffectation($id, $this->affectationDataFromRequest($request));
-                $this->addFlash('success', 'Affectation updated successfully.');
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to update affectation: ' . $e->getMessage());
-            }
+        $paletteA = ['#4f9866', '#d6a74c', '#c76767', '#6c7ba8', '#7f8b62'];
+        $paletteB = ['#5fb48a', '#7a9fd8', '#d39f63', '#bf7bd3', '#9f7e66'];
+        $statusTotal = max(count($equipments), 1);
+        $maintenanceTotal = max(count($maintenances), 1);
 
-            return $this->redirectToRoute('admin_management_workers');
+        $statusLegend = [];
+        $idx = 0;
+        foreach ($statusDistribution as $label => $value) {
+            $statusLegend[] = [
+                'label' => $label,
+                'value' => $value,
+                'percent' => round(($value / $statusTotal) * 100, 1),
+                'color' => $paletteA[$idx % count($paletteA)],
+            ];
+            ++$idx;
         }
 
-        $affectations = $crudService->listAffectations();
-        $evaluation = [
-            'affectationId' => null,
-            'note' => null,
-            'qualite' => null,
-            'commentaire' => null,
-            'dateEvaluation' => null,
+        $maintenanceLegend = [];
+        $idx = 0;
+        foreach ($maintenanceTypeDistribution as $label => $value) {
+            $maintenanceLegend[] = [
+                'label' => $label,
+                'value' => $value,
+                'percent' => round(($value / $maintenanceTotal) * 100, 1),
+                'color' => $paletteB[$idx % count($paletteB)],
+            ];
+            ++$idx;
+        }
+
+        return [
+            'stats' => [
+                'equipmentCount' => count($equipments),
+                'maintenanceCount' => count($maintenances),
+                'readyCount' => (int) ($statusDistribution['Ready'] ?? 0),
+                'serviceCount' => (int) ($statusDistribution['Service'] ?? 0),
+                'offlineCount' => (int) ($statusDistribution['Offline'] ?? 0),
+                'totalCost' => $totalCost,
+                'averageCost' => count($maintenances) > 0 ? $totalCost / count($maintenances) : 0.0,
+            ],
+            'statusLegend' => $statusLegend,
+            'maintenanceLegend' => $maintenanceLegend,
         ];
-        $evaluations = $crudService->listEvaluations();
-
-        return $this->render('management/workers.html.twig', [
-            'active' => 'workers',
-            'adminMode' => true,
-            'affectations' => $affectations,
-            'affectation' => $affectation,
-            'affectationEditing' => true,
-            'evaluations' => $evaluations,
-            'evaluation' => $evaluation,
-            'evaluationEditing' => false,
-        ]);
     }
 
-    #[Route('/admin/management/workers/{id}/delete', name: 'admin_management_workers_delete', methods: ['POST'])]
-    public function adminDeleteWorker(int $id, Request $request, PdoCrudService $crudService): Response
+    /**
+     * @param array<int, array<string, mixed>> $animals
+     * @param array<int, array<string, mixed>> $records
+     * @return array{animalTypeLegend:array<int, array<string, mixed>>,conditionLegend:array<int, array<string, mixed>>,stats:array<string, mixed>}
+     */
+    private function buildAnimalInsights(array $animals, array $records): array
     {
-        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentAdminId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        $typeDistribution = [];
+        foreach ($animals as $row) {
+            $key = trim((string) ($row['type'] ?? 'Unknown'));
+            $typeDistribution[$key] = ($typeDistribution[$key] ?? 0) + 1;
         }
 
-        if (!$this->isCsrfTokenValid('delete_affectation_' . $id, (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        $conditionDistribution = [];
+        foreach ($records as $row) {
+            $key = trim((string) ($row['conditionStatus'] ?? 'Unknown'));
+            $conditionDistribution[$key] = ($conditionDistribution[$key] ?? 0) + 1;
+        }
+
+        $paletteA = ['#5ea075', '#7a8fc4', '#d29c5d', '#be6971', '#6d9cab'];
+        $paletteB = ['#69b879', '#d77f66', '#f0bc5d', '#8f83d2', '#69a4c0'];
+        $animalTotal = max(count($animals), 1);
+        $recordTotal = max(count($records), 1);
+
+        $animalTypeLegend = [];
+        $idx = 0;
+        foreach ($typeDistribution as $label => $value) {
+            $animalTypeLegend[] = [
+                'label' => $label,
+                'value' => $value,
+                'percent' => round(($value / $animalTotal) * 100, 1),
+                'color' => $paletteA[$idx % count($paletteA)],
+            ];
+            ++$idx;
+        }
+
+        $conditionLegend = [];
+        $idx = 0;
+        foreach ($conditionDistribution as $label => $value) {
+            $conditionLegend[] = [
+                'label' => $label,
+                'value' => $value,
+                'percent' => round(($value / $recordTotal) * 100, 1),
+                'color' => $paletteB[$idx % count($paletteB)],
+            ];
+            ++$idx;
+        }
+
+        return [
+            'animalTypeLegend' => $animalTypeLegend,
+            'conditionLegend' => $conditionLegend,
+            'stats' => [
+                'animalCount' => count($animals),
+                'recordCount' => count($records),
+                'vaccinatedCount' => count(array_filter($animals, static fn(array $row): bool => (bool) ($row['vaccinated'] ?? false))),
+                'criticalCount' => (int) ($conditionDistribution['CRITICAL'] ?? 0),
+            ],
+        ];
+    }
+
+    private function handleWorkerSave(Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
+    {
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        $data = $this->workerDataFromRequest($request);
+        $workerId = (int) $request->request->get('id', 0);
+        $errors = $this->validateWorkerData($data);
+
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
         }
 
         try {
-            $crudService->deleteAffectation($id);
-            $this->addFlash('success', 'Affectation deleted successfully.');
-        } catch (\Throwable $e) {
-            $this->addFlash('error', 'Unable to delete affectation: ' . $e->getMessage());
-        }
-
-        return $this->redirectToRoute('admin_management_workers');
-    }
-
-    #[Route('/admin/management/workers/evaluation/{id}/edit', name: 'admin_management_evaluation_edit', methods: ['GET', 'POST'])]
-    public function adminEditEvaluation(int $id, Request $request, PdoCrudService $crudService): Response
-    {
-        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentAdminId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
-        }
-
-        $evaluation = $crudService->findEvaluation($id);
-        if (!$evaluation) {
-            throw $this->createNotFoundException('Evaluation not found.');
-        }
-
-        if ($request->isMethod('POST')) {
-            try {
-                $crudService->updateEvaluation($id, $this->evaluationDataFromRequest($request));
-                $this->addFlash('success', 'Evaluation updated successfully.');
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Unable to update evaluation: ' . $e->getMessage());
+            $workerService->ensureSchema();
+            if ($workerId > 0) {
+                $workerService->updateWorker($workerId, $data, $ownerUserId);
+                $this->addFlash('success', 'Worker updated.');
+            } else {
+                $workerService->createWorker($data, $ownerUserId);
+                $this->addFlash('success', 'Worker created.');
             }
-
-            return $this->redirectToRoute('admin_management_workers');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Worker operation failed: ' . $e->getMessage());
         }
 
-        $affectations = $crudService->listAffectations();
-        $evaluations = $crudService->listEvaluations();
-        $affectation = [
-            'typeTravail' => null,
-            'dateDebut' => null,
-            'dateFin' => null,
-            'zoneTravail' => null,
-            'statut' => 'En attente',
-        ];
-
-        return $this->render('management/workers.html.twig', [
-            'active' => 'workers',
-            'adminMode' => true,
-            'affectations' => $affectations,
-            'affectation' => $affectation,
-            'affectationEditing' => false,
-            'evaluations' => $evaluations,
-            'evaluation' => $evaluation,
-            'evaluationEditing' => true,
-        ]);
+        return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
     }
 
-    #[Route('/admin/management/workers/evaluation/{id}/delete', name: 'admin_management_evaluation_delete', methods: ['POST'])]
-    public function adminDeleteEvaluation(int $id, Request $request, PdoCrudService $crudService): Response
+    private function handleWorkerDelete(int $id, Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
     {
-        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
-        if ($currentAdminId <= 0) {
-            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
-        }
-
-        if (!$this->isCsrfTokenValid('delete_evaluation_' . $id, (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
         }
 
         try {
-            $crudService->deleteEvaluation($id);
-            $this->addFlash('success', 'Evaluation deleted successfully.');
+            $workerService->ensureSchema();
+            $workerService->deleteWorker($id, $ownerUserId);
+            $this->addFlash('success', 'Worker deleted.');
         } catch (\Throwable $e) {
-            $this->addFlash('error', 'Unable to delete evaluation: ' . $e->getMessage());
+            $this->addFlash('error', 'Unable to delete worker: ' . $e->getMessage());
         }
 
-        return $this->redirectToRoute('admin_management_workers');
+        return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+    }
+
+    private function handleAssignmentSave(Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
+    {
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        $data = $this->assignmentDataFromRequest($request);
+        $assignmentId = (int) $request->request->get('id', 0);
+        $errors = $this->validateAssignmentData($data);
+
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+        }
+
+        try {
+            $workerService->ensureSchema();
+            if ($assignmentId > 0) {
+                $workerService->updateAssignment($assignmentId, $data, $ownerUserId);
+                $this->addFlash('success', 'Assignment updated.');
+            } else {
+                $workerService->createAssignment($data, $ownerUserId);
+                $this->addFlash('success', 'Assignment created.');
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Assignment operation failed: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+    }
+
+    private function handleAssignmentDelete(int $id, Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
+    {
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        try {
+            $workerService->ensureSchema();
+            $workerService->deleteAssignment($id, $ownerUserId);
+            $this->addFlash('success', 'Assignment deleted.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete assignment: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+    }
+
+    private function handlePaymentSave(Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
+    {
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        $data = $this->paymentDataFromRequest($request);
+        $paymentId = (int) $request->request->get('id', 0);
+        $errors = $this->validatePaymentData($data);
+
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+            return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+        }
+
+        try {
+            $workerService->ensureSchema();
+            if ($paymentId > 0) {
+                $workerService->updatePayment($paymentId, $data, $ownerUserId);
+                $this->addFlash('success', 'Payment updated.');
+            } else {
+                $workerService->createPayment($data, $ownerUserId);
+                $this->addFlash('success', 'Payment created.');
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Payment operation failed: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+    }
+
+    private function handlePaymentDelete(int $id, Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
+    {
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        try {
+            $workerService->ensureSchema();
+            $workerService->deletePayment($id, $ownerUserId);
+            $this->addFlash('success', 'Payment deleted.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to delete payment: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute($adminMode ? 'admin_management_workers' : 'management_workers', $adminMode ? ['user_id' => $ownerUserId] : []);
+    }
+
+    private function renderWorkersManagementPage(Request $request, WorkerManagementService $workerService, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): Response
+    {
+        $ownerUserId = $this->resolveWorkersOwnerUserId($request, $oracleCrud, $adminMode);
+        if ($ownerUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => $adminMode ? 'admin' : 'user']);
+        }
+
+        $workerService->ensureSchema();
+        $workers = $workerService->listWorkers($ownerUserId);
+        $assignments = $workerService->listAssignments($ownerUserId);
+        $payments = $workerService->listPayments($ownerUserId);
+
+        $editWorkerId = (int) $request->query->get('editWorkerId', 0);
+        $editingWorker = $editWorkerId > 0 ? $workerService->findWorker($editWorkerId, $ownerUserId) : null;
+
+        $editAssignmentId = (int) $request->query->get('editAssignmentId', 0);
+        $editingAssignment = $editAssignmentId > 0 ? $workerService->findAssignment($editAssignmentId, $ownerUserId) : null;
+
+        $editPaymentId = (int) $request->query->get('editPaymentId', 0);
+        $editingPayment = $editPaymentId > 0 ? $workerService->findPayment($editPaymentId, $ownerUserId) : null;
+
+        $availableUsers = [];
+        if ($adminMode && $oracleCrud !== null) {
+            try {
+                $availableUsers = $oracleCrud->listUsers();
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Unable to load users: ' . $e->getMessage());
+            }
+        }
+
+        return $this->render('management/workers.html.twig', [
+            'active' => 'workers',
+            'adminMode' => $adminMode,
+            'selectedUserId' => $ownerUserId,
+            'availableUsers' => $availableUsers,
+            'workers' => $workers,
+            'assignments' => $assignments,
+            'payments' => $payments,
+            'editingWorker' => $editingWorker,
+            'editingAssignment' => $editingAssignment,
+            'editingPayment' => $editingPayment,
+        ]);
+    }
+
+    private function resolveWorkersOwnerUserId(Request $request, ?OracleSqlPlusCrudService $oracleCrud, bool $adminMode): int
+    {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return 0;
+        }
+
+        if (!$adminMode) {
+            return $currentUserId;
+        }
+
+        $selectedUserId = (int) $request->request->get('user_id', $request->query->get('user_id', 0));
+        if ($selectedUserId > 0) {
+            return $selectedUserId;
+        }
+
+        if ($oracleCrud === null) {
+            return $currentUserId;
+        }
+
+        return $this->resolveAdminSelectedUserId($request, $oracleCrud, $currentUserId);
+    }
+
+    /**
+     * @return array{lastName:?string,firstName:?string,position:?string,salary:?string,availability:?string}
+     */
+    private function workerDataFromRequest(Request $request): array
+    {
+        $lastName = trim((string) $request->request->get('last_name'));
+        $firstName = trim((string) $request->request->get('first_name'));
+        $position = trim((string) $request->request->get('position'));
+        $salary = trim((string) $request->request->get('salary'));
+        $availability = trim((string) $request->request->get('availability'));
+
+        return [
+            'lastName' => $lastName !== '' ? $lastName : null,
+            'firstName' => $firstName !== '' ? $firstName : null,
+            'position' => $position !== '' ? $position : null,
+            'salary' => $salary !== '' ? $salary : null,
+            'availability' => $availability !== '' ? $availability : 'Available',
+        ];
+    }
+
+    /**
+     * @return array{workerId:int,task:?string,startDate:?string,endDate:?string}
+     */
+    private function assignmentDataFromRequest(Request $request): array
+    {
+        $task = trim((string) $request->request->get('task'));
+        $startDate = trim((string) $request->request->get('start_date'));
+        $endDate = trim((string) $request->request->get('end_date'));
+
+        return [
+            'workerId' => (int) $request->request->get('worker_id', 0),
+            'task' => $task !== '' ? $task : null,
+            'startDate' => $startDate !== '' ? $startDate : null,
+            'endDate' => $endDate !== '' ? $endDate : null,
+        ];
+    }
+
+    /**
+     * @return array{workerId:int,amount:?string,paymentDate:?string,status:?string}
+     */
+    private function paymentDataFromRequest(Request $request): array
+    {
+        $amount = trim((string) $request->request->get('amount'));
+        $paymentDate = trim((string) $request->request->get('payment_date'));
+        $status = trim((string) $request->request->get('status'));
+
+        return [
+            'workerId' => (int) $request->request->get('worker_id', 0),
+            'amount' => $amount !== '' ? $amount : null,
+            'paymentDate' => $paymentDate !== '' ? $paymentDate : null,
+            'status' => $status !== '' ? $status : 'Pending',
+        ];
+    }
+
+    /**
+     * @param array{name:?string,type:?string,status:?string,purchaseDate:?string} $data
+     * @return array<int, string>
+     */
+    private function validateEquipmentData(array $data): array
+    {
+        $errors = [];
+
+        if (($data['name'] ?? null) === null || strlen((string) $data['name']) < 2) {
+            $errors[] = 'Equipment name must be at least 2 characters.';
+        }
+
+        if (($data['type'] ?? null) === null || strlen((string) $data['type']) < 2) {
+            $errors[] = 'Equipment type must be at least 2 characters.';
+        }
+
+        $status = (string) ($data['status'] ?? '');
+        if (!in_array($status, ['Ready', 'Service', 'Offline'], true)) {
+            $errors[] = 'Equipment status must be Ready, Service, or Offline.';
+        }
+
+        $date = (string) ($data['purchaseDate'] ?? '');
+        if ($date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $errors[] = 'Purchase date must be in YYYY-MM-DD format.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param array{equipmentId:int,maintenanceDate:?string,maintenanceType:?string,cost:?string} $data
+     * @return array<int, string>
+     */
+    private function validateMaintenanceData(array $data): array
+    {
+        $errors = [];
+
+        if (($data['equipmentId'] ?? 0) <= 0) {
+            $errors[] = 'Select a valid equipment for maintenance.';
+        }
+
+        if (($data['maintenanceType'] ?? null) === null || strlen((string) $data['maintenanceType']) < 2) {
+            $errors[] = 'Maintenance type must be at least 2 characters.';
+        }
+
+        $costValue = (string) ($data['cost'] ?? '0');
+        if (!is_numeric(str_replace(',', '.', $costValue)) || (float) str_replace(',', '.', $costValue) < 0) {
+            $errors[] = 'Maintenance cost must be a positive number.';
+        }
+
+        $date = (string) ($data['maintenanceDate'] ?? '');
+        if ($date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $errors[] = 'Maintenance date must be in YYYY-MM-DD format.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function validateProfileData(string $firstName, string $lastName, string $email, string $password): array
+    {
+        $errors = [];
+        $namePattern = '/^[a-zA-Z][a-zA-Z\s\-\']{1,59}$/';
+
+        if (!preg_match($namePattern, $firstName)) {
+            $errors[] = 'First name must be 2-60 letters and may include spaces or hyphens.';
+        }
+
+        if (!preg_match($namePattern, $lastName)) {
+            $errors[] = 'Last name must be 2-60 letters and may include spaces or hyphens.';
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 180) {
+            $errors[] = 'Email must be valid and under 180 characters.';
+        }
+
+        if ($password !== '' && (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/\d/', $password) || !preg_match('/[^a-zA-Z\d]/', $password))) {
+            $errors[] = 'If provided, password must be 8+ chars with upper, lower, number, and symbol.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function validateAdminUserData(string $firstName, string $lastName, string $email, string $status, string $roleName, string $password, bool $isCreate): array
+    {
+        $errors = $this->validateProfileData($firstName, $lastName, $email, $password);
+
+        if (!in_array($status, ['Active', 'Pending', 'Suspended'], true)) {
+            $errors[] = 'User status must be Active, Pending, or Suspended.';
+        }
+
+        if (!in_array(strtoupper($roleName), ['USER', 'ADMIN'], true)) {
+            $errors[] = 'User role must be USER or ADMIN.';
+        }
+
+        if ($isCreate && $password === '') {
+            $errors[] = 'Password is required when creating a user.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param array{lastName:?string,firstName:?string,position:?string,salary:?string,availability:?string} $data
+     * @return array<int, string>
+     */
+    private function validateWorkerData(array $data): array
+    {
+        $errors = [];
+        if (($data['firstName'] ?? null) === null || strlen((string) $data['firstName']) < 2) {
+            $errors[] = 'Worker first name must be at least 2 characters.';
+        }
+        if (($data['lastName'] ?? null) === null || strlen((string) $data['lastName']) < 2) {
+            $errors[] = 'Worker last name must be at least 2 characters.';
+        }
+        if (($data['position'] ?? null) === null || strlen((string) $data['position']) < 2) {
+            $errors[] = 'Worker position must be at least 2 characters.';
+        }
+        $salary = (string) ($data['salary'] ?? '0');
+        if (!is_numeric(str_replace(',', '.', $salary)) || (float) str_replace(',', '.', $salary) < 0) {
+            $errors[] = 'Worker salary must be a positive number.';
+        }
+        if (!in_array((string) ($data['availability'] ?? ''), ['Available', 'Busy', 'On leave'], true)) {
+            $errors[] = 'Availability must be Available, Busy, or On leave.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param array{workerId:int,task:?string,startDate:?string,endDate:?string} $data
+     * @return array<int, string>
+     */
+    private function validateAssignmentData(array $data): array
+    {
+        $errors = [];
+        if (($data['workerId'] ?? 0) <= 0) {
+            $errors[] = 'Select a valid worker for assignment.';
+        }
+        if (($data['task'] ?? null) === null || strlen((string) $data['task']) < 2) {
+            $errors[] = 'Assignment task must be at least 2 characters.';
+        }
+
+        $startDate = (string) ($data['startDate'] ?? '');
+        $endDate = (string) ($data['endDate'] ?? '');
+        if ($startDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+            $errors[] = 'Assignment start date must be in YYYY-MM-DD format.';
+        }
+        if ($endDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+            $errors[] = 'Assignment end date must be in YYYY-MM-DD format.';
+        }
+        if ($startDate !== '' && $endDate !== '' && $endDate < $startDate) {
+            $errors[] = 'Assignment end date cannot be before start date.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param array{workerId:int,amount:?string,paymentDate:?string,status:?string} $data
+     * @return array<int, string>
+     */
+    private function validatePaymentData(array $data): array
+    {
+        $errors = [];
+        if (($data['workerId'] ?? 0) <= 0) {
+            $errors[] = 'Select a valid worker for payment.';
+        }
+
+        $amount = (string) ($data['amount'] ?? '0');
+        if (!is_numeric(str_replace(',', '.', $amount)) || (float) str_replace(',', '.', $amount) < 0) {
+            $errors[] = 'Payment amount must be a positive number.';
+        }
+
+        $paymentDate = (string) ($data['paymentDate'] ?? '');
+        if ($paymentDate !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $paymentDate)) {
+            $errors[] = 'Payment date must be in YYYY-MM-DD format.';
+        }
+
+        if (!in_array((string) ($data['status'] ?? ''), ['Paid', 'Pending', 'Failed'], true)) {
+            $errors[] = 'Payment status must be Paid, Pending, or Failed.';
+        }
+
+        return $errors;
     }
 
     /**

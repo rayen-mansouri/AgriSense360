@@ -10,58 +10,178 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="{% if mode == 'admin' %}admin-mode{% endif %}">
+<body class="auth-page{% if mode == 'admin' %} admin-mode{% endif %}">
     <main class="auth-shell">
-        <section class="auth-card">
-            <a class="auth-back" href="{{ path('intro', { mode: mode }) }}">Back to Intro</a>
-            <p class="auth-kicker">{{ mode == 'admin' ? 'Admin Access' : 'User Access' }}</p>
-            <h1>{{ title }}</h1>
-            <p class="auth-sub">Use your AgriSense account credentials to continue.</p>
+        <section class="auth-layout">
+            <aside class="auth-hero">
+                <a class="auth-back" href="{{ path('intro', { mode: mode }) }}">Back to Intro</a>
+                <p class="auth-kicker">{{ mode == 'admin' ? 'Admin Access' : 'User Access' }}</p>
+                <h1>{{ mode == 'admin' ? 'A calmer control room for your team' : 'A softer way to manage the farm day' }}</h1>
+                <p class="auth-sub">{{ mode == 'admin' ? 'Admin mode keeps operations clear and fast.' : 'User mode keeps daily tasks simple and smooth.' }}</p>
 
-            {% for message in app.flashes('error') %}
-                <div class="auth-alert error">{{ message }}</div>
-            {% endfor %}
-            {% for message in app.flashes('success') %}
-                <div class="auth-alert success">{{ message }}</div>
-            {% endfor %}
-
-            <form method="post" class="auth-form">
-                {% if authType == 'signup' %}
-                    <div class="auth-grid">
-                        <label class="field">
-                            <span>First Name</span>
-                            <input class="input" type="text" name="first_name" required>
-                        </label>
-                        <label class="field">
-                            <span>Last Name</span>
-                            <input class="input" type="text" name="last_name" required>
-                        </label>
+                <div class="auth-points">
+                    <div class="auth-point">
+                        <strong>Secure session</strong>
+                        <span>Encrypted sign-in and role-based routing.</span>
                     </div>
+                    <div class="auth-point">
+                        <strong>Quick resume</strong>
+                        <span>Typed values stay visible after validation errors.</span>
+                    </div>
+                    <div class="auth-point">
+                        <strong>Gentle motion</strong>
+                        <span>Subtle motion follows your typing and focus.</span>
+                    </div>
+                </div>
+
+                <section class="auth-live-visual" id="auth-live-visual" data-stage="0" data-active="0" aria-live="polite">
+                    <div class="auth-live-orbit" aria-hidden="true">
+                        <span class="live-dot live-dot--one"></span>
+                        <span class="live-dot live-dot--two"></span>
+                        <span class="live-dot live-dot--three"></span>
+                        <span class="live-dot live-dot--four"></span>
+                        <span class="live-ring live-ring--inner"></span>
+                        <span class="live-ring live-ring--outer"></span>
+                        <span class="live-core"></span>
+                    </div>
+                    <div class="auth-live-meta">
+                        <div class="auth-live-meter" role="progressbar" aria-label="Form completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <span id="auth-live-meter-fill"></span>
+                        </div>
+                        <p class="auth-live-text" id="auth-live-text">Start typing to wake the field.</p>
+                    </div>
+                </section>
+            </aside>
+
+            <section class="auth-card">
+                <div class="auth-card__glow auth-card__glow--one"></div>
+                <div class="auth-card__glow auth-card__glow--two"></div>
+
+                <div class="auth-card__header">
+                    <div>
+                        <p class="auth-chip">{{ authType == 'signup' ? 'Create account' : 'Welcome back' }}</p>
+                        <h2>{{ title }}</h2>
+                    </div>
+                    <span class="auth-mode-badge">{{ mode == 'admin' ? 'Admin' : 'User' }}</span>
+                </div>
+
+                <p class="auth-card__sub">Use your AgriSense credentials to continue.</p>
+
+                {% if errorMessage %}
+                    <div class="auth-alert error" role="alert">{{ errorMessage }}</div>
                 {% endif %}
 
-                <label class="field">
-                    <span>Email</span>
-                    <input class="input" type="email" name="email" required>
-                </label>
+                {% for message in app.flashes('error') %}
+                    <div class="auth-alert error" role="alert">{{ message }}</div>
+                {% endfor %}
+                {% for message in app.flashes('success') %}
+                    <div class="auth-alert success" role="status">{{ message }}</div>
+                {% endfor %}
 
-                <label class="field">
-                    <span>Password</span>
-                    <input class="input" type="password" name="password" required>
-                </label>
+                <form method="post" class="auth-form" novalidate>
+                    {% if authType == 'signup' %}
+                        <div class="auth-grid">
+                            <label class="field">
+                                <span>First name</span>
+                                <input class="input" type="text" name="first_name" value="{{ formValues.firstName|default('') }}" autocomplete="given-name" required>
+                                {% if fieldErrors.first_name is defined %}
+                                    <small class="field-warning">{{ fieldErrors.first_name }}</small>
+                                {% endif %}
+                            </label>
+                            <label class="field">
+                                <span>Last name</span>
+                                <input class="input" type="text" name="last_name" value="{{ formValues.lastName|default('') }}" autocomplete="family-name" required>
+                                {% if fieldErrors.last_name is defined %}
+                                    <small class="field-warning">{{ fieldErrors.last_name }}</small>
+                                {% endif %}
+                            </label>
+                        </div>
+                    {% endif %}
 
-                <button class="primary auth-submit" type="submit">{{ submitLabel }}</button>
-            </form>
+                    <label class="field">
+                        <span>Email</span>
+                        <input class="input" type="email" name="email" value="{{ formValues.email|default('') }}" autocomplete="email" required>
+                        {% if fieldErrors.email is defined %}
+                            <small class="field-warning">{{ fieldErrors.email }}</small>
+                        {% endif %}
+                    </label>
 
-            <div class="auth-switch">
-                {% if authType == 'login' %}
-                    <span>Need an account?</span>
-                    <a href="{{ path('auth_signup', { mode: mode }) }}">Sign up</a>
-                {% else %}
-                    <span>Already have an account?</span>
-                    <a href="{{ path('auth_login', { mode: mode }) }}">Log in</a>
-                {% endif %}
-            </div>
+                    <label class="field">
+                        <span>Password</span>
+                        <input class="input" type="password" name="password" autocomplete="{% if authType == 'signup' %}new-password{% else %}current-password{% endif %}" required>
+                        {% if fieldErrors.password is defined %}
+                            <small class="field-warning">{{ fieldErrors.password }}</small>
+                        {% endif %}
+                    </label>
+
+                    <button class="primary auth-submit" type="submit">{{ submitLabel }}</button>
+                </form>
+
+                <div class="auth-switch">
+                    {% if authType == 'login' %}
+                        <span>Need an account?</span>
+                        <a href="{{ path('auth_signup', { mode: mode }) }}">Sign up</a>
+                    {% else %}
+                        <span>Already have an account?</span>
+                        <a href="{{ path('auth_login', { mode: mode }) }}">Log in</a>
+                    {% endif %}
+                </div>
+            </section>
         </section>
     </main>
+
+    <script>
+        (() => {
+            const form = document.querySelector('.auth-form');
+            const visual = document.getElementById('auth-live-visual');
+            const meter = document.getElementById('auth-live-meter-fill');
+            const text = document.getElementById('auth-live-text');
+
+            if (!form || !visual || !meter || !text) {
+                return;
+            }
+
+            const inputs = Array.from(form.querySelectorAll('input.input'));
+            const progressBar = visual.querySelector('.auth-live-meter');
+
+            function updateVisual() {
+                const total = inputs.length || 1;
+                const filled = inputs.filter((input) => input.value.trim() !== '').length;
+                const progress = Math.round((filled / total) * 100);
+                const stage = Math.min(4, Math.max(0, Math.ceil((filled / total) * 4)));
+
+                visual.dataset.stage = String(stage);
+                meter.style.width = progress + '%';
+
+                if (progressBar) {
+                    progressBar.setAttribute('aria-valuenow', String(progress));
+                }
+
+                if (filled === 0) {
+                    text.textContent = 'Start typing to wake the field.';
+                } else if (filled < total) {
+                    text.textContent = filled + ' / ' + total + ' fields ready';
+                } else {
+                    text.textContent = 'All fields complete. Ready to continue.';
+                }
+            }
+
+            inputs.forEach((input) => {
+                input.addEventListener('input', updateVisual);
+                input.addEventListener('focus', () => {
+                    visual.dataset.active = '1';
+                });
+                input.addEventListener('blur', () => {
+                    visual.dataset.active = '0';
+                });
+            });
+
+            updateVisual();
+
+            form.addEventListener('submit', () => {
+                document.body.classList.add('is-leaving');
+            });
+        })();
+    </script>
 </body>
 </html>

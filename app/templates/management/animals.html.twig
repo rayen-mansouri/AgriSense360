@@ -2,35 +2,596 @@
 
 {% block title %}Animals Management{% endblock %}
 {% block eyebrow %}Animals Management{% endblock %}
-{% block heading %}Animals management UI placeholder{% endblock %}
-{% block subhead %}No animal tables were provided in the schema images. This is a UI-only placeholder.{% endblock %}
+{% block heading %}Animal management{% endblock %}
+{% block subhead %}Track animals, health records, and shared option lists with sortable, searchable tables.{% endblock %}
 
 {% block body %}
-<section class="crud-section">
-    <div class="crud-card empty-state">
+{% set pageRoute = adminMode ? 'admin_management_animals' : 'management_animals' %}
+{% set animalSaveRoute = adminMode ? 'admin_management_animals_save' : 'management_animals_save' %}
+{% set animalDeleteRoute = adminMode ? 'admin_management_animals_delete' : 'management_animals_delete' %}
+{% set recordSaveRoute = adminMode ? 'admin_management_animal_record_save' : 'management_animal_record_save' %}
+{% set recordDeleteRoute = adminMode ? 'admin_management_animal_record_delete' : 'management_animal_record_delete' %}
+{% set typeAddRoute = 'admin_management_animal_type_add' %}
+{% set typeDeleteRoute = 'admin_management_animal_type_delete' %}
+{% set locationAddRoute = 'admin_management_animal_location_add' %}
+{% set locationDeleteRoute = 'admin_management_animal_location_delete' %}
+{% set currentAnimalId = selectedAnimal ? selectedAnimal.id : 0 %}
+
+<section class="crud-section animals-page">
+    {% if adminMode %}
+        <div class="crud-card">
+            <div class="crud-head">
+                <div>
+                    <h2>Owner selector</h2>
+                    <p>Choose the user whose animals you want to manage.</p>
+                </div>
+            </div>
+            <form method="get" class="form-grid" style="grid-template-columns: minmax(0, 1fr) auto; align-items:end;">
+                <label class="field" style="grid-column: 1 / -1;">
+                    <span>User</span>
+                    <select class="input" name="user_id">
+                        {% for user in availableUsers %}
+                            <option value="{{ user.id }}" {% if user.id == selectedUserId %}selected{% endif %}>
+                                {{ user.firstName }} {{ user.lastName }} - {{ user.email }}
+                            </option>
+                        {% else %}
+                            <option value="{{ selectedUserId }}">Current admin</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <input type="hidden" name="animalId" value="{{ currentAnimalId }}">
+                <button class="primary" type="submit">Switch user</button>
+            </form>
+        </div>
+    {% endif %}
+
+    {% for message in app.flashes('success') %}
+        <div class="flash flash-success">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="flash flash-error">{{ message }}</div>
+    {% endfor %}
+    {% for errors in app.flashes('errors') %}
+        {% for key, message in errors %}
+            <div class="flash flash-error">{{ key }}: {{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Animal insights</h2>
+                <p>Operational stats and quick distributions for this management scope.</p>
+            </div>
+        </div>
+        <div class="ops-kpi-grid">
+            <article class="ops-kpi">
+                <span class="k">Animals</span>
+                <strong>{{ animalInsights.stats.animalCount }}</strong>
+                <small>Total rows in animals table.</small>
+            </article>
+            <article class="ops-kpi">
+                <span class="k">Health Records</span>
+                <strong>{{ animalInsights.stats.recordCount }}</strong>
+                <small>Total rows in health records table.</small>
+            </article>
+            <article class="ops-kpi">
+                <span class="k">Vaccinated</span>
+                <strong>{{ animalInsights.stats.vaccinatedCount }}</strong>
+                <small>Animals currently marked vaccinated.</small>
+            </article>
+            <article class="ops-kpi">
+                <span class="k">Critical Cases</span>
+                <strong>{{ animalInsights.stats.criticalCount }}</strong>
+                <small>Records with CRITICAL condition.</small>
+            </article>
+        </div>
+        <div class="ops-grid" style="margin-top:18px;">
+            <article class="ops-panel">
+                <header>
+                    <h3>Animal Type Mix</h3>
+                </header>
+                <ul class="ops-bar-list">
+                    {% for row in animalInsights.animalTypeLegend %}
+                        <li>
+                            <div class="meta"><span>{{ row.label }}</span><strong>{{ row.value }} ({{ row.percent }}%)</strong></div>
+                            <div class="track"><span style="width: {{ row.percent }}%; background: {{ row.color }};"></span></div>
+                        </li>
+                    {% else %}
+                        <li class="ops-empty">No animal data available yet.</li>
+                    {% endfor %}
+                </ul>
+            </article>
+            <article class="ops-panel">
+                <header>
+                    <h3>Condition Mix</h3>
+                </header>
+                <ul class="ops-bar-list">
+                    {% for row in animalInsights.conditionLegend %}
+                        <li>
+                            <div class="meta"><span>{{ row.label }}</span><strong>{{ row.value }} ({{ row.percent }}%)</strong></div>
+                            <div class="track"><span style="width: {{ row.percent }}%; background: {{ row.color }};"></span></div>
+                        </li>
+                    {% else %}
+                        <li class="ops-empty">No health record data available yet.</li>
+                    {% endfor %}
+                </ul>
+            </article>
+        </div>
+    </div>
+
+    <div class="crud-card">
         <div class="crud-head">
             <div>
                 <h2>Animals</h2>
-                <p>Add tables to enable CRUD UI for livestock, health, and productivity.</p>
+                <p>{{ adminMode ? 'Manage the selected user\'s herd.' : 'Manage your animals and keep profile values in sync.' }}</p>
             </div>
             <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button" disabled>New animal</button>
+                <span class="pill">{{ animalCount }} records</span>
             </div>
         </div>
-        <div class="empty-body">
-            <div class="empty-illustration" aria-hidden="true">
-                <span></span>
+
+        <div class="crud-grid animals-entry-grid animals-entry-row">
+            <div class="crud-form" id="animal-form">
+                <h3>{{ editingAnimal ? 'Edit animal' : 'Create animal' }}</h3>
+                <form method="post" action="{{ path(animalSaveRoute) }}">
+                    <input type="hidden" name="id" value="{{ editingAnimal ? editingAnimal.id : '' }}">
+                    <input type="hidden" name="animal_id" value="{{ currentAnimalId }}">
+                    {% if adminMode %}
+                        <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                    {% endif %}
+                    <div class="form-grid animals-form-grid">
+                        <label class="field">
+                            <span>Ear tag</span>
+                            <input class="input" type="number" name="ear_tag" value="{{ editingAnimal ? editingAnimal.earTag : '' }}" required>
+                        </label>
+                        <label class="field">
+                            <span>Type</span>
+                            <select class="input" name="type" required>
+                                <option value="">Select type</option>
+                                {% for type in types %}
+                                    <option value="{{ type }}" {% if editingAnimal and editingAnimal.type == type %}selected{% endif %}>{{ type }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Weight</span>
+                            <input class="input" type="text" name="weight" value="{{ editingAnimal and editingAnimal.weight is not null ? editingAnimal.weight : '' }}" placeholder="0.0">
+                        </label>
+                        <label class="field">
+                            <span>Birth date</span>
+                            <input class="input" type="date" name="birth_date" value="{{ editingAnimal and editingAnimal.birthDate ? editingAnimal.birthDate|date('Y-m-d') : '' }}">
+                        </label>
+                        <label class="field">
+                            <span>Entry date</span>
+                            <input class="input" type="date" name="entry_date" value="{{ editingAnimal and editingAnimal.entryDate ? editingAnimal.entryDate|date('Y-m-d') : '' }}">
+                        </label>
+                        <label class="field">
+                            <span>Origin</span>
+                            <select class="input" name="origin" required>
+                                <option value="">Select origin</option>
+                                {% for origin in origins %}
+                                    <option value="{{ origin }}" {% if editingAnimal and editingAnimal.origin == origin %}selected{% endif %}>{{ origin }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Location</span>
+                            <select class="input" name="location" required>
+                                <option value="">Select location</option>
+                                {% for location in locations %}
+                                    <option value="{{ location }}" {% if editingAnimal and editingAnimal.location == location %}selected{% endif %}>{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Vaccinated</span>
+                            <select class="input" name="vaccinated">
+                                <option value="0" {% if not editingAnimal or not editingAnimal.vaccinated %}selected{% endif %}>No</option>
+                                <option value="1" {% if editingAnimal and editingAnimal.vaccinated %}selected{% endif %}>Yes</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="submit">{{ editingAnimal ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path(pageRoute, adminMode ? {user_id: selectedUserId, animalId: currentAnimalId} : {animalId: currentAnimalId}) }}">Reset</a>
+                    </div>
+                </form>
             </div>
-            <div>
-                <h3>No tables configured</h3>
-                <p>Add an animal-related table (ex: Animal, Sante, Vaccination) to generate a full CRUD UI.</p>
-                <div class="empty-actions">
-                    <button class="primary" type="button">Create first table</button>
-                    <button class="ghost" type="button">Request schema update</button>
+
+            <div class="crud-list">
+                <div class="list-head table-tools-row">
+                    <select class="input table-filter-column" id="animal-search-column">
+                        <option value="all">All columns</option>
+                        <option value="0">Ear Tag</option>
+                        <option value="1">Type</option>
+                        <option value="2">Weight</option>
+                        <option value="3">Health</option>
+                        <option value="4">Birth</option>
+                        <option value="5">Entry</option>
+                        <option value="6">Origin</option>
+                        <option value="7">Vaccinated</option>
+                        <option value="8">Location</option>
+                    </select>
+                    <input class="input" id="animal-search" type="search" placeholder="Search animals" autocomplete="off">
+                    <select class="input table-sort-column" id="animal-sort-column">
+                        <option value="0">Sort Ear Tag</option>
+                        <option value="1">Sort Type</option>
+                        <option value="2">Sort Weight</option>
+                        <option value="3">Sort Health</option>
+                        <option value="4">Sort Birth</option>
+                        <option value="5">Sort Entry</option>
+                        <option value="6">Sort Origin</option>
+                        <option value="7">Sort Vaccinated</option>
+                        <option value="8">Sort Location</option>
+                    </select>
+                    <select class="input table-sort-dir" id="animal-sort-dir">
+                        <option value="asc">Asc</option>
+                        <option value="desc">Desc</option>
+                    </select>
+                    <span class="pill" id="animal-visible-pill">{{ animals|length }} visible</span>
+                </div>
+                <div class="table-scroll">
+                    <table class="data-table" id="animal-table">
+                        <thead>
+                            <tr>
+                                <th>Ear Tag</th>
+                                <th>Type</th>
+                                <th>Weight</th>
+                                <th>Health</th>
+                                <th>Birth</th>
+                                <th>Entry</th>
+                                <th>Origin</th>
+                                <th>Vaccinated</th>
+                                <th>Location</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="animal-table-body">
+                            {% for animal in animals %}
+                                <tr>
+                                    <td data-sort="{{ animal.earTag }}">{{ animal.earTag }}</td>
+                                    <td data-sort="{{ animal.type|lower }}">{{ animal.type }}</td>
+                                    <td data-sort="{{ animal.weight is not null ? animal.weight : -1 }}">{{ animal.weight is not null ? animal.weight ~ ' kg' : '-' }}</td>
+                                    <td data-sort="{{ animal.healthStatus|default('')|lower }}">{{ animal.healthStatus ?: '-' }}</td>
+                                    <td data-sort="{{ animal.birthDate ? animal.birthDate|date('Y-m-d') : '' }}">{{ animal.birthDate ? animal.birthDate|date('Y-m-d') : '-' }}</td>
+                                    <td data-sort="{{ animal.entryDate ? animal.entryDate|date('Y-m-d') : '' }}">{{ animal.entryDate ? animal.entryDate|date('Y-m-d') : '-' }}</td>
+                                    <td data-sort="{{ animal.origin|default('')|lower }}">{{ animal.origin ?: '-' }}</td>
+                                    <td data-sort="{{ animal.vaccinated ? '1' : '0' }}">{{ animal.vaccinated ? 'Yes' : 'No' }}</td>
+                                    <td data-sort="{{ animal.location|default('')|lower }}">{{ animal.location ?: '-' }}</td>
+                                    <td>
+                                        <a class="link" href="{{ path(pageRoute, {animalId: animal.id, editAnimalId: animal.id}|merge(adminMode ? {user_id: selectedUserId} : {})) }}">Edit</a>
+                                        <form method="post" action="{{ path(animalDeleteRoute, {id: animal.id}) }}" style="display:inline;">
+                                            <input type="hidden" name="animal_id" value="{{ currentAnimalId }}">
+                                            {% if adminMode %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
+                                            <button class="link danger" type="submit">Delete</button>
+                                        </form>
+                                        <a class="link" href="{{ path(pageRoute, {animalId: animal.id}|merge(adminMode ? {user_id: selectedUserId} : {})) }}">Records</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="10">No animals found yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="crud-card">
+        <div class="crud-head">
+            <div>
+                <h2>Health records</h2>
+                <p>{% if selectedAnimal %}Records for ear tag {{ selectedAnimal.earTag }} ({{ selectedAnimal.type }}).{% else %}Select an animal to view its health history.{% endif %}</p>
+            </div>
+            <div class="crud-actions"><span class="pill">{{ recordCount }} records</span></div>
+        </div>
+
+        <div class="crud-grid animals-entry-grid animals-entry-row">
+            <div class="crud-form" id="record-form">
+                <h3>{{ editingRecord ? 'Edit record' : 'Create record' }}</h3>
+                <form method="post" action="{{ path(recordSaveRoute) }}">
+                    <input type="hidden" name="id" value="{{ editingRecord ? editingRecord.id : '' }}">
+                    {% if adminMode %}
+                        <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                    {% endif %}
+                    <div class="form-grid animals-form-grid">
+                        <label class="field">
+                            <span>Animal</span>
+                            <select class="input" name="animal_id" required>
+                                <option value="">Select animal</option>
+                                {% for animal in animals %}
+                                    <option value="{{ animal.id }}" {% if (editingRecord and editingRecord.animal.id == animal.id) or (not editingRecord and selectedAnimal and selectedAnimal.id == animal.id) %}selected{% endif %}>{{ animal.earTag }} - {{ animal.type }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Record date</span>
+                            <input class="input" type="date" name="record_date" value="{{ editingRecord and editingRecord.recordDate ? editingRecord.recordDate|date('Y-m-d') : 'now'|date('Y-m-d') }}" required>
+                        </label>
+                        <label class="field">
+                            <span>Weight</span>
+                            <input class="input" type="text" name="weight" value="{{ editingRecord and editingRecord.weight is not null ? editingRecord.weight : '' }}" placeholder="0.0">
+                        </label>
+                        <label class="field">
+                            <span>Appetite</span>
+                            <select class="input" name="appetite">
+                                <option value="">Select appetite</option>
+                                {% for appetite in appetites %}
+                                    <option value="{{ appetite }}" {% if editingRecord and editingRecord.appetite == appetite %}selected{% endif %}>{{ appetite }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Condition</span>
+                            <select class="input" name="condition_status" required>
+                                <option value="">Select condition</option>
+                                {% for condition in conditions %}
+                                    <option value="{{ condition }}" {% if editingRecord and editingRecord.conditionStatus == condition %}selected{% endif %}>{{ condition }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Production</span>
+                            <input class="input" type="text" name="production" value="{{ editingRecord ? (editingRecord.milkYield ?? editingRecord.eggCount ?? editingRecord.woolLength ?? '') : '' }}" placeholder="0">
+                        </label>
+                        <label class="field" style="grid-column: 1 / -1;">
+                            <span>Notes</span>
+                            <textarea class="input" name="notes" rows="4" placeholder="Optional notes">{{ editingRecord ? editingRecord.notes : '' }}</textarea>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary" type="submit">{{ editingRecord ? 'Update' : 'Save' }}</button>
+                        <a class="ghost" href="{{ path(pageRoute, adminMode ? {user_id: selectedUserId, animalId: currentAnimalId} : {animalId: currentAnimalId}) }}">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="crud-list">
+                <div class="list-head table-tools-row">
+                    <select class="input table-filter-column" id="record-search-column">
+                        <option value="all">All columns</option>
+                        <option value="0">Animal</option>
+                        <option value="1">Date</option>
+                        <option value="2">Weight</option>
+                        <option value="3">Appetite</option>
+                        <option value="4">Condition</option>
+                        <option value="5">Production</option>
+                        <option value="6">Notes</option>
+                    </select>
+                    <input class="input" id="record-search" type="search" placeholder="Search records" autocomplete="off">
+                    <select class="input table-sort-column" id="record-sort-column">
+                        <option value="0">Sort Animal</option>
+                        <option value="1">Sort Date</option>
+                        <option value="2">Sort Weight</option>
+                        <option value="3">Sort Appetite</option>
+                        <option value="4">Sort Condition</option>
+                        <option value="5">Sort Production</option>
+                        <option value="6">Sort Notes</option>
+                    </select>
+                    <select class="input table-sort-dir" id="record-sort-dir">
+                        <option value="asc">Asc</option>
+                        <option value="desc">Desc</option>
+                    </select>
+                    <span class="pill" id="record-visible-pill">{{ records|length }} visible</span>
+                </div>
+                <div class="table-scroll">
+                    <table class="data-table" id="record-table">
+                        <thead>
+                            <tr>
+                                <th>Animal</th>
+                                <th>Date</th>
+                                <th>Weight</th>
+                                <th>Appetite</th>
+                                <th>Condition</th>
+                                <th>Production</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="record-table-body">
+                            {% for record in records %}
+                                {% set productionValue = record.milkYield is not null ? record.milkYield : (record.eggCount is not null ? record.eggCount : (record.woolLength is not null ? record.woolLength : null)) %}
+                                <tr>
+                                    <td data-sort="{{ record.animal.earTag }}">{{ record.animal.earTag }} - {{ record.animal.type }}</td>
+                                    <td data-sort="{{ record.recordDate ? record.recordDate|date('Y-m-d') : '' }}">{{ record.recordDate ? record.recordDate|date('Y-m-d') : '-' }}</td>
+                                    <td data-sort="{{ record.weight is not null ? record.weight : -1 }}">{{ record.weight is not null ? record.weight ~ ' kg' : '-' }}</td>
+                                    <td data-sort="{{ record.appetite|default('')|lower }}">{{ record.appetite ?: '-' }}</td>
+                                    <td data-sort="{{ record.conditionStatus|default('')|lower }}">{{ record.conditionStatus ?: '-' }}</td>
+                                    <td data-sort="{{ productionValue is not null ? productionValue : -1 }}">{{ productionValue is not null ? productionValue : '-' }}</td>
+                                    <td data-sort="{{ record.notes|default('')|lower }}">{{ record.notes ?: '-' }}</td>
+                                    <td>
+                                        <a class="link" href="{{ path(pageRoute, {animalId: currentAnimalId, editRecordId: record.id}|merge(adminMode ? {user_id: selectedUserId} : {})) }}">Edit</a>
+                                        <form method="post" action="{{ path(recordDeleteRoute, {id: record.id}) }}" style="display:inline;">
+                                            <input type="hidden" name="animal_id" value="{{ currentAnimalId }}">
+                                            {% if adminMode %}<input type="hidden" name="user_id" value="{{ selectedUserId }}">{% endif %}
+                                            <button class="link danger" type="submit">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="8">No health records yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if adminMode %}
+        <div class="crud-card">
+            <div class="crud-head">
+                <div>
+                    <h2>Options</h2>
+                    <p>Manage shared type and location lists used by animal forms.</p>
+                </div>
+            </div>
+            <div class="crud-grid">
+                <div class="crud-list">
+                    <div class="crud-head" style="margin-bottom: 12px;">
+                        <div>
+                            <h2>Animal types</h2>
+                            <p>Values are stored in lowercase for consistency.</p>
+                        </div>
+                    </div>
+                    <ul style="list-style:none; display:grid; gap:10px; margin-bottom:16px;">
+                        {% for type in types %}
+                            <li style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+                                <span>{{ type }}</span>
+                                <form method="post" action="{{ path(typeDeleteRoute) }}">
+                                    <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                                    <input type="hidden" name="value" value="{{ type }}">
+                                    <button class="link danger" type="submit">Delete</button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <form method="post" action="{{ path(typeAddRoute) }}" class="form-grid">
+                        <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                        <label class="field" style="grid-column: 1 / -1;">
+                            <span>New type</span>
+                            <input class="input" name="value" placeholder="cow, goat, chicken...">
+                        </label>
+                        <button class="primary" type="submit">Add type</button>
+                    </form>
+                </div>
+                <div class="crud-list">
+                    <div class="crud-head" style="margin-bottom: 12px;">
+                        <div>
+                            <h2>Animal locations</h2>
+                            <p>Simple reusable location values.</p>
+                        </div>
+                    </div>
+                    <ul style="list-style:none; display:grid; gap:10px; margin-bottom:16px;">
+                        {% for location in locations %}
+                            <li style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+                                <span>{{ location }}</span>
+                                <form method="post" action="{{ path(locationDeleteRoute) }}">
+                                    <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                                    <input type="hidden" name="value" value="{{ location }}">
+                                    <button class="link danger" type="submit">Delete</button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <form method="post" action="{{ path(locationAddRoute) }}" class="form-grid">
+                        <input type="hidden" name="user_id" value="{{ selectedUserId }}">
+                        <label class="field" style="grid-column: 1 / -1;">
+                            <span>New location</span>
+                            <input class="input" name="value" placeholder="barn, coop, pasture...">
+                        </label>
+                        <button class="primary" type="submit">Add location</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </section>
+
+<script>
+(() => {
+    function initInteractiveTable(config) {
+        const table = document.getElementById(config.tableId);
+        const body = document.getElementById(config.bodyId);
+        const searchInput = document.getElementById(config.searchInputId);
+        const searchColumn = document.getElementById(config.searchColumnId);
+        const sortColumn = document.getElementById(config.sortColumnId);
+        const sortDir = document.getElementById(config.sortDirId);
+        const visiblePill = document.getElementById(config.visiblePillId);
+
+        if (!table || !body || !searchInput || !searchColumn || !sortColumn || !sortDir || !visiblePill) {
+            return;
+        }
+
+        const baseRows = Array.from(body.querySelectorAll('tr')).filter((row) => row.querySelectorAll('td').length > 0);
+
+        function rowCellValue(row, index) {
+            const cell = row.querySelectorAll('td')[index];
+            if (!cell) {
+                return '';
+            }
+            return String(cell.dataset.sort || cell.textContent || '').trim();
+        }
+
+        function compareValues(a, b) {
+            const na = Number(a);
+            const nb = Number(b);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+                return na - nb;
+            }
+            return a.localeCompare(b, undefined, { sensitivity: 'base' });
+        }
+
+        function updateTable() {
+            const query = searchInput.value.trim().toLowerCase();
+            const selectedColumn = searchColumn.value;
+            const sortIndex = Number(sortColumn.value);
+            const direction = sortDir.value === 'desc' ? -1 : 1;
+
+            const filtered = baseRows.filter((row) => {
+                if (query === '') {
+                    return true;
+                }
+
+                if (selectedColumn === 'all') {
+                    return row.textContent.toLowerCase().includes(query);
+                }
+
+                const value = rowCellValue(row, Number(selectedColumn)).toLowerCase();
+                return value.includes(query);
+            });
+
+            filtered.sort((leftRow, rightRow) => {
+                const leftValue = rowCellValue(leftRow, sortIndex);
+                const rightValue = rowCellValue(rightRow, sortIndex);
+                return compareValues(leftValue, rightValue) * direction;
+            });
+
+            baseRows.forEach((row) => {
+                row.style.display = 'none';
+            });
+
+            filtered.forEach((row) => {
+                row.style.display = '';
+                body.appendChild(row);
+            });
+
+            visiblePill.textContent = `${filtered.length} visible`;
+        }
+
+        [searchInput, searchColumn, sortColumn, sortDir].forEach((el) => {
+            el.addEventListener('input', updateTable);
+            el.addEventListener('change', updateTable);
+        });
+
+        updateTable();
+    }
+
+    initInteractiveTable({
+        tableId: 'animal-table',
+        bodyId: 'animal-table-body',
+        searchInputId: 'animal-search',
+        searchColumnId: 'animal-search-column',
+        sortColumnId: 'animal-sort-column',
+        sortDirId: 'animal-sort-dir',
+        visiblePillId: 'animal-visible-pill',
+    });
+
+    initInteractiveTable({
+        tableId: 'record-table',
+        bodyId: 'record-table-body',
+        searchInputId: 'record-search',
+        searchColumnId: 'record-search-column',
+        sortColumnId: 'record-sort-column',
+        sortDirId: 'record-sort-dir',
+        visiblePillId: 'record-visible-pill',
+    });
+})();
+</script>
 {% endblock %}
