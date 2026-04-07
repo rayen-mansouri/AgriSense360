@@ -355,7 +355,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- Affectations List -->
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search affectations" id="affectation-search">
+                    {% if adminMode %}
+                        <input class="input" type="search" placeholder="Search by ID or type..." id="affectation-search">
+                    {% else %}
+                        <input class="input" type="search" placeholder="Search affectations..." id="affectation-search">
+                    {% endif %}
                     <span class="pill">{{ affectations|length }} records</span>
                 </div>
                 <table class="data-table">
@@ -475,7 +479,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <!-- Evaluations List -->
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search evaluations" id="evaluation-search">
+                    {% if adminMode %}
+                        <input class="input" type="search" placeholder="Search by ID or quality..." id="evaluation-search">
+                    {% else %}
+                        <input class="input" type="search" placeholder="Search evaluations..." id="evaluation-search">
+                    {% endif %}
                     <span class="pill">{{ evaluations|length }} records</span>
                 </div>
                 <table class="data-table">
@@ -744,6 +752,75 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.style.borderColor = '#d86a5b';
             } else {
                 this.style.borderColor = '';
+            }
+        });
+    }
+
+    // Search/Filter by ID and other fields (Admin only)
+    const affectationSearch = document.getElementById('affectation-search');
+    if (affectationSearch) {
+        affectationSearch.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const affectationRows = document.querySelectorAll('#affectation-list tr');
+            let visibleCount = 0;
+
+            affectationRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let matches = false;
+
+                if (query === '') {
+                    matches = true;
+                } else {
+                    // Search in all cells (ID, Type, Zone, Start Date, End Date, Status)
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(query)) {
+                            matches = true;
+                        }
+                    });
+                }
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            // Show "no results" message if needed
+            const emptyRow = document.querySelector('#affectation-list tr[style*="display: none"]');
+            if (visibleCount === 0 && query !== '') {
+                console.log('Aucune affectation trouvée pour: ' + query);
+            }
+        });
+    }
+
+    // Search/Filter evaluations by ID and quality (Admin only)
+    const evaluationSearch = document.getElementById('evaluation-search');
+    if (evaluationSearch) {
+        evaluationSearch.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const evaluationRows = document.querySelectorAll('#evaluation-list tr');
+            let visibleCount = 0;
+
+            evaluationRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let matches = false;
+
+                if (query === '') {
+                    matches = true;
+                } else {
+                    // Search in all cells (ID, Affectation, Note, Quality, Date)
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(query)) {
+                            matches = true;
+                        }
+                    });
+                }
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            // Show "no results" message if needed
+            if (visibleCount === 0 && query !== '') {
+                console.log('Aucune évaluation trouvée pour: ' + query);
             }
         });
     }
