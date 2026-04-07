@@ -1529,12 +1529,20 @@ final class ManagementController extends AbstractController
         $typeCounts = [];
         $zoneCounts = [];
         $totalAffectations = 0;
+        $inProgressCount = 0;
+        $pendingCount = 0;
 
         foreach ($affectations as $aff) {
             $totalAffectations++;
             $status = $aff['statut'] ?? 'En attente';
             if (isset($statusCounts[$status])) {
                 $statusCounts[$status]++;
+            }
+
+            if ($status === 'En cours') {
+                $inProgressCount++;
+            } elseif ($status === 'En attente') {
+                $pendingCount++;
             }
 
             $type = $aff['typeTravail'] ?? 'Unknown';
@@ -1555,6 +1563,7 @@ final class ManagementController extends AbstractController
             'Insuffisant' => 0,
         ];
         $notesSum = 0;
+        $excellentCount = 0;
 
         foreach ($evaluations as $eval) {
             $note = (int) ($eval['note'] ?? 0);
@@ -1563,6 +1572,9 @@ final class ManagementController extends AbstractController
             $quality = $eval['qualite'] ?? 'Unknown';
             if (isset($qualityCounts[$quality])) {
                 $qualityCounts[$quality]++;
+                if ($quality === 'Excellent') {
+                    $excellentCount++;
+                }
             }
         }
 
@@ -1575,6 +1587,9 @@ final class ManagementController extends AbstractController
         $completedCount = $statusCounts['Complété'] ?? 0;
         $completionRate = $totalAffectations > 0 ? round(($completedCount / $totalAffectations) * 100, 1) : 0;
 
+        // Suspended/Cancelled count
+        $suspendedCancelledCount = ($statusCounts['Suspendu'] ?? 0) + ($statusCounts['Annulé'] ?? 0);
+
         return [
             'totalAffectations' => $totalAffectations,
             'totalEvaluations' => $totalEvaluations,
@@ -1585,6 +1600,10 @@ final class ManagementController extends AbstractController
             'zoneCounts' => $zoneCounts,
             'qualityCounts' => $qualityCounts,
             'dateStats' => $dateStats,
+            'inProgressCount' => $inProgressCount,
+            'pendingCount' => $pendingCount,
+            'excellentCount' => $excellentCount,
+            'suspendedCancelledCount' => $suspendedCancelledCount,
         ];
     }
 
