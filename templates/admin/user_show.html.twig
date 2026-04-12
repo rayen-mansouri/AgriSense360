@@ -1,0 +1,150 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'users' %}
+{% set activeSection = 'main' %}
+
+{% block title %}{{ user.name }} — Détails{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    .profile-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+
+    .avatar-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-md); padding: 28px 22px; text-align: center; }
+    .avatar-big { width: 86px; height: 86px; border-radius: 50%; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; font-weight: 800; color: #fff; background: linear-gradient(135deg,#2e7d32,#4caf50); overflow: hidden; }
+    .avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+    .av-name  { font-size: 1.1rem; font-weight: 800; margin-bottom: 5px; }
+    .av-email { font-size: .78rem; color: var(--text-light); margin-bottom: 12px; }
+    .av-divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+    .av-row { display: flex; justify-content: space-between; font-size: .8rem; color: var(--text-mid); margin-bottom: 8px; }
+    .av-row strong { color: var(--text-dark); font-weight: 700; }
+
+    /* Edit form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1/-1; }
+    .form-label { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-light); }
+    .form-input, .form-select { padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans',sans-serif; font-size: .87rem; color: var(--text-dark); background: #fafcf8; outline: none; transition: border-color .18s; width: 100%; }
+    .form-input:focus, .form-select:focus { border-color: var(--green-light); }
+    .form-input[readonly] { background: #f0f4f0; color: var(--text-light); cursor: not-allowed; }
+
+    /* Status toggle */
+    .status-row { display: flex; gap: 10px; }
+    .status-opt input { display: none; }
+    .status-opt label { padding: 9px 18px; border: 1.5px solid var(--border); border-radius: 50px; cursor: pointer; font-size: .83rem; font-weight: 700; color: var(--text-mid); background: #fafcf8; transition: all .16s; display: inline-block; }
+    .status-opt input:checked + label { border-color: var(--green-mid); background: var(--green-pale); color: #1b5e20; }
+    .status-opt.blocked input:checked + label { border-color: #c62828; background: #fde8e8; color: #c62828; }
+
+    .action-bar { display: flex; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--border); background: #fafcf8; align-items: center; }
+
+    .section-sep { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--text-light); margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="breadcrumb">
+            <a href="{{ path('admin_dashboard') }}">👥 Utilisateurs</a>
+            <span>›</span><span>{{ user.name }}</span>
+        </div>
+
+        {% for msg in app.flashes('success') %}<div class="flash-success">✓ {{ msg }}</div>{% endfor %}
+        {% for msg in app.flashes('error') %}<div class="flash-error">⚠ {{ msg }}</div>{% endfor %}
+
+        <div class="profile-grid">
+            <!-- Avatar card -->
+            <div class="avatar-card">
+                <div class="avatar-big">
+                    {% if user.profilePicture %}
+                        <img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="Photo">
+                    {% else %}
+                        {{ user.name|first|upper }}
+                    {% endif %}
+                </div>
+                <div class="av-name">{{ user.name }}</div>
+                <div class="av-email">{{ user.email }}</div>
+
+                {% set r = user.getRoles() %}
+                {% if 'ROLE_ADMIN' in r %}<span class="badge badge-blue">Administrateur</span>
+                {% elseif 'ROLE_GERANT' in r %}<span class="badge badge-green">Gérant</span>
+                {% else %}<span class="badge badge-orange">Ouvrier</span>{% endif %}
+
+                <hr class="av-divider">
+                <div class="av-row">
+                    <span>Statut</span>
+                    <strong class="{{ user.status == 'active' ? 'status-badge status-active' : 'status-badge status-blocked' }}">
+                        {{ user.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                    </strong>
+                </div>
+                {% if user.phone %}
+                <div class="av-row"><span>📞 Téléphone</span><strong>{{ user.phone }}</strong></div>
+                {% endif %}
+                <div class="av-row"><span>Créé le</span><strong>{{ user.createdAt ? user.createdAt|date('d/m/Y') : '—' }}</strong></div>
+                {% if user.updatedAt %}
+                <div class="av-row"><span>Modifié le</span><strong>{{ user.updatedAt|date('d/m/Y') }}</strong></div>
+                {% endif %}
+            </div>
+
+            <!-- Edit form -->
+            <div class="card">
+                <div class="card-head"><span class="card-title">✏️ Modifier l'utilisateur</span></div>
+
+                <form method="post" action="{{ path('admin_user_edit', {id: user.id}) }}">
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nom complet</label>
+                                <input type="text" name="name" class="form-input" value="{{ user.name }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email (non modifiable)</label>
+                                <input type="email" class="form-input" value="{{ user.email }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Téléphone</label>
+                                <input type="tel" name="phone" class="form-input" value="{{ user.phone }}" placeholder="Ex : 55 123 456">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Rôle</label>
+                                <select name="role" class="form-select">
+                                    <option value="ROLE_ADMIN"   {{ 'ROLE_ADMIN'   in user.getRoles() ? 'selected' : '' }}>🛡️ Administrateur</option>
+                                    <option value="ROLE_GERANT"  {{ 'ROLE_GERANT'  in user.getRoles() ? 'selected' : '' }}>🧑‍💼 Gérant</option>
+                                    <option value="ROLE_OUVRIER" {{ 'ROLE_OUVRIER' in user.getRoles() ? 'selected' : '' }}>👷 Ouvrier</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <p class="section-sep">Statut du compte</p>
+                        <div class="status-row">
+                            <div class="status-opt">
+                                <input type="radio" name="status" id="st_active" value="active" {{ user.status == 'active' ? 'checked' : '' }}>
+                                <label for="st_active">✓ Actif</label>
+                            </div>
+                            <div class="status-opt blocked">
+                                <input type="radio" name="status" id="st_blocked" value="blocked" {{ user.status == 'blocked' ? 'checked' : '' }}>
+                                <label for="st_blocked">✗ Bloqué</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button type="submit" class="btn btn-green">💾 Enregistrer les modifications</button>
+                        <a href="{{ path('admin_dashboard') }}" class="btn btn-pale">← Retour à la liste</a>
+
+                        {% if app.user.id != user.id %}
+                        <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}"
+                              onsubmit="return confirm('Supprimer définitivement « {{ user.name }} » ?');"
+                              style="margin-left:auto;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                            <button type="submit" class="btn btn-red">🗑 Supprimer</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
