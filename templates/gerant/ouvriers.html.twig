@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestion ouvriers — AgriSense 360</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/app.css') }}">
+</head>
+<body class="sidebar-collapsed">
+{% set activePage = 'ouvriers' %}
+{% set activeSection = 'main' %}
+
+<div class="ambient" aria-hidden="true">
+    <div class="ambient-leaf"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44-6-6-10-10-10-14z" fill="currentColor"/></svg></div>
+    <div class="ambient-leaf leaf-2"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12c-2 18-14 34-34 42z" fill="currentColor"/></svg></div>
+    <div class="ambient-leaf leaf-3"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44z" fill="currentColor"/></svg></div>
+</div>
+
+<div class="page">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" type="button" onclick="_sbToggle()">
+                    <span class="toggle-icon"><span></span></span>
+                    <span class="toggle-text">Réduire le menu</span>
+                </button>
+                <h1>Gestion des ouvriers</h1>
+                <p class="topbar-sub">Consultez et gérez la liste des ouvriers de votre exploitation.</p>
+            </div>
+            <div class="topbar-right">
+                <div class="top-stat">
+                    <span class="sv">{{ ouvriers|length }}</span>
+                    <span class="sl">Ouvriers</span>
+                </div>
+            </div>
+        </header>
+
+        <div style="padding: 0 34px 34px;">
+            {% for msg in app.flashes('success') %}<div class="flash-success">✓ {{ msg }}</div>{% endfor %}
+
+            <!-- Filters -->
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display:flex; align-items:center; gap:12px; padding:14px 20px; background:#fafcf8; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+                    <div style="position:relative; flex:1; min-width:200px;">
+                        <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-mute);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="searchInput" placeholder="Rechercher par nom, email, téléphone..."
+                               style="width:100%;padding:8px 12px 8px 32px;border:1.5px solid var(--border);border-radius:50px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.83rem;outline:none;background:#fff;transition:border-color .18s;"
+                               oninput="filterList()">
+                    </div>
+                    <select id="statusFilter" onchange="filterList()"
+                            style="padding:8px 12px;border:1.5px solid var(--border);border-radius:50px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;background:#fff;outline:none;">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actif</option>
+                        <option value="blocked">Bloqué</option>
+                    </select>
+                    <button onclick="resetFilters()"
+                            style="padding:8px 14px;border:1.5px solid #f5c6cb;border-radius:50px;background:#fff5f5;color:#c62828;font-family:'Plus Jakarta Sans',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;">
+                        ✕ Réinitialiser
+                    </button>
+                </div>
+
+                <div id="countBar" style="padding:8px 20px;font-size:.79rem;color:var(--text-mute);border-bottom:1px solid var(--border);font-style:italic;">
+                    {{ ouvriers|length }} ouvrier(s) trouvé(s)
+                </div>
+
+                <!-- Ouvrier cards -->
+                <div id="ouvriersList" style="padding:10px 16px 16px;">
+                    {% for ouvrier in ouvriers %}
+                    <div class="ouvrier-card"
+                         data-name="{{ ouvrier.name|lower }}"
+                         data-email="{{ ouvrier.email|lower }}"
+                         data-phone="{{ ouvrier.phone ? ouvrier.phone|lower : '' }}"
+                         data-status="{{ ouvrier.status }}"
+                         style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:8px;background:#fff;border:1.5px solid var(--border);transition:box-shadow .18s,border-color .18s,transform .14s;">
+
+                        <!-- Avatar -->
+                        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#1a4a2a,#4caf50);color:#fff;font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+                            {% if ouvrier.profilePicture %}
+                                <img src="{{ asset('uploads/profiles/' ~ ouvrier.profilePicture) }}" alt="Photo" style="width:100%;height:100%;object-fit:cover;">
+                            {% else %}
+                                {{ ouvrier.name|first|upper }}
+                            {% endif %}
+                        </div>
+
+                        <!-- Info -->
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                                {{ ouvrier.name }}
+                                <span class="badge badge-orange">Ouvrier</span>
+                            </div>
+                            <div style="font-size:.76rem;color:var(--text-mute);display:flex;gap:14px;">
+                                <span>✉ {{ ouvrier.email }}</span>
+                                {% if ouvrier.phone %}<span>📞 {{ ouvrier.phone }}</span>{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <span style="padding:4px 10px;border-radius:50px;font-size:.72rem;font-weight:700;{{ ouvrier.status == 'active' ? 'background:#e8f5e9;color:#1b5e20;' : 'background:#fde8e8;color:#b71c1c;' }}">
+                            {{ ouvrier.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                        </span>
+
+                        <!-- Actions -->
+                        <div style="display:flex;gap:8px;flex-shrink:0;">
+                            <a href="{{ path('gerant_ouvrier_show', {id: ouvrier.id}) }}"
+                               style="padding:6px 14px;border-radius:50px;font-size:.76rem;font-weight:700;background:#1976d2;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                                👁 Voir
+                            </a>
+                            <form method="post" action="{{ path('gerant_ouvrier_delete', {id: ouvrier.id}) }}"
+                                  onsubmit="return confirm('Supprimer cet ouvrier ? Cette action est irréversible.');" style="display:inline;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ ouvrier.id) }}">
+                                <button type="submit"
+                                        style="padding:6px 14px;border-radius:50px;font-size:.76rem;font-weight:700;background:#c62828;color:#fff;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:'Plus Jakarta Sans',sans-serif;">
+                                    🗑 Supprimer
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:48px;color:var(--text-mute);">
+                        Aucun ouvrier trouvé.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function filterList() {
+    const s = document.getElementById('searchInput').value.toLowerCase();
+    const st = document.getElementById('statusFilter').value;
+    let count = 0;
+    document.querySelectorAll('.ouvrier-card').forEach(c => {
+        const ok = (!s || c.dataset.name.includes(s) || c.dataset.email.includes(s) || c.dataset.phone.includes(s))
+                && (!st || c.dataset.status === st);
+        c.style.display = ok ? '' : 'none';
+        if (ok) count++;
+    });
+    document.getElementById('countBar').textContent = count + ' ouvrier(s) trouvé(s)';
+}
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    filterList();
+}
+</script>
+</body>
+</html>

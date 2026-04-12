@@ -1,0 +1,188 @@
+{% extends 'base.html.twig' %}
+{% block title %}Bienvenue — AgriSense 360{% endblock %}
+
+{% block styles %}
+<style>
+    .welcome-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        background: var(--bg);
+    }
+
+    .welcome-card {
+        background: var(--white);
+        border-radius: 20px;
+        box-shadow: 0 8px 40px rgba(46,107,46,.14);
+        padding: 48px 44px;
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+    }
+
+    .welcome-emoji { font-size: 3.5rem; margin-bottom: 12px; display: block; }
+
+    .welcome-title {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: var(--green-dark);
+        margin-bottom: 8px;
+    }
+
+    .welcome-sub {
+        color: var(--text-mid);
+        font-size: .92rem;
+        line-height: 1.6;
+        margin-bottom: 32px;
+    }
+
+    .avatar-upload-area {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        border: 3px dashed var(--border);
+        margin: 0 auto 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+        position: relative;
+        overflow: hidden;
+        background: #f6fbf4;
+    }
+
+    .avatar-upload-area:hover { border-color: var(--green-mid); background: var(--green-pale); }
+
+    .avatar-upload-area img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0; left: 0;
+        border-radius: 50%;
+    }
+
+    .avatar-placeholder { font-size: 2rem; color: var(--text-light); }
+    .avatar-label { font-size: .7rem; color: var(--text-light); margin-top: 4px; }
+
+    .upload-hint {
+        font-size: .78rem;
+        color: var(--text-light);
+        margin-bottom: 28px;
+    }
+
+    .btn-stack { display: flex; flex-direction: column; gap: 12px; }
+
+    .btn-upload {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        background: var(--green-mid);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+    .btn-upload:hover { background: var(--green-dark); }
+
+    .btn-skip {
+        display: block;
+        width: 100%;
+        padding: 13px;
+        background: transparent;
+        color: var(--text-light);
+        border: 2px solid var(--border);
+        border-radius: 50px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
+        font-size: .92rem;
+        cursor: pointer;
+        transition: all .2s;
+        text-decoration: none;
+    }
+
+    .btn-skip:hover { border-color: var(--green-mid); color: var(--green-mid); background: var(--green-pale); }
+
+    .step-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 28px;
+    }
+
+    .step { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .step.active { background: var(--green-mid); width: 24px; border-radius: 4px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="welcome-wrap">
+    <div class="welcome-card">
+        <span class="welcome-emoji">🌱</span>
+        <h1 class="welcome-title">Bienvenue sur AgriSense 360 !</h1>
+        <p class="welcome-sub">
+            Bonjour <strong>{{ app.user.name }}</strong>, votre compte est prêt.<br>
+            Souhaitez-vous ajouter une photo de profil ?
+        </p>
+
+        <div class="step-indicator">
+            <div class="step active"></div>
+            <div class="step"></div>
+            <div class="step"></div>
+        </div>
+
+        <form method="post" action="{{ path('profile_first_login_save') }}" enctype="multipart/form-data">
+            <label for="photoInput">
+                <div class="avatar-upload-area" id="avatarArea">
+                    <img id="avatarPreview" src="" alt="" style="display:none;">
+                    <span class="avatar-placeholder" id="avatarPlaceholder">📷</span>
+                    <span class="avatar-label" id="avatarLabelText">Cliquer pour choisir</span>
+                </div>
+            </label>
+
+            <input type="file" id="photoInput" name="profile_picture" accept="image/*" style="display:none;">
+            <p class="upload-hint">JPG, PNG ou WebP · max 3 Mo</p>
+
+            <div class="btn-stack">
+                <button type="submit" class="btn-upload">✓ Continuer avec cette photo</button>
+                <a href="{{ path('profile_first_login_save') }}" class="btn-skip" onclick="skipPhoto(event)">→ Ignorer, continuer sans photo</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('photoInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const img = document.getElementById('avatarPreview');
+        img.src = ev.target.result;
+        img.style.display = 'block';
+        document.getElementById('avatarPlaceholder').style.display = 'none';
+        document.getElementById('avatarLabelText').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+});
+
+function skipPhoto(e) {
+    e.preventDefault();
+    // Submit form without file to just mark firstLogin=false
+    const form = document.querySelector('form');
+    const input = document.getElementById('photoInput');
+    input.value = '';
+    form.submit();
+}
+</script>
+{% endblock %}

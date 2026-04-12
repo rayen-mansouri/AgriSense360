@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ user.name }} — Détails ouvrier</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/app.css') }}">
+</head>
+<body class="sidebar-collapsed">
+{% set activePage = 'ouvriers' %}
+{% set activeSection = 'main' %}
+
+<div class="ambient" aria-hidden="true">
+    <div class="ambient-leaf"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44z" fill="currentColor"/></svg></div>
+    <div class="ambient-leaf leaf-2"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12z" fill="currentColor"/></svg></div>
+</div>
+
+<div class="page">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" type="button" onclick="_sbToggle()">
+                    <span class="toggle-icon"><span></span></span>
+                    <span class="toggle-text">Réduire le menu</span>
+                </button>
+                <div class="breadcrumb">
+                    <a href="{{ path('gerant_ouvriers') }}">👷 Ouvriers</a>
+                    <span>›</span><span>{{ user.name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <div style="padding:0 34px 34px;">
+            <!-- Profile card -->
+            <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start;">
+
+                <!-- Left -->
+                <div class="card">
+                    <div style="padding:28px 22px;text-align:center;">
+                        <div style="width:90px;height:90px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;background:linear-gradient(135deg,#1a4a2a,#4caf50);overflow:hidden;">
+                            {% if user.profilePicture %}
+                                <img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="Photo" style="width:100%;height:100%;object-fit:cover;">
+                            {% else %}
+                                {{ user.name|first|upper }}
+                            {% endif %}
+                        </div>
+                        <div style="font-size:1.1rem;font-weight:800;margin-bottom:4px;">{{ user.name }}</div>
+                        <div style="font-size:.8rem;color:var(--text-mute);margin-bottom:12px;">{{ user.email }}</div>
+                        <span class="badge badge-orange">Ouvrier</span>
+
+                        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+                        <div style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--text-mid);margin-bottom:8px;">
+                            <span>Statut</span>
+                            <strong style="{{ user.status == 'active' ? 'color:#1b5e20' : 'color:#b71c1c' }}">
+                                {{ user.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                            </strong>
+                        </div>
+                        {% if user.phone %}
+                        <div style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--text-mid);margin-bottom:8px;">
+                            <span>📞 Téléphone</span><strong>{{ user.phone }}</strong>
+                        </div>
+                        {% endif %}
+                        <div style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--text-mid);margin-bottom:8px;">
+                            <span>Membre depuis</span>
+                            <strong>{{ user.createdAt ? user.createdAt|date('d/m/Y') : '—' }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right -->
+                <div class="card">
+                    <div class="card-head">
+                        <span class="card-title">📋 Informations de l'ouvrier</span>
+                        <span class="badge badge-orange">Lecture seule</span>
+                    </div>
+                    <div class="card-body">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            <div>
+                                <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-mute);margin-bottom:5px;">Nom complet</div>
+                                <div style="padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;background:#f8faf8;">{{ user.name }}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-mute);margin-bottom:5px;">Adresse email</div>
+                                <div style="padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;background:#f8faf8;">{{ user.email }}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-mute);margin-bottom:5px;">Téléphone</div>
+                                <div style="padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;background:#f8faf8;">{{ user.phone ?? '—' }}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-mute);margin-bottom:5px;">Statut</div>
+                                <div style="padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;background:#f8faf8;">
+                                    {{ user.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if user.profilePicture %}
+                        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border);">
+                            <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-mute);margin-bottom:10px;">Photo de profil</div>
+                            <img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="Photo de profil"
+                                 style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--border);">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div style="display:flex;gap:12px;padding:16px 22px;border-top:1px solid var(--border);background:#fafcf8;">
+                        <a href="{{ path('gerant_ouvriers') }}" class="btn btn-pale">← Retour à la liste</a>
+                        <form method="post" action="{{ path('gerant_ouvrier_delete', {id: user.id}) }}"
+                              onsubmit="return confirm('Supprimer définitivement cet ouvrier ?');"
+                              style="margin-left:auto;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                            <button type="submit" class="btn btn-red">🗑 Supprimer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

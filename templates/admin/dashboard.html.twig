@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestion des utilisateurs — AgriSense 360</title>
+    <link rel="stylesheet" href="{{ asset('assets/styles/app.css') }}">
+    <style>
+        .panel { margin: 0 36px 36px; }
+        .filters { display:flex; align-items:center; gap:10px; padding:14px 20px; background:#fafcf8; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+        .search-wrap { position:relative; flex:1; min-width:180px; }
+        .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-mute); pointer-events:none; }
+        .search-inp { width:100%; padding:8px 12px 8px 32px; border:1.5px solid var(--border); border-radius:50px; font-family:'Plus Jakarta Sans',sans-serif; font-size:.83rem; outline:none; background:#fff; transition:border-color .18s; }
+        .search-inp:focus { border-color:var(--green-400); }
+        .filter-sel { padding:8px 12px; border:1.5px solid var(--border); border-radius:50px; font-family:'Plus Jakarta Sans',sans-serif; font-size:.82rem; background:#fff; outline:none; cursor:pointer; }
+        .btn-reset { padding:8px 14px; border:1.5px solid #f5c6cb; border-radius:50px; background:#fff5f5; color:#c62828; font-family:'Plus Jakarta Sans',sans-serif; font-size:.8rem; font-weight:700; cursor:pointer; }
+        .count-bar { padding:8px 20px; font-size:.79rem; color:var(--text-mute); border-bottom:1px solid var(--border); font-style:italic; }
+        .users-list { padding:10px 16px 16px; }
+        .user-card { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:var(--radius-sm); margin-bottom:8px; background:#fff; border:1.5px solid var(--border); transition:box-shadow .18s,border-color .18s,transform .14s; animation:slideIn .25s ease both; }
+        @keyframes slideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+        .user-card:hover { box-shadow:var(--shadow-md); border-color:var(--green-400); transform:translateY(-1px); }
+        .av { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:#fff; flex-shrink:0; overflow:hidden; }
+        .av img { width:100%; height:100%; object-fit:cover; }
+        .av-0{background:linear-gradient(135deg,#1a4a2a,#4caf50)} .av-1{background:linear-gradient(135deg,#0d2e4a,#2196f3)} .av-2{background:linear-gradient(135deg,#4a1a3a,#9c27b0)} .av-3{background:linear-gradient(135deg,#4a3a1a,#ff9800)} .av-4{background:linear-gradient(135deg,#1a3a4a,#00897b)} .av-5{background:linear-gradient(135deg,#3a1a4a,#673ab7)} .av-6{background:linear-gradient(135deg,#4a1a1a,#f44336)} .av-7{background:linear-gradient(135deg,#1a3a2a,#8bc34a)}
+        .u-name { font-weight:700; font-size:.9rem; display:flex; align-items:center; gap:7px; margin-bottom:3px; }
+        .u-meta { font-size:.76rem; color:var(--text-mute); display:flex; gap:14px; }
+        .actions { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+        .btn-sm { padding:6px 13px; border-radius:50px; font-size:.76rem; font-weight:700; border:none; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; display:inline-flex; align-items:center; gap:4px; text-decoration:none; transition:filter .15s,transform .1s; }
+        .btn-sm:hover { filter:brightness(.9); transform:translateY(-1px); }
+        .btn-voir { background:#1976d2; color:#fff; }
+        .btn-suppr { background:#c62828; color:#fff; }
+        .btn-suppr.off { background:#ffcdd2; color:#ef9a9a; cursor:not-allowed; pointer-events:none; }
+        .st-active  { padding:4px 10px; border-radius:50px; font-size:.72rem; font-weight:700; background:#e8f5e9; color:#1b5e20; }
+        .st-blocked { padding:4px 10px; border-radius:50px; font-size:.72rem; font-weight:700; background:#fde8e8; color:#b71c1c; }
+    </style>
+</head>
+<body class="sidebar-collapsed">
+{% set activePage = 'users' %}
+{% set activeSection = 'main' %}
+
+<div class="ambient" aria-hidden="true">
+    <div class="ambient-leaf"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44z" fill="currentColor"/></svg></div>
+    <div class="ambient-leaf leaf-2"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12z" fill="currentColor"/></svg></div>
+</div>
+
+<div class="page">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="sidebar-toggle" type="button" onclick="_sbToggle()">
+                    <span class="toggle-icon"><span></span></span>
+                    <span class="toggle-text">Réduire le menu</span>
+                </button>
+                <h1>Gestion des utilisateurs</h1>
+                <p class="topbar-sub">{{ users|length }} utilisateur(s) enregistré(s) dans le système.</p>
+            </div>
+            <div class="topbar-right">
+                <a href="{{ path('admin_user_add') }}" style="padding:10px 22px;border-radius:50px;background:var(--green-500);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.88rem;text-decoration:none;">➕ Ajouter</a>
+            </div>
+        </header>
+
+        {% for msg in app.flashes('success') %}<div class="flash-success" style="margin:0 36px 16px;">✓ {{ msg }}</div>{% endfor %}
+        {% for msg in app.flashes('error') %}<div class="flash-error" style="margin:0 36px 16px;">⚠ {{ msg }}</div>{% endfor %}
+
+        <div class="panel">
+            <div class="card">
+                <div class="filters">
+                    <div class="search-wrap">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="searchInput" class="search-inp" placeholder="Rechercher par nom, email, téléphone...">
+                    </div>
+                    <select id="roleFilter" class="filter-sel">
+                        <option value="">Tous les rôles</option>
+                        <option value="ROLE_ADMIN">Administrateur</option>
+                        <option value="ROLE_GERANT">Gérant</option>
+                        <option value="ROLE_OUVRIER">Ouvrier</option>
+                    </select>
+                    <select id="statusFilter" class="filter-sel">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actif</option>
+                        <option value="blocked">Bloqué</option>
+                    </select>
+                    <button class="btn-reset" onclick="resetFilters()">✕ Réinitialiser</button>
+                </div>
+                <div class="count-bar" id="countBar">{{ users|length }} utilisateur(s) trouvé(s)</div>
+                <div class="users-list" id="usersList">
+                    {% for user in users %}
+                    <div class="user-card"
+                         data-name="{{ user.name|lower }}"
+                         data-email="{{ user.email|lower }}"
+                         data-phone="{{ user.phone ? user.phone|lower : '' }}"
+                         data-status="{{ user.status }}"
+                         data-role="{{ user.getRoles()[0] }}">
+                        <div class="av av-{{ loop.index0 % 8 }}">
+                            {% if user.profilePicture %}<img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="">{% else %}{{ user.name|first|upper }}{% endif %}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="u-name">
+                                {{ user.name }}
+                                {% set r = user.getRoles() %}
+                                {% if 'ROLE_ADMIN' in r %}<span class="badge badge-blue">Administrateur</span>
+                                {% elseif 'ROLE_GERANT' in r %}<span class="badge badge-green">Gérant</span>
+                                {% else %}<span class="badge badge-orange">Ouvrier</span>{% endif %}
+                            </div>
+                            <div class="u-meta">
+                                <span>✉ {{ user.email }}</span>
+                                {% if user.phone %}<span>📞 {{ user.phone }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <span class="{{ user.status == 'active' ? 'st-active' : 'st-blocked' }}">
+                            {{ user.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                        </span>
+                        <div class="actions">
+                            <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn-sm btn-voir">👁 Voir</a>
+                            {% if app.user.id != user.id %}
+                            <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}"
+                                  onsubmit="return confirm('Supprimer « {{ user.name }} » ? Action irréversible.');" style="display:inline;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                                <button type="submit" class="btn-sm btn-suppr">🗑 Supprimer</button>
+                            </form>
+                            {% else %}
+                            <button class="btn-sm btn-suppr off" disabled>🗑 Supprimer</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:48px;color:var(--text-mute);">Aucun utilisateur trouvé.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function filterUsers() {
+    const s = document.getElementById('searchInput').value.toLowerCase();
+    const role = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    let n = 0;
+    document.querySelectorAll('.user-card').forEach(c => {
+        const ok = (!s || c.dataset.name.includes(s) || c.dataset.email.includes(s) || c.dataset.phone.includes(s))
+                && (!role || c.dataset.role === role)
+                && (!status || c.dataset.status === status);
+        c.style.display = ok ? '' : 'none';
+        if (ok) n++;
+    });
+    document.getElementById('countBar').textContent = n + ' utilisateur(s) trouvé(s)';
+}
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    filterUsers();
+}
+document.getElementById('searchInput').addEventListener('input', filterUsers);
+document.getElementById('roleFilter').addEventListener('change', filterUsers);
+document.getElementById('statusFilter').addEventListener('change', filterUsers);
+</script>
+</body>
+</html>
