@@ -1,0 +1,147 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}AgriSense 360 — Complete control. Complete growth{% endblock %}
+
+{% block styles %}
+<style>
+    .landing-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .landing-card {
+        width: 100%;
+        max-width: 440px;
+        text-align: center;
+    }
+
+    .tagline {
+        color: var(--text-mid);
+        font-size: 1rem;
+        margin-bottom: 32px;
+        letter-spacing: .02em;
+    }
+
+    .cta-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 36px;
+    }
+
+    .quote-card {
+        background: var(--white);
+        border-radius: var(--radius);
+        padding: 28px 30px 22px;
+        box-shadow: var(--shadow);
+    }
+
+    .quote-label {
+        font-size: .72rem;
+        letter-spacing: .15em;
+        color: var(--text-light);
+        font-weight: 700;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .quote-label::before, .quote-label::after {
+        content: '✦';
+        color: var(--green-light);
+    }
+
+    .quote-icon {
+        font-size: 2.2rem;
+        color: var(--green-pale);
+        line-height: 1;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .quote-text {
+        font-style: italic;
+        color: var(--text-dark);
+        font-size: .95rem;
+        line-height: 1.6;
+        margin-bottom: 14px;
+    }
+
+    .quote-divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 12px 0;
+    }
+
+    .quote-author {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        color: var(--green-dark);
+        font-size: .9rem;
+        margin-bottom: 14px;
+    }
+
+    .btn-refresh {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        background: transparent;
+        border: 1.5px solid var(--border);
+        border-radius: 50px;
+        color: var(--text-mid);
+        font-size: .85rem;
+        cursor: pointer;
+        font-family: 'Lato', sans-serif;
+        transition: border-color .2s, background .2s;
+    }
+
+    .btn-refresh:hover { border-color: var(--green-mid); background: var(--green-pale); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="landing-wrap">
+    <div class="landing-card">
+        <div class="logo-wrap">
+            <span class="logo-icon">🌱</span>
+            <span class="logo-text">AgriSense 360</span>
+        </div>
+        <p class="tagline">Complete control. Complete growth</p>
+
+        <div class="cta-stack">
+            <a href="{{ path('app_login') }}" class="btn-primary">Se connecter</a>
+            <a href="{{ path('app_register') }}" class="btn-outline">Créer un compte</a>
+        </div>
+
+        <div class="quote-card">
+            <p class="quote-label">CITATION DU JOUR</p>
+            <span class="quote-icon">❝</span>
+            <p class="quote-text" id="quote-text">What the mind can conceive and believe, and the heart desire, you can achieve.</p>
+            <hr class="quote-divider">
+            <p class="quote-author" id="quote-author">— Norman Vincent Peale</p>
+            <button class="btn-refresh" onclick="newQuote()">↺ Nouvelle citation</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const quotes = [
+    { text: "What the mind can conceive and believe, and the heart desire, you can achieve.", author: "Norman Vincent Peale" },
+    { text: "The farmer is the only man in our economy who buys everything at retail, sells everything at wholesale, and pays the freight both ways.", author: "John F. Kennedy" },
+    { text: "Agriculture is our wisest pursuit, because it will in the end contribute most to real wealth, good morals, and happiness.", author: "Thomas Jefferson" },
+    { text: "To forget how to dig the earth and to tend the soil is to forget ourselves.", author: "Mahatma Gandhi" },
+    { text: "The ultimate goal of farming is not the growing of crops, but the cultivation and perfection of human beings.", author: "Masanobu Fukuoka" },
+];
+function newQuote() {
+    const q = quotes[Math.floor(Math.random() * quotes.length)];
+    document.getElementById('quote-text').textContent = q.text;
+    document.getElementById('quote-author').textContent = '— ' + q.author;
+}
+</script>
+{% endblock %}

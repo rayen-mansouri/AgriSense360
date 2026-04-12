@@ -1,0 +1,88 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'dashboard' %}
+{% set activeSection = 'main' %}
+
+{% block title %}Mon espace — AgriSense 360{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    .welcome-banner { background: linear-gradient(135deg,#01579b,#0288d1); border-radius: var(--radius); padding: 26px 30px; color: #fff; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
+    .welcome-banner h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .welcome-banner p  { font-size: .88rem; opacity: .85; }
+    .welcome-icon { font-size: 3.5rem; opacity: .2; }
+
+    .tasks-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .task-card { background: var(--white); border-radius: var(--radius-sm); padding: 16px 18px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 14px; border-left: 4px solid var(--border); transition: transform .2s; }
+    .task-card:hover { transform: translateX(3px); }
+    .task-card.urgent  { border-left-color: #d32f2f; }
+    .task-card.pending { border-left-color: #f57c00; }
+    .task-card.done    { border-left-color: #4caf50; opacity: .7; }
+    .task-check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
+    .task-card.done .task-check { background: #4caf50; border-color: #4caf50; color: #fff; }
+    .task-info { flex: 1; }
+    .task-name { font-size: .9rem; font-weight: 700; margin-bottom: 3px; }
+    .task-card.done .task-name { text-decoration: line-through; color: var(--text-light); }
+    .task-meta { font-size: .74rem; color: var(--text-light); display: flex; gap: 12px; }
+
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f0f4f8; font-size: .84rem; }
+    .info-row:last-child { border-bottom: none; }
+    .info-row strong { font-weight: 700; }
+    .weather-big { text-align: center; padding: 8px 0 14px; }
+    .weather-temp { font-size: 2.8rem; font-weight: 800; }
+    .weather-desc { font-size: .85rem; color: var(--text-light); margin-top: 4px; }
+    .weather-row  { display: flex; justify-content: space-around; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .weather-stat { text-align: center; font-size: .75rem; color: var(--text-light); }
+    .weather-stat strong { display: block; font-size: .9rem; color: var(--text-dark); font-weight: 700; }
+    .section-title { font-size: .95rem; font-weight: 800; margin-bottom: 14px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="welcome-banner">
+            <div>
+                <h1>Bonjour, {{ user.name }} 👋</h1>
+                <p>Voici vos tâches et informations pour aujourd'hui.</p>
+            </div>
+            <div class="welcome-icon">👷</div>
+        </div>
+
+        <p class="section-title">📋 Mes tâches du jour</p>
+        <div class="tasks-list">
+            <div class="task-card done"><div class="task-check">✓</div><div class="task-info"><div class="task-name">Irrigation — Parcelle A3</div><div class="task-meta"><span>📍 Zone A</span><span>⏰ 8h00 - 9h00</span></div></div><span class="badge badge-green">Terminé</span></div>
+            <div class="task-card urgent"><div class="task-check"></div><div class="task-info"><div class="task-name">Traitement phytosanitaire — Parcelle B1</div><div class="task-meta"><span>📍 Zone B</span><span>⏰ 10h00 - 12h00</span></div></div><span class="badge badge-red">Urgent</span></div>
+            <div class="task-card pending"><div class="task-check"></div><div class="task-info"><div class="task-name">Désherbage — Serre C2</div><div class="task-meta"><span>📍 Serre C</span><span>⏰ 14h00 - 16h00</span></div></div><span class="badge badge-orange">En attente</span></div>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="card">
+                <div class="card-head"><span class="card-title">👤 Mes informations</span></div>
+                <div class="card-body">
+                    <div class="info-row"><span>Nom</span><strong>{{ user.name }}</strong></div>
+                    <div class="info-row"><span>Email</span><strong>{{ user.email }}</strong></div>
+                    <div class="info-row"><span>Téléphone</span><strong>{{ user.phone ?? '—' }}</strong></div>
+                    <div class="info-row"><span>Rôle</span><strong>Ouvrier</strong></div>
+                    <div class="info-row"><span>Statut</span><strong style="color:#2e7d32;">✓ Actif</strong></div>
+                    <div class="info-row"><span>Membre depuis</span><strong>{{ user.createdAt ? user.createdAt|date('d/m/Y') : '—' }}</strong></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head"><span class="card-title">🌤️ Météo du jour</span></div>
+                <div class="card-body">
+                    <div class="weather-big"><div style="font-size:2.8rem;">☀️</div><div class="weather-temp">28°C</div><div class="weather-desc">Ensoleillé — Tunis</div></div>
+                    <div class="weather-row">
+                        <div class="weather-stat"><strong>72%</strong>Humidité</div>
+                        <div class="weather-stat"><strong>15 km/h</strong>Vent</div>
+                        <div class="weather-stat"><strong>0 mm</strong>Pluie</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
