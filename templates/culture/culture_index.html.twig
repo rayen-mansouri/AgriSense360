@@ -1,0 +1,738 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Cultures{% endblock %}
+
+{% block content %}
+
+{# ═══════════════════════════════════════════════════
+   PAGE HEADER
+   ═══════════════════════════════════════════════════ #}
+<div class="page-header">
+    <div class="page-header-left">
+        <p class="page-breadcrumb">
+            <a href="{{ path('home') }}">🏠 Accueil</a> / Cultures
+        </p>
+        <h1 class="page-title">🌱 Cultures</h1>
+        <p class="page-subtitle">{{ cultures|length }} culture(s) enregistrée(s)</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a href="{{ path('parcelle_index') }}" class="btn btn-secondary">🗺️ Voir les parcelles</a>
+        <button class="btn btn-secondary" onclick="openAgendaModal()">📅 Agenda</button>
+        <button class="btn btn-primary" onclick="openModal('modal-add')">
+            ➕ Nouvelle culture
+        </button>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   TOOLBAR
+   ═══════════════════════════════════════════════════ #}
+<div class="toolbar">
+    <form method="get" action="{{ path('culture_index') }}" style="flex:1;display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="search-wrap" style="flex:1;min-width:200px;">
+            <span class="search-icon">🔍</span>
+            <input type="text"
+                   name="search"
+                   value="{{ search }}"
+                   class="search-input"
+                   placeholder="Rechercher une culture…"
+                   autocomplete="off">
+        </div>
+        <div class="sort-group">
+            <button type="submit" name="sort" value="type"
+                    class="btn btn-secondary {% if sort == 'type' %}active{% endif %}">
+                🏷️ Type
+            </button>
+            <button type="submit" name="sort" value="etat"
+                    class="btn btn-secondary {% if sort == 'etat' %}active{% endif %}">
+                📊 État
+            </button>
+            <button type="submit" name="sort" value="surface"
+                    class="btn btn-secondary {% if sort == 'surface' %}active{% endif %}">
+                📐 Surface
+            </button>
+            {% if sort or search %}
+                <a href="{{ path('culture_index') }}" class="btn btn-secondary">↺ Reset</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   DONNÉES JS — stockées ici pour éviter les problèmes
+   d'échappement dans les attributs ondblclick inline
+   ═══════════════════════════════════════════════════ #}
+<script>
+const CULTURES_DATA = [
+    {% for culture in cultures %}
+    {
+        id: {{ culture.id }},
+        nom: {{ culture.nom|json_encode|raw }},
+        typeCulture: {{ culture.typeCulture|json_encode|raw }},
+        etat: {{ culture.etat|json_encode|raw }},
+        surface: {{ culture.surface ?? 0 }},
+        datePlantation: {{ culture.datePlantation ? culture.datePlantation|date('Y-m-d')|json_encode|raw : 'null' }},
+        dateRecolte: {{ culture.dateRecolte ? culture.dateRecolte|date('Y-m-d')|json_encode|raw : 'null' }},
+        img: {{ culture.img|json_encode|raw }},
+        parcelleName: {{ (parcelleMap[culture.parcelle.id] ?? 'N/A')|json_encode|raw }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
+
+{# ═══════════════════════════════════════════════════
+   CULTURE CARDS GRID
+   ═══════════════════════════════════════════════════ #}
+<div class="card-grid">
+
+    {% if cultures is empty %}
+        <div class="empty-state">
+            <div class="empty-icon">🌱</div>
+            <div class="empty-title">Aucune culture trouvée</div>
+            <div class="empty-subtitle">Ajoutez votre première culture pour commencer</div>
+        </div>
+    {% endif %}
+
+    {% for culture in cultures %}
+    <div class="culture-card"
+         style="cursor:pointer;"
+         title="Double-cliquez pour voir les détails"
+         ondblclick="openCultureDetail({{ culture.id }})"
+         data-culture-id="{{ culture.id }}">
+
+        <div class="culture-card-image">
+            {% if culture.img %}
+                <img src="{{ asset('images/cultures/' ~ culture.img) }}"
+                     alt="{{ culture.nom }}"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:var(--green-100);">
+                    {{ cultureTypeEmoji(culture.typeCulture) }}
+                </div>
+            {% else %}
+                <div class="img-fallback" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--green-100);">
+                    {{ cultureTypeEmoji(culture.typeCulture) }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="culture-card-body">
+            <span class="culture-card-type">{{ culture.typeCulture }}</span>
+            <div class="culture-card-name">{{ culture.nom }}</div>
+            {% set etatClass = etatToCssClass(culture.etat) %}
+            <span class="etat-badge {{ etatClass }}">{{ culture.etat }}</span>
+
+            <div class="culture-card-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Surface</span>
+                    <span class="meta-value">{{ culture.surface }} m²</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Parcelle</span>
+                    <span class="meta-value">
+                        <a href="{{ path('parcelle_index') }}" style="color:var(--green-600);text-decoration:none;">
+                            {{ parcelleMap[culture.parcelle.id] ?? 'N/A' }}
+                        </a>
+                    </span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Plantation</span>
+                    <span class="meta-value">{{ culture.datePlantation ? culture.datePlantation|date('d/m/Y') : '—' }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Récolte prévue</span>
+                    <span class="meta-value">{{ culture.dateRecolte ? culture.dateRecolte|date('d/m/Y') : '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="culture-card-footer">
+            <button class="btn btn-secondary btn-sm"
+                    onclick="event.stopPropagation(); openEditModal({{ culture.id }},
+                        '{{ culture.nom|e('js') }}',
+                        '{{ culture.typeCulture|e('js') }}',
+                        {{ culture.datePlantation ? "'" ~ culture.datePlantation|date('Y-m-d') ~ "'" : 'null' }},
+                        {{ culture.dateRecolte ? "'" ~ culture.dateRecolte|date('Y-m-d') ~ "'" : 'null' }},
+                        {{ culture.surface ?? 0 }},
+                        {{ culture.parcelle.id }})">
+                ✏️ Modifier
+            </button>
+
+            <form method="post" action="{{ path('culture_delete', {id: culture.id}) }}"
+                  onsubmit="return confirm('Supprimer « {{ culture.nom|e('js') }} » ?')"
+                  onclick="event.stopPropagation();">
+                <input type="hidden" name="_token"
+                       value="{{ csrf_token('del-culture-' ~ culture.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+{# ═══════════════════════════════════════════════════
+   MODAL — ADD CULTURE
+   ═══════════════════════════════════════════════════ #}
+<div id="modal-add" class="modal-backdrop" style="display:none;"
+     onclick="if(event.target===this)closeModal('modal-add')">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">🌱 Nouvelle culture</span>
+            <button class="modal-close" onclick="closeModal('modal-add')">×</button>
+        </div>
+        {# NO html5 required/pattern — all validation done in JS #}
+        <form id="form-add" method="post" action="{{ path('culture_new') }}"
+              onsubmit="return validateCultureForm('add')">
+            <div class="modal-body">
+
+                {% if app.request.query.has('error') %}
+                <div style="background:#ffebee; border-left:4px solid #f44336; padding:12px; border-radius:5px; margin-bottom:15px; color:#c62828;">
+                    ⚠️ Veuillez corriger les erreurs ci-dessous
+                </div>
+                {% endif %}
+
+                {# TYPE #}
+                <div class="form-group">
+                    <label class="form-label">Type de culture <span class="required">*</span></label>
+                    <select name="type_culture" id="add-type" class="form-control"
+                            onchange="updateCropList('add')">
+                        <option value="">— Sélectionner un type —</option>
+                        {% for type, names in cultureMap %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="add-type-err"></span>
+                </div>
+
+                {# NOM (filtered by type) #}
+                <div class="form-group">
+                    <label class="form-label">Culture <span class="required">*</span></label>
+                    <select name="nom" id="add-nom" class="form-control"
+                            onchange="fetchHarvestDate('add')">
+                        <option value="">— Choisir d'abord le type —</option>
+                    </select>
+                    <span class="field-error" id="add-nom-err"></span>
+                </div>
+
+                {# PARCELLE #}
+                <div class="form-group">
+                    <label class="form-label">Parcelle <span class="required">*</span></label>
+                    <select name="parcelle_id" id="add-parcelle" class="form-control">
+                        <option value="">— Sélectionner une parcelle —</option>
+                        {% for parcelle in parcelles %}
+                            {% if parcelle.statut == 'Libre' and parcelle.surfaceRestant > 0.01 %}
+                                <option value="{{ parcelle.id }}">
+                                    {{ parcelle.nom }} — Restant: {{ parcelle.surfaceRestant|number_format(2,',') }} m²
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="add-parcelle-err"></span>
+                </div>
+
+                <div class="form-row">
+                    {# DATE PLANTATION #}
+                    <div class="form-group">
+                        <label class="form-label">Date de plantation <span class="required">*</span></label>
+                        <input type="date" name="date_plantation" id="add-date-plantation"
+                               class="form-control"
+                               onchange="fetchHarvestDate('add')">
+                        <span class="field-error" id="add-date-plantation-err"></span>
+                    </div>
+
+                    {# SURFACE #}
+                    <div class="form-group">
+                        <label class="form-label">Surface (m²) <span class="required">*</span></label>
+                        <input type="text" name="surface" id="add-surface" class="form-control"
+                               placeholder="ex: 500">
+                        <span class="field-error" id="add-surface-err"></span>
+                    </div>
+                </div>
+
+                {# DATE RÉCOLTE — auto-calculated #}
+                <div class="form-group">
+                    <label class="form-label">Date de récolte</label>
+                    <input type="date" name="date_recolte" id="add-date-recolte" class="form-control">
+                    <div id="add-harvest-preview" class="harvest-preview">
+                        🗓️ Date calculée automatiquement selon la durée de croissance
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add')">Annuler</button>
+                <button type="submit" class="btn btn-primary">✅ Ajouter la culture</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   MODAL — EDIT CULTURE
+   ═══════════════════════════════════════════════════ #}
+<div id="modal-edit" class="modal-backdrop" style="display:none;"
+     onclick="if(event.target===this)closeModal('modal-edit')">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">✏️ Modifier la culture</span>
+            <button class="modal-close" onclick="closeModal('modal-edit')">×</button>
+        </div>
+        <form id="form-edit" method="post" action=""
+              onsubmit="return validateCultureForm('edit')">
+            <div class="modal-body">
+
+                {% if app.request.query.get('edit_error') == '1' %}
+                <div style="background:#ffebee; border-left:4px solid #f44336; padding:12px; border-radius:5px; margin-bottom:15px; color:#c62828;">
+                    ⚠️ Erreur lors de la modification. Veuillez vérifier les informations.
+                </div>
+                {% endif %}
+
+                {# TYPE #}
+                <div class="form-group">
+                    <label class="form-label">Type de culture <span class="required">*</span></label>
+                    <select name="type_culture" id="edit-type" class="form-control"
+                            onchange="updateCropList('edit')">
+                        <option value="">— Sélectionner un type —</option>
+                        {% for type, names in cultureMap %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="edit-type-err"></span>
+                </div>
+
+                {# NOM #}
+                <div class="form-group">
+                    <label class="form-label">Culture <span class="required">*</span></label>
+                    <select name="nom" id="edit-nom" class="form-control"
+                            onchange="fetchHarvestDate('edit')">
+                        <option value="">— Sélectionner —</option>
+                    </select>
+                    <span class="field-error" id="edit-nom-err"></span>
+                </div>
+
+                {# PARCELLE #}
+                <div class="form-group">
+                    <label class="form-label">Parcelle <span class="required">*</span></label>
+                    <select name="parcelle_id" id="edit-parcelle" class="form-control">
+                        <option value="">— Sélectionner une parcelle —</option>
+                        {% for parcelle in parcelles %}
+                            <option value="{{ parcelle.id }}" data-restant="{{ parcelle.surfaceRestant }}">
+                                {{ parcelle.nom }} — Restant: {{ parcelle.surfaceRestant|number_format(2,',') }} m²
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="edit-parcelle-err"></span>
+                </div>
+
+                <div class="form-row">
+                    {# DATE PLANTATION #}
+                    <div class="form-group">
+                        <label class="form-label">Date de plantation <span class="required">*</span></label>
+                        <input type="date" name="date_plantation" id="edit-date-plantation"
+                               class="form-control"
+                               onchange="fetchHarvestDate('edit')">
+                        <span class="field-error" id="edit-date-plantation-err"></span>
+                    </div>
+
+                    {# SURFACE #}
+                    <div class="form-group">
+                        <label class="form-label">Surface (m²) <span class="required">*</span></label>
+                        <input type="text" name="surface" id="edit-surface" class="form-control">
+                        <span class="field-error" id="edit-surface-err"></span>
+                    </div>
+                </div>
+
+                {# DATE RÉCOLTE #}
+                <div class="form-group">
+                    <label class="form-label">Date de récolte</label>
+                    <input type="date" name="date_recolte" id="edit-date-recolte" class="form-control">
+                    <div id="edit-harvest-preview" class="harvest-preview">
+                        🗓️ Date recalculée automatiquement selon la durée de croissance
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit')">Annuler</button>
+                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ══════════════════════════════════════════════════════
+   MODAL AGENDA — iframe vers /agenda
+   ══════════════════════════════════════════════════════ #}
+<div id="modal-agenda" class="modal-backdrop" style="display:none;align-items:center;justify-content:center;"
+     onclick="if(event.target===this)closeAgendaModal()">
+    <div style="
+        background:#fff;border-radius:16px;width:95vw;max-width:1150px;
+        height:90vh;display:flex;flex-direction:column;
+        box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+
+        <div style="background:linear-gradient(135deg,#1e3c2c,#2a5a3a);
+                    padding:14px 22px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+            <span style="font-size:1.2rem;font-weight:700;color:#fff;">📅 Agenda des Cultures</span>
+            <div style="flex:1"></div>
+            <button onclick="closeAgendaModal()" style="
+                background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);
+                border-radius:8px;padding:6px 16px;font-weight:700;cursor:pointer;font-size:14px;
+                font-family:inherit;">✕ Fermer</button>
+        </div>
+
+        <iframe id="agenda-iframe"
+                src="about:blank"
+                style="flex:1;border:none;width:100%;"></iframe>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<style>
+/* ── Inline field error messages ── */
+.field-error {
+    display: block;
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 4px;
+    min-height: 16px;
+    font-weight: 500;
+}
+.field-error:empty { margin-top: 0; }
+
+.form-control.is-invalid {
+    border-color: #d32f2f !important;
+    box-shadow: 0 0 0 2px rgba(211,47,47,.15);
+}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Culture map — same as Java CultureController.CULTURE_MAP
+// ═══════════════════════════════════════════════════════════════
+const CULTURE_MAP = {{ cultureMap|json_encode|raw }};
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDATION HELPERS
+// ═══════════════════════════════════════════════════════════════
+function setError(inputEl, errEl, msg) {
+    errEl.textContent = msg;
+    inputEl.classList.add('is-invalid');
+}
+
+function clearError(inputEl, errEl) {
+    errEl.textContent = '';
+    inputEl.classList.remove('is-invalid');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// validateCultureForm(prefix)
+//   prefix = 'add' | 'edit'
+//   Rules:
+//     type_culture    : must be selected
+//     nom             : must be selected (not empty)
+//     parcelle_id     : must be selected
+//     date_plantation : required
+//     surface         : required, positive number
+// ═══════════════════════════════════════════════════════════════
+function validateCultureForm(prefix) {
+    let valid = true;
+
+    /* ── TYPE ── */
+    const typeEl  = document.getElementById(prefix + '-type');
+    const typeErr = document.getElementById(prefix + '-type-err');
+    if (!typeEl.value) {
+        setError(typeEl, typeErr, '⚠️ Veuillez sélectionner un type de culture');
+        valid = false;
+    } else {
+        clearError(typeEl, typeErr);
+    }
+
+    /* ── NOM (depends on type being selected first) ── */
+    const nomEl  = document.getElementById(prefix + '-nom');
+    const nomErr = document.getElementById(prefix + '-nom-err');
+    if (!nomEl.value) {
+        setError(nomEl, nomErr, '⚠️ Veuillez sélectionner une culture');
+        valid = false;
+    } else {
+        clearError(nomEl, nomErr);
+    }
+
+    /* ── PARCELLE ── */
+    const parcelleEl  = document.getElementById(prefix + '-parcelle');
+    const parcelleErr = document.getElementById(prefix + '-parcelle-err');
+    if (!parcelleEl.value) {
+        setError(parcelleEl, parcelleErr, '⚠️ Veuillez sélectionner une parcelle');
+        valid = false;
+    } else {
+        clearError(parcelleEl, parcelleErr);
+    }
+
+    /* ── DATE PLANTATION ── */
+    const dpEl  = document.getElementById(prefix + '-date-plantation');
+    const dpErr = document.getElementById(prefix + '-date-plantation-err');
+    if (!dpEl.value) {
+        setError(dpEl, dpErr, '⚠️ La date de plantation est obligatoire');
+        valid = false;
+    } else {
+        clearError(dpEl, dpErr);
+    }
+
+    /* ── SURFACE ── */
+    const surfEl  = document.getElementById(prefix + '-surface');
+    const surfErr = document.getElementById(prefix + '-surface-err');
+    const surfVal = surfEl.value.trim();
+    if (surfVal === '') {
+        setError(surfEl, surfErr, '⚠️ La surface est obligatoire');
+        valid = false;
+    } else if (isNaN(surfVal) || isNaN(parseFloat(surfVal))) {
+        setError(surfEl, surfErr, '⚠️ Entrez un nombre valide');
+        valid = false;
+    } else if (parseFloat(surfVal) <= 0) {
+        setError(surfEl, surfErr, '⚠️ La surface doit être supérieure à 0');
+        valid = false;
+    } else {
+        clearError(surfEl, surfErr);
+    }
+
+    return valid;
+}
+
+// ── Clear errors live as user interacts ──────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    ['add', 'edit'].forEach(function(prefix) {
+        var fields = [
+            ['type',            'change'],
+            ['nom',             'change'],
+            ['parcelle',        'change'],
+            ['date-plantation', 'change'],
+            ['surface',         'input'],
+        ];
+
+        fields.forEach(function([field, evt]) {
+            var el  = document.getElementById(prefix + '-' + field);
+            var err = document.getElementById(prefix + '-' + field + '-err');
+            if (el && err) {
+                el.addEventListener(evt, function() { clearError(el, err); });
+            }
+        });
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    // Reset all error states when modal is closed
+    document.querySelectorAll('#' + id + ' .field-error').forEach(function(el) { el.textContent = ''; });
+    document.querySelectorAll('#' + id + ' .form-control.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
+}
+
+// Auto-open on redirect with ?modal=add
+{% if app.request.query.get('modal') == 'add' %}
+    window.addEventListener('DOMContentLoaded', () => openModal('modal-add'));
+{% endif %}
+
+// ═══════════════════════════════════════════════════════════════
+// CROP LIST — filtered by type (mirrors Java type→crop filtering)
+// ═══════════════════════════════════════════════════════════════
+function updateCropList(prefix) {
+    const type = document.getElementById(prefix + '-type').value;
+    const nomSelect = document.getElementById(prefix + '-nom');
+    nomSelect.innerHTML = '<option value="">— Sélectionner —</option>';
+
+    if (type && CULTURE_MAP[type]) {
+        CULTURE_MAP[type].forEach(crop => {
+            const opt = document.createElement('option');
+            opt.value = crop;
+            opt.textContent = crop;
+            nomSelect.appendChild(opt);
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HARVEST DATE — AJAX auto-calculate (mirrors CultureDurations.java)
+// ═══════════════════════════════════════════════════════════════
+async function fetchHarvestDate(prefix) {
+    const nom = document.getElementById(prefix + '-nom').value;
+    const dp  = document.getElementById(prefix + '-date-plantation').value;
+    const recolteInput = document.getElementById(prefix + '-date-recolte');
+    const previewDiv   = document.getElementById(prefix + '-harvest-preview');
+
+    if (!nom || !dp) return;
+
+    try {
+        const res  = await fetch(`{{ path('culture_harvest_date') }}?nom=${encodeURIComponent(nom)}&date=${dp}`);
+        const data = await res.json();
+
+        if (data.date) {
+            recolteInput.value = data.date;
+            previewDiv.innerHTML = `🗓️ Récolte estimée : <strong>${formatDate(data.date)}</strong>
+                — Durée totale : <strong>${data.duration} jours</strong>
+                (Semis: ${data.phases.semis}j · Croissance: ${data.phases.croissance}j · Maturité: ${data.phases.maturite}j)`;
+            previewDiv.classList.add('visible');
+        }
+    } catch(e) { console.warn('Harvest date fetch failed', e); }
+}
+
+function formatDate(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT MODAL — prefill
+// ═══════════════════════════════════════════════════════════════
+function openEditModal(id, nom, type, dp, dr, surface, parcelleId) {
+    document.getElementById('form-edit').action = `/culture/${id}/edit`;
+
+    const typeEl = document.getElementById('edit-type');
+    typeEl.value = type;
+    updateCropList('edit');
+
+    setTimeout(() => {
+        document.getElementById('edit-nom').value = nom;
+        document.getElementById('edit-date-plantation').value = dp || '';
+        document.getElementById('edit-date-recolte').value = dr || '';
+        document.getElementById('edit-surface').value = surface;
+        document.getElementById('edit-parcelle').value = parcelleId;
+    }, 10);
+
+    openModal('modal-edit');
+}
+
+// Auto-open edit modal on redirect back from controller validation error
+{% if app.request.query.get('edit_id') %}
+    window.addEventListener('DOMContentLoaded', () => {
+        {% for culture in cultures %}
+            {% if culture.id == app.request.query.get('edit_id') %}
+            openEditModal(
+                {{ culture.id }},
+                '{{ culture.nom|e('js') }}',
+                '{{ culture.typeCulture|e('js') }}',
+                '{{ culture.datePlantation ? culture.datePlantation|date('Y-m-d') : '' }}',
+                '{{ culture.dateRecolte ? culture.dateRecolte|date('Y-m-d') : '' }}',
+                {{ culture.surface ?? 0 }},
+                {{ culture.parcelle.id }}
+            );
+            {% endif %}
+        {% endfor %}
+    });
+{% endif %}
+
+// ═══════════════════════════════════════════════════════════════
+// DETAILS PANEL (double-click on card) — reads from CULTURES_DATA
+// No inline twig escaping issues
+// ═══════════════════════════════════════════════════════════════
+function openCultureDetail(id) {
+    const c = CULTURES_DATA.find(x => x.id === id);
+    if (!c) return;
+
+    // Remove any existing panel
+    const existing = document.getElementById('culture-details-panel');
+    const existingBackdrop = document.getElementById('culture-details-backdrop');
+    if (existing) {
+        if (existing.dataset.cultureId == id) {
+            existing.remove();
+            if (existingBackdrop) existingBackdrop.remove();
+            return; // toggle off
+        }
+        existing.remove();
+        if (existingBackdrop) existingBackdrop.remove();
+    }
+
+    const fmtDate = (iso) => {
+        if (!iso) return '—';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    };
+
+    const etatClass = etatToCssClass(c.etat);
+
+    const panel = document.createElement('div');
+    panel.id = 'culture-details-panel';
+    panel.dataset.cultureId = id;
+    panel.style.cssText = `
+        position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+        background:white; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+        padding:28px; z-index:9999; width:min(700px,90vw); max-height:85vh; overflow-y:auto;
+    `;
+
+    panel.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+            <h2 style="margin:0; font-size:1.6rem; color:var(--text-dark);">${c.nom}</h2>
+            <span class="etat-badge ${etatClass}">${c.etat}</span>
+        </div>
+        <div style="display:flex; gap:24px; flex-wrap:wrap;">
+            <div style="width:180px; height:180px; border-radius:12px; overflow:hidden; background:var(--green-50); flex-shrink:0; display:flex; align-items:center; justify-content:center;">
+                <img src="/images/cultures/${c.img || 'default.png'}" alt="${c.nom}" style="width:100%;height:100%;object-fit:contain;"
+                     onerror="this.parentElement.innerHTML='<span style=\\'font-size:3rem;\\'>🌱</span>'">
+            </div>
+            <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:200px;">
+                ${[
+                    ['Type', c.typeCulture],
+                    ['Surface', (c.surface || 0) + ' m²'],
+                    ['Plantation', fmtDate(c.datePlantation)],
+                    ['Récolte prévue', fmtDate(c.dateRecolte)],
+                    ['Parcelle', c.parcelleName],
+                ].map(([label, value]) => `
+                    <div style="padding:12px; background:var(--green-50); border-radius:10px; border:1px solid var(--green-200);">
+                        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--text-light); margin-bottom:4px;">${label}</div>
+                        <div style="font-size:1rem; font-weight:600; color:var(--text-dark);">${value}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <div style="margin-top:20px; text-align:right;">
+            <button class="btn btn-secondary btn-sm" id="close-details-btn">✕ Fermer</button>
+        </div>
+    `;
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'culture-details-backdrop';
+    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;';
+    backdrop.onclick = () => { panel.remove(); backdrop.remove(); };
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panel);
+
+    panel.querySelector('#close-details-btn').onclick = () => {
+        panel.remove();
+        backdrop.remove();
+    };
+}
+
+function etatToCssClass(etat) {
+    const classMap = {
+        'Semis':              'etat-semis',
+        'Croissance':         'etat-croissance',
+        'Maturité':           'etat-maturite',
+        'Récolte Prévue':     'etat-recolte-prevue',
+        'Récolte en Retard':  'etat-recolte-en-retard',
+    };
+    return classMap[etat] || 'etat-semis';
+}
+}
+
+function openAgendaModal() {
+    const modal  = document.getElementById('modal-agenda');
+    const iframe = document.getElementById('agenda-iframe');
+    if (!iframe.getAttribute('data-loaded')) {
+        iframe.src = '{{ path('agenda_view') }}';
+        iframe.setAttribute('data-loaded', '1');
+    }
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeAgendaModal() {
+    document.getElementById('modal-agenda').style.display = 'none';
+    document.body.style.overflow = '';
+}
+</script>
+
+{% endblock %}

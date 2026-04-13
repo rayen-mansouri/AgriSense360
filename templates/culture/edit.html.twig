@@ -1,0 +1,134 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier Culture{% endblock %}
+
+{% block content %}
+
+<div style="max-width:720px; margin:40px auto; padding:0 20px;">
+
+    <a href="{{ path('culture_index') }}" style="color:#5a9814; text-decoration:none; font-size:14px;">
+        ← Retour aux cultures
+    </a>
+
+    <div class="popup-content" style="margin-top:20px;">
+        <h2 class="popup-title">✏️ Modifier : {{ culture.nom }}</h2>
+
+        {# État actuel badge #}
+        <div style="margin-bottom:20px;">
+            <span style="font-size:13px; color:#555;">État actuel : </span>
+            <span class="{{ culture.etatClass }} culture-etat">{{ culture.etat }}</span>
+            <span style="font-size:12px; color:#888; margin-left:8px;">(recalculé automatiquement à la sauvegarde)</span>
+        </div>
+
+        {% if errors is defined and errors|length > 0 %}
+        <div style="background:#ffeaea; border:1px solid #f44336; border-radius:10px; padding:14px; margin-bottom:20px;">
+            {% for error in errors %}
+                <p style="color:#d32f2f; margin:4px 0; font-size:14px;">⚠️ {{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ path('culture_edit', {id: culture.id}) }}"
+              style="display:flex; flex-direction:column; gap:18px;">
+
+            <div>
+                <label class="form-label" for="nom">Nom *</label>
+                <input type="text" name="nom" id="nom" value="{{ culture.nom }}"
+                       style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;" required>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label class="form-label">Catégorie</label>
+                    <select id="categorie"
+                            style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; background:white;"
+                            onchange="updateCultureNames(this.value)">
+                        <option value="">-- Catégorie --</option>
+                        {% for categorie, noms in cultureMap %}
+                            <option value="{{ categorie }}">{{ categorie }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="type_culture">Type *</label>
+                    <select name="type_culture" id="type_culture"
+                            style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; background:white;">
+                        <option value="{{ culture.typeCulture }}" selected>{{ culture.typeCulture }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label" for="parcelle_id">Parcelle *</label>
+                <select name="parcelle_id" id="parcelle_id"
+                        style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; background:white;"
+                        required>
+                    {% for parcelle in parcelles %}
+                        <option value="{{ parcelle.id }}"
+                                data-surface="{{ parcelle.surfaceRestant }}"
+                                {% if culture.parcelle.id == parcelle.id %}selected{% endif %}>
+                            {{ parcelle.nom }} — Restant: {{ parcelle.surfaceRestant|number_format(2) }} m²
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label" for="surface">Surface (m²) *</label>
+                <input type="number" name="surface" id="surface" value="{{ culture.surface }}"
+                       min="0.01" step="0.01"
+                       style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;" required>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label class="form-label" for="date_plantation">Date de plantation *</label>
+                    <input type="date" name="date_plantation" id="date_plantation"
+                           value="{{ culture.datePlantation|date('Y-m-d') }}"
+                           style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;" required>
+                </div>
+                <div>
+                    <label class="form-label" for="date_recolte">Date de récolte *</label>
+                    <input type="date" name="date_recolte" id="date_recolte"
+                           value="{{ culture.dateRecolte|date('Y-m-d') }}"
+                           style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label" for="img">Image (optionnel)</label>
+                <input type="text" name="img" id="img" value="{{ culture.img ?? '' }}"
+                       placeholder="Ex: tomates.png"
+                       style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;">
+            </div>
+
+            <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
+                <a href="{{ path('culture_index') }}"
+                   style="padding:12px 24px; border:1px solid #ccc; border-radius:25px; text-decoration:none; color:#555;">
+                    Annuler
+                </a>
+                <button type="submit" class="add-button">💾 Sauvegarder</button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const cultureMap = {{ cultureMap|json_encode|raw }};
+function updateCultureNames(categorie) {
+    const select = document.getElementById('type_culture');
+    select.innerHTML = '';
+    if (cultureMap[categorie]) {
+        cultureMap[categorie].forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+    }
+}
+</script>
+{% endblock %}

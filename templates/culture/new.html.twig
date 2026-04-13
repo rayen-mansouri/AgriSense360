@@ -1,0 +1,175 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouvelle Culture{% endblock %}
+
+{% block content %}
+
+<div style="max-width:720px; margin:40px auto; padding:0 20px;">
+
+    <a href="{{ path('culture_index') }}" style="color:#5a9814; text-decoration:none; font-size:14px;">
+        ← Retour aux cultures
+    </a>
+
+    <div class="popup-content" style="margin-top:20px;">
+        <h2 class="popup-title">🌱 Ajouter une culture</h2>
+
+        {# Error messages #}
+        {% if errors is defined and errors|length > 0 %}
+        <div style="background:#ffeaea; border:1px solid #f44336; border-radius:10px; padding:14px; margin-bottom:20px;">
+            {% for error in errors %}
+                <p style="color:#d32f2f; margin:4px 0; font-size:14px;">⚠️ {{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ path('culture_new') }}"
+              style="display:flex; flex-direction:column; gap:18px;">
+
+            {# ── Nom ──────────────────────────────────────────── #}
+            <div>
+                <label class="form-label" for="nom">Nom de la culture *</label>
+                <input type="text" name="nom" id="nom"
+                       value="{{ culture.nom ?? '' }}"
+                       placeholder="Ex: Blé dur, Tomates cerises..."
+                       style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; font-size:14px;"
+                       required>
+            </div>
+
+            {# ── Type Culture (Catégorie → Nom) replaces your cultureMap ComboBox chain ── #}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label class="form-label" for="categorie">Catégorie *</label>
+                    <select id="categorie" name="categorie"
+                            style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; background:white;"
+                            onchange="updateCultureNames(this.value)">
+                        <option value="">-- Catégorie --</option>
+                        {% for categorie, noms in cultureMap %}
+                            <option value="{{ categorie }}"
+                                {% if culture.typeCulture is defined and categorie == culture.typeCulture %}selected{% endif %}>
+                                {{ categorie }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="type_culture">Type de culture *</label>
+                    <select id="type_culture" name="type_culture"
+                            style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; background:white;">
+                        <option value="">-- Choisir catégorie d'abord --</option>
+                        {% if culture.typeCulture is defined and culture.typeCulture %}
+                            <option value="{{ culture.typeCulture }}" selected>{{ culture.typeCulture }}</option>
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            {# ── Parcelle selector (only Libre parcelles) ──────── #}
+            <div>
+                <label class="form-label" for="parcelle_id">Parcelle * (surface disponible)</label>
+                <select name="parcelle_id" id="parcelle_id"
+                        style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px; background:white;"
+                        required>
+                    <option value="">-- Choisir une parcelle --</option>
+                    {% for parcelle in parcelles %}
+                        <option value="{{ parcelle.id }}"
+                                data-surface="{{ parcelle.surfaceRestant }}"
+                                {% if culture.parcelle is defined and culture.parcelle.id == parcelle.id %}selected{% endif %}>
+                            {{ parcelle.nom }} — Restant: {{ parcelle.surfaceRestant|number_format(2) }} m² / {{ parcelle.surface }} m²
+                            {% if parcelle.statut == 'Occupée' %}(Occupée){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small style="color:#888; font-size:12px;" id="surfaceInfo"></small>
+            </div>
+
+            {# ── Surface ───────────────────────────────────────── #}
+            <div>
+                <label class="form-label" for="surface">Surface à utiliser (m²) *</label>
+                <input type="number" name="surface" id="surface"
+                       value="{{ culture.surface ?? '' }}"
+                       placeholder="Ex: 150" min="0.01" step="0.01"
+                       style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;"
+                       required>
+            </div>
+
+            {# ── Dates ────────────────────────────────────────── #}
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label class="form-label" for="date_plantation">Date de plantation *</label>
+                    <input type="date" name="date_plantation" id="date_plantation"
+                           value="{{ culture.datePlantation ? culture.datePlantation|date('Y-m-d') : '' }}"
+                           style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;"
+                           required>
+                </div>
+                <div>
+                    <label class="form-label" for="date_recolte">Date de récolte *</label>
+                    <input type="date" name="date_recolte" id="date_recolte"
+                           value="{{ culture.dateRecolte ? culture.dateRecolte|date('Y-m-d') : '' }}"
+                           style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;"
+                           required>
+                </div>
+            </div>
+
+            {# ── État preview (auto-calculated) ───────────────── #}
+            <div style="background:#f0f7eb; border:1px solid #c8e6b0; border-radius:10px; padding:14px;">
+                <p style="font-size:13px; color:#21422f; margin:0;">
+                    ℹ️ <strong>État calculé automatiquement</strong> selon les dates de plantation et récolte.
+                    Pas besoin de le choisir manuellement.
+                </p>
+            </div>
+
+            {# ── Image (optional) ─────────────────────────────── #}
+            <div>
+                <label class="form-label" for="img">Image (nom du fichier, optionnel)</label>
+                <input type="text" name="img" id="img"
+                       value="{{ culture.img ?? '' }}"
+                       placeholder="Ex: tomates.png"
+                       style="width:100%; border:1px solid #ddd; border-radius:8px; padding:10px 14px;">
+                <small style="color:#888; font-size:12px;">Placez l'image dans public/images/cultures/</small>
+            </div>
+
+            {# ── Buttons ──────────────────────────────────────── #}
+            <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
+                <a href="{{ path('culture_index') }}"
+                   style="padding:12px 24px; border:1px solid #ccc; border-radius:25px; text-decoration:none; color:#555;">
+                    Annuler
+                </a>
+                <button type="submit" class="add-button">✅ Ajouter la culture</button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+{# Culture map data passed from controller to JS #}
+<script>
+const cultureMap = {{ cultureMap|json_encode|raw }};
+
+function updateCultureNames(categorie) {
+    const select = document.getElementById('type_culture');
+    select.innerHTML = '<option value="">-- Choisir --</option>';
+    if (cultureMap[categorie]) {
+        cultureMap[categorie].forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+    }
+}
+
+// Show available surface when parcelle is selected
+document.getElementById('parcelle_id')?.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const surface = opt.dataset.surface;
+    const info = document.getElementById('surfaceInfo');
+    if (surface) {
+        info.textContent = `✅ Surface disponible: ${parseFloat(surface).toFixed(2)} m²`;
+    } else {
+        info.textContent = '';
+    }
+});
+</script>
+{% endblock %}

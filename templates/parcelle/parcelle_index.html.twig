@@ -1,0 +1,795 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Parcelles{% endblock %}
+
+{% block content %}
+
+{# ═══════════════════════════════════════════════════
+   PAGE HEADER
+   ═══════════════════════════════════════════════════ #}
+<div class="page-header">
+    <div class="page-header-left">
+        <p class="page-breadcrumb">
+            <a href="{{ path('home') }}">🏠 Accueil</a> / Parcelles
+        </p>
+        <h1 class="page-title">🗺️ Parcelles</h1>
+        <p class="page-subtitle">{{ parcelles|length }} parcelle(s) enregistrée(s)</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a href="{{ path('culture_index') }}" class="btn btn-secondary">🌱 Voir les cultures</a>
+        <button class="btn btn-secondary" onclick="openCarteModal()">🗺️ Visualiser carte</button>
+        <button class="btn btn-primary" onclick="openModal('modal-add')">➕ Nouvelle parcelle</button>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   FLASH MESSAGES
+   ═══════════════════════════════════════════════════ #}
+{% for type, messages in app.flashes %}
+    {% for message in messages %}
+        <div style="padding:12px 18px;margin-bottom:12px;border-radius:8px;
+             background:{{ type == 'success' ? '#e8f5e9' : '#ffebee' }};
+             border-left:4px solid {{ type == 'success' ? '#4CAF50' : '#f44336' }};
+             color:{{ type == 'success' ? '#2e7d32' : '#c62828' }};font-weight:500;">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endfor %}
+
+{# ═══════════════════════════════════════════════════
+   TOOLBAR
+   ═══════════════════════════════════════════════════ #}
+<div class="toolbar">
+    <form method="get" action="{{ path('parcelle_index') }}" style="flex:1;display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="search-wrap" style="flex:1;min-width:200px;">
+            <span class="search-icon">🔍</span>
+            <input type="text" name="search" value="{{ search }}" class="search-input"
+                   placeholder="Rechercher par nom ou gouvernorat…" autocomplete="off">
+        </div>
+        <div class="sort-group">
+            <button type="submit" name="sort" value="statut"
+                    class="btn btn-secondary {% if sort == 'statut' %}active{% endif %}">🔵 Statut</button>
+            <button type="submit" name="sort" value="surface"
+                    class="btn btn-secondary {% if sort == 'surface' %}active{% endif %}">📐 Surface</button>
+            {% if sort or search %}
+                <a href="{{ path('parcelle_index') }}" class="btn btn-secondary">↺ Reset</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% if parcelles|length > 0 %}
+<div style="margin-bottom:10px;color:#888;font-size:0.82rem;text-align:center;">
+    💡 Double-cliquez sur une carte pour voir les détails et les cultures
+</div>
+{% endif %}
+
+{# ═══════════════════════════════════════════════════
+   DONNÉES JS — stockées ici, pas inline dans onclick
+   ✅ C'est ça qui corrige le double-clic cassé
+   ═══════════════════════════════════════════════════ #}
+<script>
+const PARCELLES_DATA = [
+    {% for p in parcelles %}
+    {
+        id: {{ p.id }},
+        nom: {{ p.nom|json_encode|raw }},
+        surface: {{ p.surface }},
+        surfaceRestant: {{ p.surfaceRestant }},
+        taux: {{ p.tauxOccupation }},
+        localisation: {{ p.localisation|json_encode|raw }},
+        typeSol: {{ p.typeSol|json_encode|raw }},
+        statut: {{ p.statut|json_encode|raw }},
+        cultures: {{ p.cultures|json_encode|raw }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
+
+{# ═══════════════════════════════════════════════════
+   GRILLE DES CARTES
+   ═══════════════════════════════════════════════════ #}
+<div class="card-grid">
+
+    {% if parcelles is empty %}
+        <div class="empty-state">
+            <div class="empty-icon">🗺️</div>
+            <div class="empty-title">Aucune parcelle trouvée</div>
+            <div class="empty-subtitle">Ajoutez votre première parcelle pour commencer</div>
+        </div>
+    {% endif %}
+
+    {% for parcelle in parcelles %}
+    {#
+       ondblclick passe juste l'ID entier — aucun JSON inline dans l'attribut HTML
+       Les données viennent de PARCELLES_DATA défini au-dessus
+    #}
+    <div class="parcelle-card"
+         style="cursor:pointer;"
+         title="Double-cliquez pour voir les détails"
+         ondblclick="openDetailModal({{ parcelle.id }})">
+
+        <div class="parcelle-card-header">
+            <div class="parcelle-card-name">{{ parcelle.nom }}</div>
+            <span class="parcelle-statut {{ parcelle.statut == 'Libre' ? 'statut-libre' : 'statut-occupee' }}">
+                {{ parcelle.statut == 'Libre' ? '🟢' : '🟠' }} {{ parcelle.statut }}
+            </span>
+        </div>
+
+        <div class="parcelle-info-grid">
+            <div class="parcelle-info-item">
+                <span class="meta-label">📐 Surface totale</span>
+                <span class="meta-value">{{ parcelle.surface|number_format(0,',') }} m²</span>
+            </div>
+            <div class="parcelle-info-item">
+                <span class="meta-label">📏 Restante</span>
+                <span class="meta-value">{{ parcelle.surfaceRestant|number_format(2,',') }} m²</span>
+            </div>
+            <div class="parcelle-info-item">
+                <span class="meta-label">📍 Localisation</span>
+                <span class="meta-value">{{ parcelle.localisation }}</span>
+            </div>
+            <div class="parcelle-info-item">
+                <span class="meta-label">🌍 Type de sol</span>
+                {% set solClass = parcelle.typeSol == 'Sol Limoneux' ? 'sol-limoneux'
+                               : (parcelle.typeSol == 'Sol Argileux' ? 'sol-argileux' : 'sol-sablonneux') %}
+                <span class="type-sol-badge {{ solClass }}">{{ parcelle.typeSol }}</span>
+            </div>
+        </div>
+
+        {% set taux = parcelle.tauxOccupation %}
+        <div class="progress-wrap">
+            <div class="progress-label">
+                <span>📊 Occupation</span>
+                <span>{{ taux }}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:{{ taux }}%;
+                    {% if taux >= 90 %}background:var(--red-600){% elseif taux >= 60 %}background:var(--amber){% endif %}">
+                </div>
+            </div>
+        </div>
+
+        {% set culturesCount = parcelle.cultures|length %}
+
+        <div class="parcelle-card-footer">
+            <a href="{{ path('parcelle_show', {id: parcelle.id}) }}"
+               class="btn btn-secondary btn-sm"
+               onclick="event.stopPropagation();">
+                🔍 Détails
+            </a>
+            <button class="btn btn-secondary btn-sm"
+                    onclick="event.stopPropagation(); openEditModal({{ parcelle.id }},
+                        '{{ parcelle.nom|e('js') }}',
+                        {{ parcelle.surface }},
+                        '{{ parcelle.localisation|e('js') }}',
+                        '{{ parcelle.typeSol|e('js') }}',
+                        '{{ parcelle.statut|e('js') }}',
+                        {{ parcelle.surfaceRestant }},
+                        {{ culturesCount }})">
+                ✏️ Modifier
+            </button>
+
+            <form method="post" action="{{ path('parcelle_delete', {id: parcelle.id}) }}"
+                  onsubmit="return confirmDelete('{{ parcelle.nom|e('js') }}', {{ culturesCount }})"
+                  onclick="event.stopPropagation();">
+                <input type="hidden" name="_token" value="{{ csrf_token('del-parcelle-' ~ parcelle.id) }}">
+                <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+{# ═══════════════════════════════════════════════════
+   MODAL — AJOUTER PARCELLE
+   ═══════════════════════════════════════════════════ #}
+<div id="modal-add" class="modal-backdrop" style="display:none;"
+     onclick="if(event.target===this)closeModal('modal-add')">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">🗺️ Nouvelle parcelle</span>
+            <button class="modal-close" onclick="closeModal('modal-add')">×</button>
+        </div>
+        <form id="form-add" method="post" action="{{ path('parcelle_new') }}"
+              onsubmit="return validateParcelleForm('add')">
+            <div class="modal-body">
+
+                {% if app.request.query.has('error') %}
+                <div style="background:#ffebee;border-left:4px solid #f44336;padding:12px;border-radius:5px;margin-bottom:15px;color:#c62828;">
+                    ⚠️ Veuillez corriger les erreurs ci-dessous
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label class="form-label">Nom de la parcelle <span class="required">*</span></label>
+                    <input type="text" name="nom" id="add-nom" class="form-control"
+                           placeholder="Ex: Champ Nord, Parcelle A…">
+                    <span class="field-error" id="add-nom-err"></span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Surface (m²) <span class="required">*</span></label>
+                        <input type="text" name="surface" id="add-surface" class="form-control"
+                               placeholder="Ex: 5000">
+                        <span class="field-error" id="add-surface-err"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Statut</label>
+                        <select name="statut" id="add-statut" class="form-control">
+                            <option value="Libre" selected>🟢 Libre</option>
+                            <option value="Occupée">🟠 Occupée</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gouvernorat <span class="required">*</span></label>
+                    <select name="localisation" id="add-localisation" class="form-control">
+                        <option value="">— Sélectionner un gouvernorat —</option>
+                        {% for gov in gouvernorats %}
+                            <option value="{{ gov }}">📍 {{ gov }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="add-localisation-err"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Type de sol <span class="required">*</span></label>
+                    <select name="type_sol" id="add-type-sol" class="form-control">
+                        <option value="">— Sélectionner le type de sol —</option>
+                        {% for type in typesSol %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="add-type-sol-err"></span>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add')">Annuler</button>
+                <button type="submit" class="btn btn-primary">✅ Ajouter la parcelle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   MODAL — MODIFIER PARCELLE
+   ═══════════════════════════════════════════════════ #}
+<div id="modal-edit" class="modal-backdrop" style="display:none;"
+     onclick="if(event.target===this)closeModal('modal-edit')">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">✏️ Modifier la parcelle</span>
+            <button class="modal-close" onclick="closeModal('modal-edit')">×</button>
+        </div>
+        <form id="form-edit" method="post" action=""
+              onsubmit="return validateParcelleForm('edit')">
+            <div class="modal-body">
+
+                {% if app.request.query.get('edit_error') == '1' %}
+                <div style="background:#ffebee;border-left:4px solid #f44336;padding:12px;border-radius:5px;margin-bottom:15px;color:#c62828;">
+                    ⚠️ Erreur lors de la modification. Veuillez vérifier les informations.
+                </div>
+                {% endif %}
+
+                <div id="cultures-warning"
+                     style="display:none;background:#fff3cd;border-left:4px solid #ffc107;padding:12px;border-radius:5px;margin-bottom:15px;color:#856404;">
+                    ⚠️ Cette parcelle contient <strong id="cultures-warning-count">0</strong> culture(s).
+                    La surface ne peut pas être modifiée.
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nom <span class="required">*</span></label>
+                    <input type="text" name="nom" id="edit-nom" class="form-control">
+                    <span class="field-error" id="edit-nom-err"></span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Surface (m²) <span class="required">*</span></label>
+                        <input type="text" name="surface" id="edit-surface" class="form-control">
+                        <span class="field-error" id="edit-surface-err"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Statut (Automatique)</label>
+                        <div id="edit-statut-display"
+                             style="padding:10px;background:#f5f5f5;border-radius:5px;border:1px solid #ddd;font-weight:bold;display:flex;align-items:center;gap:8px;">
+                            <span id="edit-statut-icon">🟢</span>
+                            <span id="edit-statut-text">Libre</span>
+                        </div>
+                        <input type="hidden" name="statut" id="edit-statut" value="Libre">
+                        <small style="color:#999;margin-top:5px;">Mis à jour automatiquement selon l'espace disponible</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gouvernorat <span class="required">*</span></label>
+                    <select name="localisation" id="edit-localisation" class="form-control">
+                        <option value="">— Sélectionner —</option>
+                        {% for gov in gouvernorats %}
+                            <option value="{{ gov }}">📍 {{ gov }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="edit-localisation-err"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Type de sol <span class="required">*</span></label>
+                    <select name="type_sol" id="edit-type-sol" class="form-control">
+                        <option value="">— Sélectionner —</option>
+                        {% for type in typesSol %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="field-error" id="edit-type-sol-err"></span>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit')">Annuler</button>
+                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   MODAL — DÉTAILS PARCELLE (double-clic)
+   ═══════════════════════════════════════════════════ #}
+<div id="modal-detail" class="modal-backdrop" style="display:none;"
+     onclick="if(event.target===this)closeModal('modal-detail')">
+    <div class="modal modal-details" style="max-width:780px;width:95%;">
+        <div class="modal-header">
+            <span class="modal-title">🗺️ <span id="detail-nom">—</span></span>
+            <button class="modal-close" onclick="closeModal('modal-detail')">×</button>
+        </div>
+        <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+
+            <div style="background:linear-gradient(135deg,var(--green-50) 0%,var(--green-100) 100%);
+                        border-radius:14px;padding:20px;margin-bottom:20px;border-left:5px solid var(--green-600);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                    <span style="font-size:1.1rem;font-weight:700;color:var(--text-dark);">
+                        📍 <span id="detail-localisation">—</span>
+                    </span>
+                    <span id="detail-statut-badge"
+                          style="padding:6px 16px;border-radius:20px;font-weight:700;font-size:0.9rem;border:1.5px solid;">—</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+                    <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:12px;text-align:center;">
+                        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-light);margin-bottom:4px;">Surface totale</div>
+                        <div style="font-size:1.2rem;font-weight:700;color:var(--green-700);" id="detail-surface">—</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:12px;text-align:center;">
+                        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-light);margin-bottom:4px;">Restante</div>
+                        <div style="font-size:1.2rem;font-weight:700;color:var(--green-700);" id="detail-surface-restant">—</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:12px;text-align:center;">
+                        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-light);margin-bottom:4px;">Type de sol</div>
+                        <div style="font-size:0.95rem;font-weight:600;color:var(--text-dark);" id="detail-type-sol">—</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:12px;text-align:center;">
+                        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-light);margin-bottom:4px;">Occupation</div>
+                        <div style="font-size:1.2rem;font-weight:700;" id="detail-taux">—</div>
+                    </div>
+                </div>
+
+                <div style="margin-top:14px;">
+                    <div class="progress-bar" style="height:10px;border-radius:5px;">
+                        <div id="detail-progress-fill" class="progress-fill"
+                             style="height:10px;border-radius:5px;width:0%;transition:width 0.4s ease;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size:1rem;font-weight:700;color:var(--text-dark);margin-bottom:12px;">
+                🌱 Cultures sur cette parcelle (<span id="detail-cultures-count">0</span>)
+            </div>
+            <div id="detail-cultures-container"></div>
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-detail')">Fermer</button>
+            <button type="button" class="btn btn-primary" id="detail-edit-btn">✏️ Modifier cette parcelle</button>
+        </div>
+    </div>
+</div>
+
+
+{# ══════════════════════════════════════════════════════
+   MODAL CARTE — iframe vers /carte-parcelles
+   ══════════════════════════════════════════════════════ #}
+<div id="modal-carte" class="modal-backdrop" style="display:none;align-items:center;justify-content:center;"
+     onclick="if(event.target===this)closeCarteModal()">
+    <div style="
+        background:#fff;border-radius:16px;width:95vw;max-width:1300px;
+        height:90vh;display:flex;flex-direction:column;
+        box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+
+        <div style="background:linear-gradient(135deg,#1b5e20,#2e7d32);
+                    padding:14px 22px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+            <span style="font-size:1.2rem;font-weight:700;color:#fff;">🗺️ Carte des Parcelles — Tunisie</span>
+            <div style="flex:1"></div>
+            <button onclick="closeCarteModal()" style="
+                background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);
+                border-radius:8px;padding:6px 16px;font-weight:700;cursor:pointer;font-size:14px;
+                font-family:inherit;">✕ Fermer</button>
+        </div>
+
+        <iframe id="carte-iframe"
+                src="about:blank"
+                style="flex:1;border:none;width:100%;"></iframe>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<style>
+/* ── Messages d'erreur sous les champs ── */
+.field-error {
+    display: block;
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 5px;
+    min-height: 16px;
+    font-weight: 500;
+}
+.field-error:empty { margin-top: 0; }
+
+/* Bordure rouge sur champ invalide */
+.form-control.is-invalid {
+    border-color: #d32f2f !important;
+    box-shadow: 0 0 0 3px rgba(211,47,47,.15);
+}
+
+/* Cartes cultures dans le modal détail */
+.detail-culture-card {
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.detail-culture-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+/* ══════════════════════════════════════════════════
+   HELPERS MODALS
+   ══════════════════════════════════════════════════ */
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    document.querySelectorAll('#' + id + ' .field-error').forEach(el => el.textContent = '');
+    document.querySelectorAll('#' + id + ' .form-control.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+}
+
+{% if app.request.query.get('modal') == 'add' %}
+window.addEventListener('DOMContentLoaded', () => openModal('modal-add'));
+{% endif %}
+
+function confirmDelete(nom, culturesCount) {
+    if (culturesCount > 0)
+        return confirm(`⚠️ La parcelle "${nom}" contient ${culturesCount} culture(s).\n\nToutes les cultures associées seront supprimées !\n\nConfirmer ?`);
+    return confirm(`Supprimer la parcelle "${nom}" ?`);
+}
+
+/* ══════════════════════════════════════════════════
+   VALIDATION — s'affiche UNIQUEMENT au clic Submit
+   Les champs invalides ont : bordure rouge + message dessous
+   ══════════════════════════════════════════════════ */
+function setError(inputEl, errEl, msg) {
+    errEl.textContent = msg;
+    inputEl.classList.add('is-invalid');
+    /* Scroll vers le premier champ en erreur */
+    inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearFieldError(inputEl, errEl) {
+    errEl.textContent = '';
+    inputEl.classList.remove('is-invalid');
+}
+
+function validateParcelleForm(prefix) {
+    let valid = true;
+
+    /* ── NOM ── */
+    const nomEl  = document.getElementById(prefix + '-nom');
+    const nomErr = document.getElementById(prefix + '-nom-err');
+    const nomVal = nomEl.value.trim();
+    if (nomVal === '') {
+        setError(nomEl, nomErr, '⚠️ Le nom est obligatoire');
+        valid = false;
+    } else if (nomVal.length < 3) {
+        setError(nomEl, nomErr, '⚠️ Minimum 3 caractères');
+        valid = false;
+    } else {
+        clearFieldError(nomEl, nomErr);
+    }
+
+    /* ── SURFACE (ignorée si disabled) ── */
+    const surfEl  = document.getElementById(prefix + '-surface');
+    const surfErr = document.getElementById(prefix + '-surface-err');
+    if (!surfEl.disabled) {
+        const surfVal = surfEl.value.trim();
+        if (surfVal === '') {
+            setError(surfEl, surfErr, '⚠️ La surface est obligatoire');
+            valid = false;
+        } else if (isNaN(surfVal) || parseFloat(surfVal) <= 0) {
+            setError(surfEl, surfErr, '⚠️ Entrez un nombre positif');
+            valid = false;
+        } else {
+            clearFieldError(surfEl, surfErr);
+        }
+    }
+
+    /* ── LOCALISATION ── */
+    const locEl  = document.getElementById(prefix + '-localisation');
+    const locErr = document.getElementById(prefix + '-localisation-err');
+    if (!locEl.value) {
+        setError(locEl, locErr, '⚠️ Veuillez sélectionner un gouvernorat');
+        valid = false;
+    } else {
+        clearFieldError(locEl, locErr);
+    }
+
+    /* ── TYPE DE SOL ── */
+    const solEl  = document.getElementById(prefix + '-type-sol');
+    const solErr = document.getElementById(prefix + '-type-sol-err');
+    if (!solEl.value) {
+        setError(solEl, solErr, '⚠️ Veuillez sélectionner le type de sol');
+        valid = false;
+    } else {
+        clearFieldError(solEl, solErr);
+    }
+
+    return valid; /* false = formulaire bloqué, erreurs affichées */
+}
+
+/* Efface l'erreur dès que l'utilisateur corrige */
+document.addEventListener('DOMContentLoaded', function () {
+    ['add', 'edit'].forEach(function(prefix) {
+        var nomEl  = document.getElementById(prefix + '-nom');
+        var surfEl = document.getElementById(prefix + '-surface');
+        var locEl  = document.getElementById(prefix + '-localisation');
+        var solEl  = document.getElementById(prefix + '-type-sol');
+
+        if (nomEl)  nomEl.addEventListener('input',  () => clearFieldError(nomEl,  document.getElementById(prefix + '-nom-err')));
+        if (surfEl) surfEl.addEventListener('input',  () => clearFieldError(surfEl, document.getElementById(prefix + '-surface-err')));
+        if (locEl)  locEl.addEventListener('change', () => clearFieldError(locEl,  document.getElementById(prefix + '-localisation-err')));
+        if (solEl)  solEl.addEventListener('change', () => clearFieldError(solEl,  document.getElementById(prefix + '-type-sol-err')));
+    });
+});
+
+/* ══════════════════════════════════════════════════
+   MODAL MODIFIER — pré-remplissage des champs
+   ══════════════════════════════════════════════════ */
+function openEditModal(id, nom, surface, localisation, typeSol, statut, surfaceRestant, culturesCount) {
+    document.getElementById('form-edit').action    = `/parcelle/${id}/edit`;
+    document.getElementById('edit-nom').value      = nom;
+    document.getElementById('edit-surface').value  = surface;
+
+    const hasCultures   = culturesCount > 0;
+    const surfaceInput  = document.getElementById('edit-surface');
+    const statusDisplay = document.getElementById('edit-statut-display');
+    const warningDiv    = document.getElementById('cultures-warning');
+    const warningCount  = document.getElementById('cultures-warning-count');
+
+    if (hasCultures) {
+        surfaceInput.disabled        = true;
+        surfaceInput.style.opacity   = '0.5';
+        surfaceInput.style.cursor    = 'not-allowed';
+        statusDisplay.style.opacity  = '0.5';
+        warningDiv.style.display     = 'block';
+        warningCount.textContent     = culturesCount;
+    } else {
+        surfaceInput.disabled        = false;
+        surfaceInput.style.opacity   = '1';
+        surfaceInput.style.cursor    = 'auto';
+        statusDisplay.style.opacity  = '1';
+        warningDiv.style.display     = 'none';
+    }
+
+    setTimeout(() => {
+        document.getElementById('edit-localisation').value = localisation;
+        document.getElementById('edit-type-sol').value     = typeSol;
+        updateParcelleStatus(surfaceRestant);
+    }, 10);
+
+    openModal('modal-edit');
+}
+
+function updateParcelleStatus(surfaceRestant) {
+    const statusInput   = document.getElementById('edit-statut');
+    const statusDisplay = document.getElementById('edit-statut-display');
+    const statusIcon    = document.getElementById('edit-statut-icon');
+    const statusText    = document.getElementById('edit-statut-text');
+    const isLibre       = surfaceRestant > 0.01;
+
+    if (isLibre) {
+        statusDisplay.style.background  = '#e8f5e9';
+        statusDisplay.style.borderColor = '#4CAF50';
+        statusInput.value               = 'Libre';
+        statusIcon.textContent          = '🟢';
+        statusText.textContent          = 'Libre';
+        statusText.style.color          = '#2e7d32';
+    } else {
+        statusDisplay.style.background  = '#ffebee';
+        statusDisplay.style.borderColor = '#f44336';
+        statusInput.value               = 'Occupée';
+        statusIcon.textContent          = '🟠';
+        statusText.textContent          = 'Occupée';
+        statusText.style.color          = '#c62828';
+    }
+}
+
+/* Auto-ouvre modal modifier si ?edit_id= dans l'URL */
+{% if app.request.query.get('edit_id') %}
+window.addEventListener('DOMContentLoaded', () => {
+    {% for parcelle in parcelles %}
+        {% if parcelle.id == app.request.query.get('edit_id') %}
+        openEditModal(
+            {{ parcelle.id }},
+            '{{ parcelle.nom|e('js') }}',
+            {{ parcelle.surface }},
+            '{{ parcelle.localisation|e('js') }}',
+            '{{ parcelle.typeSol|e('js') }}',
+            '{{ parcelle.statut|e('js') }}',
+            {{ parcelle.surfaceRestant }},
+            {{ parcelle.cultures|length }}
+        );
+        {% endif %}
+    {% endfor %}
+});
+{% endif %}
+
+/* ══════════════════════════════════════════════════
+   MODAL DÉTAILS — ouvert par double-clic
+   ✅ FIX PRINCIPAL : on lit depuis PARCELLES_DATA
+   défini en <script> dans le HTML (pas dans onclick)
+   Aucun problème d'échappement de caractères
+   ══════════════════════════════════════════════════ */
+function openDetailModal(parcelleId) {
+    const p = PARCELLES_DATA.find(x => x.id === parcelleId);
+    if (!p) return;
+
+    document.getElementById('detail-nom').textContent          = p.nom;
+    document.getElementById('detail-localisation').textContent = p.localisation;
+    document.getElementById('detail-surface').textContent      = p.surface.toLocaleString('fr-FR') + ' m²';
+    document.getElementById('detail-surface-restant').textContent = p.surfaceRestant.toFixed(2) + ' m²';
+    document.getElementById('detail-type-sol').textContent     = p.typeSol;
+    document.getElementById('detail-cultures-count').textContent = (p.cultures || []).length;
+
+    /* Taux d'occupation + couleur */
+    const tauxEl = document.getElementById('detail-taux');
+    const fillEl = document.getElementById('detail-progress-fill');
+    tauxEl.textContent  = p.taux + '%';
+    tauxEl.style.color  = p.taux >= 90 ? 'var(--red-600)' : (p.taux >= 60 ? 'var(--amber)' : 'var(--green-600)');
+    fillEl.style.width      = p.taux + '%';
+    fillEl.style.background = p.taux >= 90 ? 'var(--red-600)' : (p.taux >= 60 ? 'var(--amber)' : 'var(--green-500)');
+
+    /* Badge statut */
+    const badge = document.getElementById('detail-statut-badge');
+    if (p.statut === 'Libre') {
+        badge.textContent       = '🟢 Libre';
+        badge.style.background  = '#e8f5e9';
+        badge.style.color       = '#2e7d32';
+        badge.style.borderColor = '#4CAF50';
+    } else {
+        badge.textContent       = '🟠 Occupée';
+        badge.style.background  = '#fff3e0';
+        badge.style.color       = '#e65100';
+        badge.style.borderColor = '#FF9800';
+    }
+
+    /* Bouton "Modifier" dans le footer du modal */
+    document.getElementById('detail-edit-btn').onclick = function () {
+        closeModal('modal-detail');
+        openEditModal(p.id, p.nom, p.surface, p.localisation, p.typeSol, p.statut, p.surfaceRestant, (p.cultures || []).length);
+    };
+
+    /* ── Liste des cultures ── */
+    const container = document.getElementById('detail-cultures-container');
+    container.innerHTML = '';
+
+    if (!p.cultures || p.cultures.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:40px 20px;color:var(--text-light);">
+                <div style="font-size:2.5rem;margin-bottom:10px;">🌾</div>
+                <div>Aucune culture sur cette parcelle</div>
+            </div>`;
+    } else {
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;';
+
+        p.cultures.forEach(function(culture) {
+            const card = document.createElement('div');
+            card.className = 'detail-culture-card';
+
+            const img = document.createElement('img');
+            img.src = '/images/cultures/' + (culture.img || 'default.png');
+            img.style.cssText = 'width:100%;height:120px;object-fit:contain;background:var(--green-100);border-radius:8px;padding:8px;';
+            img.onerror = function() {
+                this.style.display = 'none';
+                const fb = document.createElement('div');
+                fb.style.cssText = 'width:100%;height:120px;display:flex;align-items:center;justify-content:center;background:var(--green-100);border-radius:8px;font-size:2.5rem;';
+                fb.textContent = '🌱';
+                this.parentNode.insertBefore(fb, this.nextSibling);
+            };
+
+            const nomEl = document.createElement('div');
+            nomEl.style.cssText = 'font-weight:600;font-size:0.95rem;color:var(--text-dark);';
+            nomEl.textContent = culture.nom;
+
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:8px;justify-content:space-between;align-items:center;';
+
+            const typeEl = document.createElement('small');
+            typeEl.style.cssText = 'color:var(--text-light);font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;font-weight:500;';
+            typeEl.textContent = culture.typeCulture || 'N/A';
+
+            const etatEl = document.createElement('span');
+            etatEl.textContent = culture.etat || 'N/A';
+            etatEl.className   = 'etat-badge ' + getEtatCssClass(culture.etat);
+            etatEl.style.cssText = 'font-size:0.72rem;padding:3px 7px;white-space:nowrap;';
+
+            row.appendChild(typeEl);
+            row.appendChild(etatEl);
+
+            const surfBox = document.createElement('div');
+            surfBox.style.cssText = 'background:var(--green-50);border:1px solid var(--green-200);border-radius:8px;padding:8px;text-align:center;';
+            surfBox.innerHTML = `<div style="color:var(--text-light);font-size:0.7rem;text-transform:uppercase;margin-bottom:3px;">📐 Surface</div>
+                                 <div style="color:var(--green-700);font-weight:600;">${culture.surface || 0} m²</div>`;
+
+            card.appendChild(img);
+            card.appendChild(nomEl);
+            card.appendChild(row);
+            card.appendChild(surfBox);
+            grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+    }
+
+    openModal('modal-detail');
+}
+
+function getEtatCssClass(etat) {
+    return ({
+        'Semis'             : 'etat-semis',
+        'Croissance'        : 'etat-croissance',
+        'Maturité'          : 'etat-maturite',
+        'Récolte Prévue'    : 'etat-recolte-prevue',
+        'Récolte en Retard' : 'etat-recolte-en-retard'
+    })[etat] || 'etat-semis';
+}
+}
+
+function openCarteModal() {
+    const modal  = document.getElementById('modal-carte');
+    const iframe = document.getElementById('carte-iframe');
+    if (!iframe.getAttribute('data-loaded')) {
+        iframe.src = '{{ path('carte_parcelles') }}';
+        iframe.setAttribute('data-loaded', '1');
+    }
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeCarteModal() {
+    document.getElementById('modal-carte').style.display = 'none';
+    document.body.style.overflow = '';
+}
+</script>  
+
+{% endblock %}
