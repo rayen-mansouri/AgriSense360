@@ -403,7 +403,7 @@ const PARCELLES_DATA = [
 {# ══════════════════════════════════════════════════════
    MODAL CARTE — iframe vers /carte-parcelles
    ══════════════════════════════════════════════════════ #}
-<div id="modal-carte" class="modal-backdrop" style="display:none;align-items:center;justify-content:center;"
+<div id="modal-carte" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;"
      onclick="if(event.target===this)closeCarteModal()">
     <div style="
         background:#fff;border-radius:16px;width:95vw;max-width:1300px;
@@ -790,6 +790,6 @@ function closeCarteModal() {
     document.getElementById('modal-carte').style.display = 'none';
     document.body.style.overflow = '';
 }
-</script>  
+</script>
 
 {% endblock %}
