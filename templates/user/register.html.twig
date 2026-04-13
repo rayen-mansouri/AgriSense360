@@ -8,13 +8,17 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --g5: #4caf50; --g7: #2e7d32;
-            --panel: #1e2d3d;
-            --panel-light: #263545;
-            --border-inp: rgba(255,255,255,.15);
-            --text: #f0f4f8;
-            --muted: #8fa4b8;
-        }
+    --g5: #3e8e3e;
+    --g7: #2d6a2d;
+
+    --panel: #f4f9f1;
+    --panel-light: #ffffff;
+
+    --border-inp: #dde8d8;
+
+    --text: #1e3a1e;
+    --muted: #6b8f6b;
+}
         html, body { height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; }
 
         .split { display: flex; width: 100vw; height: 100vh; }
@@ -51,7 +55,7 @@
         /* Fields */
         .field-group { margin-bottom: 14px; }
         .field-label { display: block; font-size: .75rem; font-weight: 600; color: var(--muted); margin-bottom: 7px; letter-spacing: .03em; }
-        .hint { font-size: .7rem; color: rgba(255,255,255,.3); margin-top: 4px; display: block; }
+        .hint { font-size: .7rem; color: #8fb08f; margin-top: 4px; display: block; }
 
         .inp-wrap { position: relative; }
         .inp-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
@@ -66,8 +70,7 @@
             font-size: .88rem; color: var(--text); outline: none;
             transition: border-color .18s, box-shadow .18s;
         }
-        .inp::placeholder { color: rgba(255,255,255,.2); }
-        .inp:focus { border-color: var(--g5); box-shadow: 0 0 0 3px rgba(76,175,80,.15); }
+.inp::placeholder { color: #9bb79b; }        .inp:focus { border-color: var(--g5); box-shadow: 0 0 0 3px rgba(76,175,80,.15); }
 
         /* Role */
         .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -86,7 +89,7 @@
         .role-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
 
         /* Section sep */
-        .sep { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; margin-bottom: 12px; }
+        .sep { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); border-top: 1px solid #dde8d8; padding-top: 14px; margin-bottom: 12px; }
 
         /* Submit */
         .btn-submit {
@@ -104,11 +107,11 @@
         /* Footer */
         .form-footer { text-align: center; font-size: .78rem; color: var(--muted); margin-top: 6px; }
         .form-footer a { color: var(--g5); text-decoration: none; font-weight: 600; }
-        .copyright { text-align: center; font-size: .72rem; color: rgba(255,255,255,.18); margin-top: 20px; }
+        .copyright { text-align: center; font-size: .72rem; color: #9bb79b; margin-top: 20px; }
 
         /* Divider */
         .divider { display: flex; align-items: center; gap: 14px; font-size: .78rem; color: var(--muted); margin: 14px 0; }
-        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.1); }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background:#dde8d8; }
 
         /* Social */
         .social-btn {

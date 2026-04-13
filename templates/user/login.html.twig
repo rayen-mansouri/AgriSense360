@@ -8,13 +8,17 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --g5: #4caf50; --g7: #2e7d32;
-            --panel: #1e2d3d;
-            --panel-light: #263545;
-            --border-inp: rgba(255,255,255,.15);
-            --text: #f0f4f8;
-            --muted: #8fa4b8;
-        }
+    --g5: #3e8e3e;          /* main green */
+    --g7: #2d6a2d;          /* dark green */
+
+    --panel: #f4f9f1;       /* light background (instead of dark blue) */
+    --panel-light: #ffffff; /* inputs */
+
+    --border-inp: #dde8d8;  /* light border */
+
+    --text: #1e3a1e;        /* dark green text */
+    --muted: #6b8f6b;       /* soft green */
+}
         html, body { height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; }
 
         .split { display: flex; width: 100vw; height: 100vh; }
@@ -96,7 +100,7 @@
             outline: none;
             transition: border-color .18s, box-shadow .18s;
         }
-        .inp::placeholder { color: rgba(255,255,255,.22); }
+        .inp::placeholder { color: #9bb79b; }        
         .inp:focus { border-color: var(--g5); box-shadow: 0 0 0 3px rgba(76,175,80,.15); }
 
         .row-mid { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }

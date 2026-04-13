@@ -4,190 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AgriSense 360{% endblock %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --green-dark:   #2d6a2d;
-            --green-mid:    #3e8e3e;
-            --green-light:  #5ab55a;
-            --green-pale:   #d4edda;
-            --bg:           #e8f5e4;
-            --white:        #ffffff;
-            --text-dark:    #1e3a1e;
-            --text-mid:     #4a6741;
-            --text-light:   #7fa87a;
-            --border:       #c3ddbf;
-            --shadow:       0 4px 20px rgba(46,107,46,.12);
-            --radius:       14px;
-            --radius-sm:    8px;
+            --green-dark:#2d6a2d;
+            --green-mid:#3e8e3e;
+            --green-light:#5ab55a;
+            --green-pale:#d4edda;
+            --bg:#e8f5e4;
+            --white:#fff;
+            --text-dark:#1e3a1e;
+            --text-mid:#4a6741;
+            --text-light:#7fa87a;
+            --border:#c3ddbf;
+            --shadow:0 4px 20px rgba(46,107,46,.12);
+            --radius:14px;
         }
 
         body {
             font-family: 'Lato', sans-serif;
             background-color: var(--bg);
             color: var(--text-dark);
-            min-height: 100vh;
         }
 
-        .logo-wrap {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 8px;
-        }
+        /* NAVBAR */
+/* NAVBAR */
+.navbar {
+    width: 100%;
+    padding: 22px 40px; /* 🔥 taller header */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--white);
+    box-shadow: var(--shadow);
+}
 
-        .logo-icon { font-size: 2rem; }
+.logo {
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: var(--green-dark);
+}
 
-        .logo-text {
-            font-family: 'Nunito', sans-serif;
-            font-weight: 800;
-            font-size: 2rem;
+/* BUTTONS */
+.nav-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-main {
+    padding: 10px 22px;
+    background: var(--green-mid);
+    color: white;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.btn-main:hover {
+    background: var(--green-dark);
+}
+
+.btn-outline {
+    padding: 10px 20px;
+    border: 2px solid var(--green-mid);
+    border-radius: 50px;
+    text-decoration: none;
+    color: var(--green-mid);
+    font-weight: 600;
+}
+
+.btn-outline:hover {
+    background: var(--green-pale);
+}
+
+        .nav-links a:hover {
             color: var(--green-dark);
+        }
+
+        .container {
+            padding: 40px 20px;
         }
 
         .btn-primary {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            background: var(--green-mid);
-            color: var(--white);
-            border: none;
-            border-radius: 50px;
-            font-family: 'Nunito', sans-serif;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background .2s, transform .1s;
-            text-decoration: none;
-            text-align: center;
+            display:block;
+            width:100%;
+            padding:14px;
+            background:var(--green-mid);
+            color:#fff;
+            border-radius:50px;
+            text-align:center;
+            text-decoration:none;
+            font-weight:700;
         }
-
-        .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
 
         .btn-outline {
-            display: block;
-            width: 100%;
-            padding: 13px;
-            background: transparent;
-            color: var(--green-mid);
-            border: 2px solid var(--green-mid);
-            border-radius: 50px;
-            font-family: 'Nunito', sans-serif;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all .2s;
-            text-decoration: none;
-            text-align: center;
+            display:block;
+            width:100%;
+            padding:13px;
+            border:2px solid var(--green-mid);
+            border-radius:50px;
+            text-align:center;
+            text-decoration:none;
+            color:var(--green-mid);
         }
 
-        .btn-outline:hover { background: var(--green-pale); }
-
-        .btn-google {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 12px;
-            background: var(--white);
-            color: var(--text-dark);
-            border: 2px solid var(--border);
-            border-radius: 50px;
-            font-family: 'Lato', sans-serif;
-            font-weight: 600;
-            font-size: .95rem;
-            cursor: pointer;
-            transition: border-color .2s, background .2s;
-            text-decoration: none;
-        }
-
-        .btn-google:hover { border-color: var(--green-mid); background: var(--green-pale); }
-
-        .btn-face {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 12px;
-            background: var(--green-dark);
-            color: var(--white);
-            border: none;
-            border-radius: 50px;
-            font-family: 'Lato', sans-serif;
-            font-weight: 600;
-            font-size: .95rem;
-            cursor: pointer;
-            transition: background .2s;
-            text-decoration: none;
-        }
-
-        .btn-face:hover { background: #1e4e1e; }
-
-        .form-input {
-            width: 100%;
-            padding: 13px 16px;
-            border: 2px solid var(--border);
-            border-radius: 50px;
-            font-size: .95rem;
-            font-family: 'Lato', sans-serif;
-            color: var(--text-dark);
-            background: var(--white);
-            outline: none;
-            transition: border-color .2s, box-shadow .2s;
-        }
-
-        .form-input:focus {
-            border-color: #5eb5e8;
-            box-shadow: 0 0 0 3px rgba(94,181,232,.15);
-        }
-
-        .form-input::placeholder { color: var(--text-light); }
-
-        .alert-error {
-            background: #fde8e8;
-            border: 1px solid #f5c6cb;
-            color: #842029;
-            padding: 10px 16px;
-            border-radius: var(--radius-sm);
-            font-size: .9rem;
-            margin-bottom: 12px;
-        }
-
-        .alert-success {
-            background: var(--green-pale);
-            border: 1px solid var(--border);
-            color: var(--green-dark);
-            padding: 10px 16px;
-            border-radius: var(--radius-sm);
-            font-size: .9rem;
-            margin-bottom: 12px;
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-light);
-            font-size: .85rem;
-            margin: 4px 0;
-        }
-
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
     </style>
+
     {% block styles %}{% endblock %}
 </head>
+
 <body>
-    {% block body %}{% endblock %}
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">🌱 AgriSense 360</div>
+
+    <div class="nav-actions">
+        {% if app.user %}
+            <a href="{{ path('app_logout') }}" class="btn-outline">Déconnexion</a>
+        {% else %}
+            <a href="{{ path('app_login') }}" class="btn-outline">Se connecter</a>
+            <a href="{{ path('app_register') }}" class="btn-main">S'inscrire</a>
+        {% endif %}
+    </div>
+</div>
+
+{% block body %}{% endblock %}
+
 </body>
 </html>
