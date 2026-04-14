@@ -18,14 +18,9 @@ class AnimalManagementController extends AbstractController
     #[Route('/', name: 'animal_management_index', methods: ['GET'])]
     public function index(Request $request, EntityManagerInterface $em, EnumOptionService $enumOptionService): Response
     {
-        $mode = $this->normalizeMode((string) $request->query->get('mode', 'admin'));
-        $availableTabs = $mode === 'admin' ? ['animaux', 'dossiers', 'options', 'analytics'] : ['animaux', 'dossiers'];
+        $availableTabs = ['animaux', 'dossiers', 'options', 'analytics'];
         $currentTab = (string) $request->query->get('tab', 'animaux');
         if (!in_array($currentTab, $availableTabs, true)) {
-            $currentTab = 'animaux';
-        }
-        $accessDenied = $mode === 'other_worker';
-        if ($accessDenied) {
             $currentTab = 'animaux';
         }
         $pageSize = 10;
@@ -130,9 +125,6 @@ class AnimalManagementController extends AbstractController
                 ->getResult();
         }
         return $this->render('animal_management/index.html.twig', [
-            'mode' => $mode,
-            'availableTabs' => $availableTabs,
-            'accessDenied' => $accessDenied,
             'currentTab' => $currentTab,
             'animals' => $animals,
             'records' => $records,
@@ -164,32 +156,22 @@ class AnimalManagementController extends AbstractController
     #[Route('/animals/add', name: 'animal_add', methods: ['POST'])]
     public function addAnimal(Request $request, EntityManagerInterface $em, AnimalValidationService $validationService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode === 'other_worker') {
-            $this->addFlash('error', 'Not related to your role. Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         $errors = $validationService->validateAnimal($request->request->all());
         if ($errors !== []) {
             $this->addFlash('errors', $errors);
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'animaux']);
         }
         $animal = new Animal();
         $this->hydrateAnimal($animal, $request);
         $em->persist($animal);
         $em->flush();
         $this->addFlash('success', 'Animal added successfully.');
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'animaux']);
     }
 
     #[Route('/animals/{id}/update', name: 'animal_update', methods: ['POST'])]
     public function updateAnimal(int $id, Request $request, EntityManagerInterface $em, AnimalValidationService $validationService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode === 'other_worker') {
-            $this->addFlash('error', 'Not related to your role. Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         $animal = $em->getRepository(Animal::class)->find($id);
         if (!$animal instanceof Animal) {
             throw $this->createNotFoundException();
@@ -197,48 +179,38 @@ class AnimalManagementController extends AbstractController
         $errors = $validationService->validateAnimal($request->request->all());
         if ($errors !== []) {
             $this->addFlash('errors', $errors);
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux', 'editAnimalId' => $id]);
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'animaux', 'editAnimalId' => $id]);
         }
         $this->hydrateAnimal($animal, $request);
         $em->flush();
         $this->addFlash('success', 'Animal updated.');
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'animaux']);
     }
 
     #[Route('/animals/{id}/delete', name: 'animal_delete', methods: ['POST'])]
-    public function deleteAnimal(int $id, Request $request, EntityManagerInterface $em): RedirectResponse
+    public function deleteAnimal(int $id, EntityManagerInterface $em): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode === 'other_worker') {
-            $this->addFlash('error', 'Not related to your role. Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         $animal = $em->getRepository(Animal::class)->find($id);
         if ($animal instanceof Animal) {
             $em->remove($animal);
             $em->flush();
             $this->addFlash('success', 'Animal deleted.');
         }
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'animaux']);
     }
 
     #[Route('/records/add', name: 'record_add', methods: ['POST'])]
     public function addRecord(Request $request, EntityManagerInterface $em, AnimalValidationService $validationService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode === 'other_worker') {
-            $this->addFlash('error', 'Not related to your role. Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         $animal = $em->getRepository(Animal::class)->find((int) $request->request->get('animalId'));
         if (!$animal instanceof Animal) {
             $this->addFlash('error', 'Please select an animal.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers']);
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers']);
         }
         $errors = $validationService->validateRecord($request->request->all());
         if ($errors !== []) {
             $this->addFlash('errors', $errors);
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers', 'animalId' => $animal->getId()]);
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers', 'animalId' => $animal->getId()]);
         }
         $record = new AnimalHealthRecord();
         $record->setAnimal($animal);
@@ -248,17 +220,12 @@ class AnimalManagementController extends AbstractController
         $animal->setWeight($record->getWeight());
         $em->flush();
         $this->addFlash('success', 'Health record added.');
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers', 'animalId' => $animal->getId()]);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers', 'animalId' => $animal->getId()]);
     }
 
     #[Route('/records/{id}/update', name: 'record_update', methods: ['POST'])]
     public function updateRecord(int $id, Request $request, EntityManagerInterface $em, AnimalValidationService $validationService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode === 'other_worker') {
-            $this->addFlash('error', 'Not related to your role. Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         $record = $em->getRepository(AnimalHealthRecord::class)->find($id);
         if (!$record instanceof AnimalHealthRecord) {
             throw $this->createNotFoundException();
@@ -266,29 +233,24 @@ class AnimalManagementController extends AbstractController
         $animal = $record->getAnimal();
         if (!$animal instanceof Animal) {
             $this->addFlash('error', 'Record has no animal.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers']);
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers']);
         }
         $errors = $validationService->validateRecord($request->request->all());
         if ($errors !== []) {
             $this->addFlash('errors', $errors);
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers', 'animalId' => $animal->getId(), 'editRecordId' => $id]);
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers', 'animalId' => $animal->getId(), 'editRecordId' => $id]);
         }
         $this->hydrateRecord($record, $request, $animal->getType());
         $animal->setHealthStatus(strtolower((string) $record->getConditionStatus()));
         $animal->setWeight($record->getWeight());
         $em->flush();
         $this->addFlash('success', 'Health record updated.');
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers', 'animalId' => $animal->getId()]);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers', 'animalId' => $animal->getId()]);
     }
 
     #[Route('/records/{id}/delete', name: 'record_delete', methods: ['POST'])]
-    public function deleteRecord(int $id, Request $request, EntityManagerInterface $em): RedirectResponse
+    public function deleteRecord(int $id, EntityManagerInterface $em): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode === 'other_worker') {
-            $this->addFlash('error', 'Not related to your role. Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         $record = $em->getRepository(AnimalHealthRecord::class)->find($id);
         $animalId = $record?->getAnimal()?->getId();
         if ($record instanceof AnimalHealthRecord) {
@@ -296,80 +258,55 @@ class AnimalManagementController extends AbstractController
             $em->flush();
             $this->addFlash('success', 'Health record deleted.');
         }
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'dossiers', 'animalId' => $animalId]);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers', 'animalId' => $animalId]);
     }
 
     #[Route('/options/type/add', name: 'option_type_add', methods: ['POST'])]
     public function addType(Request $request, EnumOptionService $enumOptionService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode !== 'admin') {
-            $this->addFlash('error', 'Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         try {
             $enumOptionService->addType((string) $request->request->get('value'));
             $this->addFlash('success', 'Type added.');
         } catch (\Throwable $e) {
             $this->addFlash('error', $e->getMessage());
         }
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
     }
 
     #[Route('/options/type/delete', name: 'option_type_delete', methods: ['POST'])]
     public function deleteType(Request $request, EnumOptionService $enumOptionService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode !== 'admin') {
-            $this->addFlash('error', 'Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         try {
             $enumOptionService->deleteType((string) $request->request->get('value'));
             $this->addFlash('success', 'Type removed.');
         } catch (\Throwable $e) {
             $this->addFlash('error', $e->getMessage());
         }
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
     }
 
     #[Route('/options/location/add', name: 'option_location_add', methods: ['POST'])]
     public function addLocation(Request $request, EnumOptionService $enumOptionService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode !== 'admin') {
-            $this->addFlash('error', 'Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         try {
             $enumOptionService->addLocation((string) $request->request->get('value'));
             $this->addFlash('success', 'Location added.');
         } catch (\Throwable $e) {
             $this->addFlash('error', $e->getMessage());
         }
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
     }
 
     #[Route('/options/location/delete', name: 'option_location_delete', methods: ['POST'])]
     public function deleteLocation(Request $request, EnumOptionService $enumOptionService): RedirectResponse
     {
-        $mode = $this->normalizeMode((string) $request->request->get('mode', 'admin'));
-        if ($mode !== 'admin') {
-            $this->addFlash('error', 'Access denied.');
-            return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'animaux']);
-        }
         try {
             $enumOptionService->deleteLocation((string) $request->request->get('value'));
             $this->addFlash('success', 'Location removed.');
         } catch (\Throwable $e) {
             $this->addFlash('error', $e->getMessage());
         }
-        return $this->redirectToRoute('animal_management_index', ['mode' => $mode, 'tab' => 'options']);
-    }
-
-    private function normalizeMode(string $mode): string
-    {
-        return in_array($mode, ['admin', 'worker', 'other_worker'], true) ? $mode : 'admin';
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
     }
 
     private function hydrateAnimal(Animal $animal, Request $request): void
