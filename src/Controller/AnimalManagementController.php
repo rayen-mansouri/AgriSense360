@@ -66,8 +66,45 @@ class AnimalManagementController extends AbstractController
             ->setMaxResults($pageSize)
             ->getQuery()
             ->getResult();
+        $visitVisit = $request->query->get('visit') === '1';
+        $visitLocationParam = trim((string) $request->query->get('visitLocation', ''));
+        $visitIndex = max(0, (int) $request->query->get('visitIndex', 0));
+        $visitWizard = false;
+        $visitLinkParams = [];
+        $visitEmptyLocation = false;
+        $visitAnimal = null;
+        $visitTotal = 0;
+        if ($currentTab === 'dossiers' && $visitVisit && $visitLocationParam !== '') {
+            $visitAnimals = $em->getRepository(Animal::class)->createQueryBuilder('a')
+                ->where('LOWER(a.location) = LOWER(:loc)')
+                ->setParameter('loc', $visitLocationParam)
+                ->orderBy('a.id', 'ASC')
+                ->getQuery()
+                ->getResult();
+            $visitTotal = count($visitAnimals);
+            if ($visitTotal === 0) {
+                $visitEmptyLocation = true;
+            } elseif ($visitIndex >= $visitTotal) {
+                $this->addFlash('success', sprintf('Visite terminée — %d animal(s) traité(s).', $visitTotal));
+
+                return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers']);
+            } else {
+                $visitWizard = true;
+                $visitAnimal = $visitAnimals[$visitIndex];
+                $visitLinkParams = [
+                    'visit' => 1,
+                    'visitLocation' => $visitLocationParam,
+                    'visitIndex' => $visitIndex,
+                ];
+            }
+        }
         $selectedAnimalId = (int) $request->query->get('animalId', 0);
-        $selectedAnimal = $selectedAnimalId > 0 ? $em->getRepository(Animal::class)->find($selectedAnimalId) : null;
+        $selectedAnimal = null;
+        if ($visitWizard && $visitAnimal instanceof Animal) {
+            $selectedAnimal = $visitAnimal;
+        } elseif ($selectedAnimalId > 0) {
+            $selectedAnimal = $em->getRepository(Animal::class)->find($selectedAnimalId);
+        }
         $records = [];
         $recordPage = max(1, (int) $request->query->get('recordPage', 1));
         $recordTotalPages = 1;
@@ -129,6 +166,14 @@ class AnimalManagementController extends AbstractController
             'animals' => $animals,
             'records' => $records,
             'selectedAnimal' => $selectedAnimal,
+            'visitWizard' => $visitWizard,
+            'visitVisit' => $visitVisit,
+            'visitLocationQuery' => $visitLocationParam,
+            'visitIndex' => $visitIndex,
+            'visitTotal' => $visitTotal,
+            'visitEmptyLocation' => $visitEmptyLocation,
+            'visitAnimal' => $visitAnimal,
+            'visitLinkParams' => $visitLinkParams,
             'types' => $enumOptionService->getTypeOptions(),
             'locations' => $enumOptionService->getLocationOptions(),
             'origins' => ['BORN_IN_FARM', 'OUTSIDE'],
@@ -221,6 +266,59 @@ class AnimalManagementController extends AbstractController
         $em->flush();
         $this->addFlash('success', 'Health record added.');
         return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers', 'animalId' => $animal->getId()]);
+    }
+
+    #[Route('/records/visit/save', name: 'record_visit_save', methods: ['POST'])]
+    public function saveVisitRecord(Request $request, EntityManagerInterface $em, AnimalValidationService $validationService): RedirectResponse
+    {
+        $visitLocation = trim((string) $request->request->get('visitLocation'));
+        $visitIndex = max(0, (int) $request->request->get('visitIndex'));
+        $animalId = (int) $request->request->get('animalId');
+        $list = $em->getRepository(Animal::class)->createQueryBuilder('a')
+            ->where('LOWER(a.location) = LOWER(:loc)')
+            ->setParameter('loc', $visitLocation)
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+        $n = count($list);
+        if ($n === 0 || $visitIndex >= $n) {
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers']);
+        }
+        $expected = $list[$visitIndex];
+        if ($expected->getId() !== $animalId) {
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers']);
+        }
+        $errors = $validationService->validateRecord($request->request->all());
+        if ($errors !== []) {
+            $this->addFlash('errors', $errors);
+
+            return $this->redirectToRoute('animal_management_index', [
+                'tab' => 'dossiers',
+                'visit' => 1,
+                'visitLocation' => $visitLocation,
+                'visitIndex' => $visitIndex,
+            ]);
+        }
+        $record = new AnimalHealthRecord();
+        $record->setAnimal($expected);
+        $this->hydrateRecord($record, $request, $expected->getType());
+        $em->persist($record);
+        $expected->setHealthStatus(strtolower((string) $record->getConditionStatus()));
+        $expected->setWeight($record->getWeight());
+        $em->flush();
+        $next = $visitIndex + 1;
+        if ($next >= $n) {
+            $this->addFlash('success', sprintf('Visite terminée — %d animal(s) traité(s).', $n));
+
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'dossiers']);
+        }
+
+        return $this->redirectToRoute('animal_management_index', [
+            'tab' => 'dossiers',
+            'visit' => 1,
+            'visitLocation' => $visitLocation,
+            'visitIndex' => $next,
+        ]);
     }
 
     #[Route('/records/{id}/update', name: 'record_update', methods: ['POST'])]
