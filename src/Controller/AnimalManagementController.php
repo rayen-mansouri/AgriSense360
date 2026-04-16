@@ -5,7 +5,9 @@ namespace App\Controller;
 use App\Entity\Animal;
 use App\Entity\AnimalHealthRecord;
 use App\Service\AnimalValidationService;
+use App\Service\BrevoMailService;
 use App\Service\EnumOptionService;
+use App\Service\VeterinaryReportEmailContentBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -404,6 +406,38 @@ class AnimalManagementController extends AbstractController
         } catch (\Throwable $e) {
             $this->addFlash('error', $e->getMessage());
         }
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
+    }
+
+    #[Route('/options/vet-report/send', name: 'vet_report_send', methods: ['POST'])]
+    public function sendVetReport(
+        Request $request,
+        EntityManagerInterface $em,
+        BrevoMailService $brevoMail,
+        VeterinaryReportEmailContentBuilder $reportBuilder,
+    ): RedirectResponse {
+        $vetEmail = trim((string) $request->request->get('vetEmail'));
+        $notes = trim((string) $request->request->get('notes'));
+        if ($vetEmail === '' || !filter_var($vetEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->addFlash('error', 'Please enter the vet email.');
+
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
+        }
+        $atRisk = $em->getRepository(Animal::class)->createQueryBuilder('a')
+            ->where('LOWER(a.healthStatus) IN (:statuses)')
+            ->setParameter('statuses', ['sick', 'injured', 'critical'])
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+        $subject = 'Animal Health Report — ' . (new \DateTimeImmutable('today'))->format('Y-m-d');
+        $body = $reportBuilder->buildBody($atRisk, $notes);
+        try {
+            $brevoMail->sendTransactionalEmail($vetEmail, $subject, $body);
+            $this->addFlash('success', 'Report sent successfully.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed: ' . $e->getMessage());
+        }
+
         return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
     }
 

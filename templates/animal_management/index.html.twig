@@ -378,6 +378,25 @@
             </div>
         </div>
     </div>
+    <div class="mgmt-form-card" style="margin-top:14px;">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Rapport email vétérinaire</div>
+                <div class="mgmt-form-subtitle">Animaux sick, injured ou critical. Configurer BREVO_API_KEY et BREVO_FROM_EMAIL dans .env.local.</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            <form method="post" action="{{ path('vet_report_send') }}" class="mgmt-grid">
+                <label>Email du vétérinaire</label>
+                <input class="mgmt-input" type="email" name="vetEmail" required placeholder="vet@example.com" autocomplete="email">
+                <label>Notes additionnelles</label>
+                <textarea class="mgmt-input" name="notes" rows="5" style="width:100%;min-height:100px;resize:vertical;" placeholder=""></textarea>
+                <div class="mgmt-actions">
+                    <button class="mgmt-btn-primary" type="submit">Envoyer le rapport</button>
+                </div>
+            </form>
+        </div>
+    </div>
     {% endif %}
     {% if currentTab == 'analytics' %}
     <div class="mgmt-form-card">
