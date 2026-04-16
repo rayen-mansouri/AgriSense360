@@ -116,6 +116,7 @@ class AnimalManagementController extends AbstractController
         $recordDir = strtoupper((string) $request->query->get('recordDir', 'DESC')) === 'ASC' ? 'ASC' : 'DESC';
         $recordSearchField = (string) $request->query->get('recordSearchField', 'all');
         $recordSearchTerm = trim((string) $request->query->get('recordSearch', ''));
+        $defaultVetEmail = (string) ($_ENV['VET_DEFAULT_EMAIL'] ?? $_SERVER['VET_DEFAULT_EMAIL'] ?? '');
         $recordSortMap = [
             'id' => 'id',
             'recordDate' => 'recordDate',
@@ -192,6 +193,7 @@ class AnimalManagementController extends AbstractController
             'recordDir' => $recordDir,
             'recordSearchField' => $recordSearchField,
             'recordSearch' => $recordSearchTerm,
+            'defaultVetEmail' => $defaultVetEmail,
             'animalPage' => $animalPage,
             'animalTotalPages' => $animalTotalPages,
             'animalTotal' => $animalTotal,

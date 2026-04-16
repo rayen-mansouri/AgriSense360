@@ -388,7 +388,7 @@
         <div class="mgmt-form-body">
             <form method="post" action="{{ path('vet_report_send') }}" class="mgmt-grid">
                 <label>Email du vétérinaire</label>
-                <input class="mgmt-input" type="email" name="vetEmail" required placeholder="vet@example.com" autocomplete="email">
+                <input class="mgmt-input" type="email" name="vetEmail" required placeholder="vet@example.com" autocomplete="email" value="{{ defaultVetEmail }}">
                 <label>Notes additionnelles</label>
                 <textarea class="mgmt-input" name="notes" rows="5" style="width:100%;min-height:100px;resize:vertical;" placeholder=""></textarea>
                 <div class="mgmt-actions">
@@ -408,15 +408,15 @@
             <form method="post" action="{{ path('farm_report_pdf_export') }}">
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     <label class="mgmt-list-row" style="justify-content:flex-start;">
-                        <input type="checkbox" name="includeSummary" value="1" checked>
+                        <input type="checkbox" name="includeSummary" value="1">
                         <span>Resume de la Ferme (totaux, vaccination, animaux a risque)</span>
                     </label>
                     <label class="mgmt-list-row" style="justify-content:flex-start;">
-                        <input type="checkbox" name="includeAllAnimals" value="1" checked>
+                        <input type="checkbox" name="includeAllAnimals" value="1">
                         <span>Liste complete des animaux</span>
                     </label>
                     <label class="mgmt-list-row" style="justify-content:flex-start;">
-                        <input type="checkbox" name="includeAtRisk" value="1" checked>
+                        <input type="checkbox" name="includeAtRisk" value="1">
                         <span>Animaux a risque (malades, blesses, critiques)</span>
                     </label>
                     <label class="mgmt-list-row" style="justify-content:flex-start;">
