@@ -397,6 +397,39 @@
             </form>
         </div>
     </div>
+    <div class="mgmt-form-card" style="margin-top:14px;">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Exporter un Rapport PDF</div>
+                <div class="mgmt-form-subtitle">Choisissez les sections a inclure dans le rapport de la ferme</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            <form method="post" action="{{ path('farm_report_pdf_export') }}">
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <label class="mgmt-list-row" style="justify-content:flex-start;">
+                        <input type="checkbox" name="includeSummary" value="1" checked>
+                        <span>Resume de la Ferme (totaux, vaccination, animaux a risque)</span>
+                    </label>
+                    <label class="mgmt-list-row" style="justify-content:flex-start;">
+                        <input type="checkbox" name="includeAllAnimals" value="1" checked>
+                        <span>Liste complete des animaux</span>
+                    </label>
+                    <label class="mgmt-list-row" style="justify-content:flex-start;">
+                        <input type="checkbox" name="includeAtRisk" value="1" checked>
+                        <span>Animaux a risque (malades, blesses, critiques)</span>
+                    </label>
+                    <label class="mgmt-list-row" style="justify-content:flex-start;">
+                        <input type="checkbox" name="includeRecentRecords" value="1">
+                        <span>Dossiers de sante recents (20 derniers)</span>
+                    </label>
+                </div>
+                <div class="mgmt-actions">
+                    <button class="mgmt-btn-primary" type="submit">Generer le Rapport PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
     {% endif %}
     {% if currentTab == 'analytics' %}
     <div class="mgmt-form-card">

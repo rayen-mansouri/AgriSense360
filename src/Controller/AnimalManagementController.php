@@ -7,6 +7,7 @@ use App\Entity\AnimalHealthRecord;
 use App\Service\AnimalValidationService;
 use App\Service\BrevoMailService;
 use App\Service\EnumOptionService;
+use App\Service\FarmPdfReportService;
 use App\Service\VeterinaryReportEmailContentBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -439,6 +440,28 @@ class AnimalManagementController extends AbstractController
         }
 
         return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
+    }
+
+    #[Route('/options/pdf/export', name: 'farm_report_pdf_export', methods: ['POST'])]
+    public function exportFarmReportPdf(Request $request, FarmPdfReportService $farmPdfReportService): Response
+    {
+        $includeSummary = $request->request->getBoolean('includeSummary');
+        $includeAllAnimals = $request->request->getBoolean('includeAllAnimals');
+        $includeAtRisk = $request->request->getBoolean('includeAtRisk');
+        $includeRecentRecords = $request->request->getBoolean('includeRecentRecords');
+
+        if (!$includeSummary && !$includeAllAnimals && !$includeAtRisk && !$includeRecentRecords) {
+            $this->addFlash('error', 'Selectionnez au moins une section pour le PDF.');
+
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
+        }
+
+        return $farmPdfReportService->buildResponse(
+            $includeSummary,
+            $includeAllAnimals,
+            $includeAtRisk,
+            $includeRecentRecords,
+        );
     }
 
     private function hydrateAnimal(Animal $animal, Request $request): void
