@@ -7,7 +7,6 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class CultureService
 {
-    // Exact same as CultureDurations.java IMAGE mapping
     private const IMAGE_MAP = [
         'Blé'=>'ble.png','Maïs'=>'mais.png','Riz'=>'riz.png','Avoine'=>'avoine.png',
         'Tomates'=>'tomates.png','Salades'=>'salades.png','Pomme de terre'=>'pomme_de_terre.png',
@@ -18,7 +17,6 @@ class CultureService
         'Laurier-rose'=>'laurier_rose.png',
     ];
 
-    // Exact same as CultureDurations.java DURATIONS map: [Semis, Croissance, Maturité]
     private const DURATIONS = [
         'Maïs'          => [30,  60,  30],
         'Riz'           => [25,  90,  30],
@@ -44,30 +42,26 @@ class CultureService
 
     public function __construct(
         private EntityManagerInterface $em,
-        private ParcelleService $parcelleService
+        private ParcelleService $parcelleService,
+        private MailService $mailService,          // ← injected automatically
     ) {}
 
-    // ── Java: CultureDurations.getImageForNom ─────────────────────────
     public static function getImageForNom(string $nom): string
     {
         return self::IMAGE_MAP[$nom] ?? 'default.png';
     }
 
-    // ── Java: CultureDurations.getTotalDuration ───────────────────────
     public static function getDuration(string $nom): int
     {
         $phases = self::DURATIONS[$nom] ?? [20, 50, 20];
         return array_sum($phases);
     }
 
-    // ── Java: CultureDurations.getPhaseDurations ──────────────────────
     public static function getPhases(string $nom): array
     {
         return self::DURATIONS[$nom] ?? [20, 50, 20];
     }
 
-    // ── Java: CultureDurations.calculateHarvestDate ───────────────────
-    // plantationDate + totalDays = harvestDate
     public static function calculateHarvestDate(\DateTimeInterface $dp, string $nom): \DateTime
     {
         $days = self::getDuration($nom);
@@ -76,42 +70,31 @@ class CultureService
         return $date;
     }
 
-    // ── Java: CultureDurations.calculateCurrentState ──────────────────
-    // EXACT same logic:
-    //   if daysUntilHarvest < 0  → "Récolte en Retard"
-    //   if daysUntilHarvest <= 7 → "Récolte Prévue"
-    //   if daysSincePlantation < semisDuration → "Semis"
-    //   if daysSincePlantation < semis + croissance → "Croissance"
-    //   else → "Maturité"
     public static function calculateEtat(\DateTimeInterface $dp, \DateTimeInterface $dr, string $nom = ''): string
     {
         $today   = new \DateTime('today');
         $start   = \DateTime::createFromInterface($dp);
         $end     = \DateTime::createFromInterface($dr);
 
-        $daysUntilHarvest   = (int)$today->diff($end)->days * ($today <= $end ? 1 : -1);
+        $daysUntilHarvest    = (int)$today->diff($end)->days * ($today <= $end ? 1 : -1);
         $daysSincePlantation = (int)$start->diff($today)->days;
 
         if ($daysUntilHarvest < 0)  return 'Récolte en Retard';
         if ($daysUntilHarvest <= 7) return 'Récolte Prévue';
 
         $phases = self::DURATIONS[$nom] ?? [20, 50, 20];
-        $semisDuration     = $phases[0];
-        $croissanceDuration = $phases[1];
-
-        if ($daysSincePlantation < $semisDuration) return 'Semis';
-        if ($daysSincePlantation < $semisDuration + $croissanceDuration) return 'Croissance';
+        if ($daysSincePlantation < $phases[0])              return 'Semis';
+        if ($daysSincePlantation < $phases[0] + $phases[1]) return 'Croissance';
         return 'Maturité';
     }
 
-    // CSS class for état badge
     public static function getEtatClass(string $etat): string
     {
         $l = mb_strtolower($etat);
-        if (str_contains($l, 'retard'))                                    return 'etat-recolte-en-retard';
-        if (str_contains($l, 'prévue') || str_contains($l, 'prevue'))     return 'etat-recolte-prevue';
-        if (str_contains($l, 'maturit'))                                   return 'etat-maturite';
-        if (str_contains($l, 'croiss'))                                    return 'etat-croissance';
+        if (str_contains($l, 'retard'))                                return 'etat-recolte-en-retard';
+        if (str_contains($l, 'prévue') || str_contains($l, 'prevue')) return 'etat-recolte-prevue';
+        if (str_contains($l, 'maturit'))                               return 'etat-maturite';
+        if (str_contains($l, 'croiss'))                                return 'etat-croissance';
         return 'etat-semis';
     }
 
@@ -135,15 +118,16 @@ class CultureService
         if ($c->getSurface() > $remaining + 0.01)
             return ['ok'=>false,'error'=>sprintf('❌ Surface trop grande! Restant: %.2f m²', $remaining)];
 
-        // Auto-calculate état using exact Java logic
         $c->setEtat(self::calculateEtat($c->getDatePlantation(), $c->getDateRecolte(), $c->getNom()));
-        // Auto-assign image from imageMap
         if (!$c->getImg()) $c->setImg(self::getImageForNom($c->getNom()));
         $c->setParcelle($parcelle);
 
         $this->em->persist($c);
         $this->em->flush();
         $this->parcelleService->recalculateSurfaceRestant($parcelle->getId());
+
+        // ── Auto-alert if harvest is today or already alerting ────────
+        $this->checkAndSendAlert($c);
 
         return ['ok'=>true];
     }
@@ -152,6 +136,19 @@ class CultureService
     public function getAllCultures(): array
     {
         return $this->em->getRepository(Culture::class)->findAll();
+    }
+
+    public function getCulturesHarvestingToday(): array
+    {
+        $today = new \DateTime('today');
+
+        return $this->em->getRepository(Culture::class)
+            ->createQueryBuilder('c')
+            ->where('c.dateRecolte = :today')
+            ->setParameter('today', $today->format('Y-m-d'))
+            ->orderBy('c.nom', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     public function getCultureById(int $id): ?Culture
@@ -193,7 +190,6 @@ class CultureService
         if ($c->getSurface() > $available + 0.01)
             return ['ok'=>false,'error'=>sprintf('❌ Surface trop grande! Disponible: %.2f m²', $available)];
 
-        // Auto-recalculate état + image
         $c->setEtat(self::calculateEtat($c->getDatePlantation(), $c->getDateRecolte(), $c->getNom()));
         $c->setImg(self::getImageForNom($c->getNom()));
         $c->setParcelle($newParcelle);
@@ -203,6 +199,9 @@ class CultureService
         if (!$sameParcelle)
             $this->parcelleService->recalculateSurfaceRestant($oldParcelle->getId());
         $this->parcelleService->recalculateSurfaceRestant($newParcelle->getId());
+
+        // ── Auto-alert after update too ───────────────────────────────
+        $this->checkAndSendAlert($c);
 
         return ['ok'=>true];
     }
@@ -217,6 +216,11 @@ class CultureService
     }
 
     // ── Refresh ALL états on page load ────────────────────────────────
+    /**
+     * Call this from your controller on every page load.
+     * It recalculates états AND fires alerts for any culture
+     * whose dateRecolte is today or already passed.
+     */
     public function refreshAllEtats(): void
     {
         foreach ($this->getAllCultures() as $c) {
@@ -224,14 +228,16 @@ class CultureService
                 $c->setEtat(self::calculateEtat(
                     $c->getDatePlantation(),
                     $c->getDateRecolte(),
-                    $c->getNom()  // nom passed for exact phase matching
+                    $c->getNom()
                 ));
+                // ── Fire alert if harvest is today ────────────────────
+                $this->checkAndSendAlert($c);
             }
         }
         $this->em->flush();
     }
 
-    // ── Stats for dashboard ───────────────────────────────────────────
+    // ── Stats ─────────────────────────────────────────────────────────
     public function getStats(): array
     {
         $all = $this->getAllCultures();
@@ -240,5 +246,34 @@ class CultureService
             'retard' => count(array_filter($all, fn($c) => $c->getEtat() === 'Récolte en Retard')),
             'pretes' => count(array_filter($all, fn($c) => in_array($c->getEtat(), ['Maturité','Récolte Prévue']))),
         ];
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    //  PRIVATE — Alert logic
+    // ═════════════════════════════════════════════════════════════════
+
+    /**
+     * Sends a culture alert email when:
+     *  - dateRecolte is TODAY  → "Récolte Prévue"  (harvest day)
+     *  - dateRecolte is PAST   → "Récolte en Retard"
+     *
+     * Silent — never throws, never blocks the request.
+     */
+    private function checkAndSendAlert(Culture $c): void
+    {
+        $dr = $c->getDateRecolte();
+        if (!$dr) return;
+
+        $today = new \DateTime('today');
+        $harvestDay = \DateTime::createFromInterface($dr)->setTime(0, 0, 0);
+
+        // Only alert on harvest day or if overdue
+        if ($harvestDay > $today) return;
+
+        try {
+            $this->mailService->sendCultureAlert($c);
+        } catch (\Throwable) {
+            // silent — mail failure must never crash the app
+        }
     }
 }
