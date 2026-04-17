@@ -14,6 +14,7 @@
         <a class="mgmt-tab {{ currentTab == 'animaux' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'animaux'}) }}">Animaux</a>
         <a class="mgmt-tab {{ currentTab == 'dossiers' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0}|merge(visitLinkParams)) }}">Dossiers de Sante</a>
         <a class="mgmt-tab {{ currentTab == 'options' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'options'}) }}">Options</a>
+        <a class="mgmt-tab {{ currentTab == 'predictor' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'predictor'}) }}">Condition Predictor</a>
         <a class="mgmt-tab {{ currentTab == 'analytics' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'analytics'}) }}">Analytics</a>
     </div>
 
@@ -382,7 +383,6 @@
         <div class="mgmt-form-card-header">
             <div>
                 <div class="mgmt-form-title">Rapport email vétérinaire</div>
-                <div class="mgmt-form-subtitle">Animaux sick, injured ou critical. Configurer BREVO_API_KEY et BREVO_FROM_EMAIL dans .env.local.</div>
             </div>
         </div>
         <div class="mgmt-form-body">
@@ -395,6 +395,34 @@
                     <button class="mgmt-btn-primary" type="submit">Envoyer le rapport</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <div class="mgmt-form-card" style="margin-top:14px;">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Entrainement du Modele Personnalise</div>
+                <div class="mgmt-form-subtitle">Utilisez vos propres donnees pour de meilleures predictions pour votre ferme</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="mgmt-list-row" style="justify-content:flex-start;">
+                    <strong>Dossiers de sante en base :</strong>
+                    <span>{{ healthRecordCount }}</span>
+                </div>
+                {% if canTrainCustomModel %}
+                    <div class="flash flash-success" style="margin-bottom:0;">Vous avez assez de dossiers pour entrainer un modele personnalise.</div>
+                {% else %}
+                    <div class="flash flash-error" style="margin-bottom:0;">Vous avez besoin d'au moins {{ trainThreshold }} dossiers de sante. Il en manque {{ trainThreshold - healthRecordCount }}.</div>
+                {% endif %}
+                <div class="mgmt-form-subtitle">
+                    Statut du modele personnalise :
+                    <strong>{{ customModelAvailable ? 'disponible' : 'pas encore entraine' }}</strong>
+                </div>
+                <form method="post" action="{{ path('ai_model_train') }}">
+                    <button class="mgmt-btn-primary" type="submit" {% if not canTrainCustomModel %}disabled{% endif %}>Exporter &amp; Reentrainer le Modele</button>
+                </form>
+            </div>
         </div>
     </div>
     <div class="mgmt-form-card" style="margin-top:14px;">
@@ -430,6 +458,130 @@
             </form>
         </div>
     </div>
+    {% endif %}
+    {% if currentTab == 'predictor' %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Predicteur de Condition</div>
+                <div class="mgmt-form-subtitle">Utilise jusqu'aux 10 derniers dossiers de sante</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            <form method="post" action="{{ path('analytics_predict') }}" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="inline-form" style="align-items:center;flex-wrap:wrap;margin-top:0;">
+                    <label>Modele :</label>
+                    <label class="mgmt-list-row" style="justify-content:flex-start;">
+                        <input type="radio" name="model" value="general" {{ selectedAiModel != 'custom' ? 'checked' : '' }}>
+                        <span>Modele General</span>
+                    </label>
+                    <label class="mgmt-list-row" style="justify-content:flex-start;opacity:{{ customModelAvailable ? '1' : '0.6' }};">
+                        <input type="radio" name="model" value="custom" {{ selectedAiModel == 'custom' ? 'checked' : '' }} {% if not customModelAvailable %}disabled{% endif %}>
+                        <span>Mon Modele Personnalise</span>
+                    </label>
+                    <span class="mgmt-form-subtitle">({{ customModelAvailable ? 'disponible' : 'pas encore entraine' }})</span>
+                </div>
+                <div class="inline-form" style="margin-top:0;align-items:center;">
+                    <select class="mgmt-input" name="animalId" style="flex:1;">
+                        <option value="">Selectionner un animal...</option>
+                        {% for animal in analyticsAnimals %}
+                            <option value="{{ animal.id }}" {{ selectedAiAnimalId == animal.id ? 'selected' : '' }}>#{{ animal.earTag }} - {{ animal.type }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="mgmt-btn-primary" type="submit">Analyser</button>
+                    <button class="mgmt-btn-ghost-link" type="submit" formaction="{{ path('analytics_predict_all') }}">Analyser tous</button>
+                </div>
+                {% if aiStatus %}
+                    <div class="flash flash-error" style="margin-bottom:0;">{{ aiStatus }}</div>
+                {% endif %}
+                {% if batchStatus %}
+                    <div class="{{ batchResults is empty ? 'flash flash-success' : 'mgmt-form-subtitle' }}" style="margin-bottom:0;">{{ batchStatus }}</div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    {% if predictionResult %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Resultat de Prediction</div>
+                <div class="mgmt-form-subtitle">{{ predictionResult.animalInfo }}</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            <div style="display:flex;flex-direction:column;gap:18px;">
+                <div style="display:flex;justify-content:center;">
+                    <span class="ai-condition-badge ai-condition-badge-{{ predictionResult.condition|lower }}">{{ predictionResult.conditionLabel }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div class="mgmt-list-row" style="justify-content:flex-start;">
+                        <strong>Fiabilite du Modele</strong>
+                        <span class="ai-confidence-value">{{ (predictionResult.confidence * 100)|number_format(1, '.', '') }}%</span>
+                    </div>
+                    <div class="ai-progress-shell">
+                        <div class="ai-progress-bar" style="width: {{ predictionResult.confidence * 100 }}%;"></div>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div class="ai-section-label">DONNEES UTILISEES POUR LA PREDICTION</div>
+                    <div class="ai-records-header">
+                        <span>Date</span>
+                        <span>Poids</span>
+                        <span>Appetit</span>
+                        <span>{{ predictionResult.productionLabel }}</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                        {% for record in predictionResult.records %}
+                            <div class="ai-record-row">
+                                <span>{{ record.recordDate }}</span>
+                                <span>{{ record.weight }}</span>
+                                <span>{{ record.appetite }}</span>
+                                <span>{{ record.production }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if batchResults is not empty or batchStatus %}
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Animaux a Surveiller</div>
+                <div class="mgmt-form-subtitle">
+                    {% if batchResults is not empty %}
+                        {{ batchResults|length }} animal(s) necessitant attention - {{ selectedAiModel == 'custom' ? 'Modele Personnalise' : 'Modele General' }}
+                    {% else %}
+                        Aucun animal a surveiller
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            {% if batchResults is not empty %}
+                <div style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow:auto;">
+                    {% for result in batchResults %}
+                        <div class="ai-batch-row">
+                            <span class="ai-condition-badge ai-condition-badge-{{ result.condition|lower }}">{{ result.conditionLabel }}</span>
+                            <span style="flex:1;">#{{ result.earTag }} - {{ result.type|capitalize }}{% if result.location %} [{{ result.location }}]{% endif %}</span>
+                            <strong class="ai-confidence-value">{{ (result.confidence * 100)|number_format(0, '.', '') }}%</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <form method="post" action="{{ path('analytics_send_vet_report') }}" class="inline-form" style="align-items:center; margin-top:14px;">
+                <input type="hidden" name="model" value="{{ selectedAiModel }}">
+                <input class="mgmt-input" type="email" name="vetEmail" value="{{ batchVetEmail }}" placeholder="Email du veterinaire..." style="flex:1;">
+                <button class="mgmt-btn-primary" type="submit">Envoyer au Veterinaire</button>
+            </form>
+            {% if batchEmailStatus %}
+                <div class="{{ batchEmailSuccess is same as(true) ? 'flash flash-success' : batchEmailSuccess is same as(false) ? 'flash flash-error' : 'mgmt-form-subtitle' }}" style="margin-top:12px;margin-bottom:0;">{{ batchEmailStatus }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
     {% endif %}
     {% if currentTab == 'analytics' %}
     <div class="mgmt-form-card">

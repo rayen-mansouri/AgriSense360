@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\Animal;
 use App\Entity\AnimalHealthRecord;
+use App\Service\AiPredictionService;
+use App\Service\AiTrainingService;
 use App\Service\AnimalValidationService;
 use App\Service\BrevoMailService;
 use App\Service\EnumOptionService;
@@ -19,9 +21,15 @@ use Symfony\Component\Routing\Attribute\Route;
 class AnimalManagementController extends AbstractController
 {
     #[Route('/', name: 'animal_management_index', methods: ['GET'])]
-    public function index(Request $request, EntityManagerInterface $em, EnumOptionService $enumOptionService): Response
+    public function index(
+        Request $request,
+        EntityManagerInterface $em,
+        EnumOptionService $enumOptionService,
+        AiPredictionService $aiPredictionService,
+        AiTrainingService $aiTrainingService,
+    ): Response
     {
-        $availableTabs = ['animaux', 'dossiers', 'options', 'analytics'];
+        $availableTabs = ['animaux', 'dossiers', 'options', 'predictor', 'analytics'];
         $currentTab = (string) $request->query->get('tab', 'animaux');
         if (!in_array($currentTab, $availableTabs, true)) {
             $currentTab = 'animaux';
@@ -117,6 +125,14 @@ class AnimalManagementController extends AbstractController
         $recordSearchField = (string) $request->query->get('recordSearchField', 'all');
         $recordSearchTerm = trim((string) $request->query->get('recordSearch', ''));
         $defaultVetEmail = (string) ($_ENV['VET_DEFAULT_EMAIL'] ?? $_SERVER['VET_DEFAULT_EMAIL'] ?? '');
+        $analyticsState = $this->getAnalyticsState($request);
+        $analyticsAnimals = $em->getRepository(Animal::class)->createQueryBuilder('a')
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+        $healthRecordCount = $aiTrainingService->getHealthRecordCount();
+        $canTrainCustomModel = $healthRecordCount >= AiTrainingService::TRAIN_THRESHOLD;
+        $customModelAvailable = $aiPredictionService->hasCustomModel();
         $recordSortMap = [
             'id' => 'id',
             'recordDate' => 'recordDate',
@@ -194,6 +210,20 @@ class AnimalManagementController extends AbstractController
             'recordSearchField' => $recordSearchField,
             'recordSearch' => $recordSearchTerm,
             'defaultVetEmail' => $defaultVetEmail,
+            'analyticsAnimals' => $analyticsAnimals,
+            'healthRecordCount' => $healthRecordCount,
+            'trainThreshold' => AiTrainingService::TRAIN_THRESHOLD,
+            'canTrainCustomModel' => $canTrainCustomModel,
+            'customModelAvailable' => $customModelAvailable,
+            'selectedAiModel' => (string) ($analyticsState['selectedModel'] ?? 'general'),
+            'selectedAiAnimalId' => (int) ($analyticsState['selectedAnimalId'] ?? 0),
+            'predictionResult' => $analyticsState['prediction'] ?? null,
+            'batchResults' => $analyticsState['batchResults'] ?? [],
+            'aiStatus' => (string) ($analyticsState['aiStatus'] ?? ''),
+            'batchStatus' => (string) ($analyticsState['batchStatus'] ?? ''),
+            'batchEmailStatus' => (string) ($analyticsState['batchEmailStatus'] ?? ''),
+            'batchEmailSuccess' => array_key_exists('batchEmailSuccess', $analyticsState) ? $analyticsState['batchEmailSuccess'] : null,
+            'batchVetEmail' => (string) ($analyticsState['batchVetEmail'] ?? $defaultVetEmail),
             'animalPage' => $animalPage,
             'animalTotalPages' => $animalTotalPages,
             'animalTotal' => $animalTotal,
@@ -412,6 +442,19 @@ class AnimalManagementController extends AbstractController
         return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
     }
 
+    #[Route('/options/ai/train', name: 'ai_model_train', methods: ['POST'])]
+    public function trainAiModel(AiTrainingService $aiTrainingService): RedirectResponse
+    {
+        try {
+            $aiTrainingService->trainCustomModel();
+            $this->addFlash('success', 'Modele entraine et sauvegarde. Redemarrez le serveur IA (api.py) pour l appliquer.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Echec de l entrainement : ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
+    }
+
     #[Route('/options/vet-report/send', name: 'vet_report_send', methods: ['POST'])]
     public function sendVetReport(
         Request $request,
@@ -442,6 +485,129 @@ class AnimalManagementController extends AbstractController
         }
 
         return $this->redirectToRoute('animal_management_index', ['tab' => 'options']);
+    }
+
+    #[Route('/analytics/predict', name: 'analytics_predict', methods: ['POST'])]
+    public function predictAnalytics(
+        Request $request,
+        EntityManagerInterface $em,
+        AiPredictionService $aiPredictionService,
+    ): RedirectResponse {
+        $model = $aiPredictionService->normalizeModel((string) $request->request->get('model', 'general'));
+        $animalId = (int) $request->request->get('animalId');
+        $state = $this->getAnalyticsState($request);
+        $state['selectedModel'] = $model;
+        $state['selectedAnimalId'] = $animalId;
+        $state['aiStatus'] = '';
+
+        $animal = $em->getRepository(Animal::class)->find($animalId);
+        if (!$animal instanceof Animal) {
+            $state['prediction'] = null;
+            $state['aiStatus'] = 'Veuillez selectionner un animal.';
+            $this->storeAnalyticsState($request, $state);
+
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'predictor']);
+        }
+
+        $records = $this->getAnalyticsRecords($em, $animal);
+
+        try {
+            $state['prediction'] = $aiPredictionService->predictAnimal($animal, $records, $model);
+        } catch (\Throwable $e) {
+            $state['prediction'] = null;
+            $state['aiStatus'] = $e->getMessage();
+        }
+
+        $this->storeAnalyticsState($request, $state);
+
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'predictor']);
+    }
+
+    #[Route('/analytics/predict-all', name: 'analytics_predict_all', methods: ['POST'])]
+    public function predictAllAnalytics(
+        Request $request,
+        EntityManagerInterface $em,
+        AiPredictionService $aiPredictionService,
+    ): RedirectResponse {
+        $model = $aiPredictionService->normalizeModel((string) $request->request->get('model', 'general'));
+        $state = $this->getAnalyticsState($request);
+        $state['selectedModel'] = $model;
+        $state['batchEmailStatus'] = '';
+        $state['batchEmailSuccess'] = null;
+        $animals = $em->getRepository(Animal::class)->createQueryBuilder('a')
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $batchResults = $aiPredictionService->analyzeAll(
+            $animals,
+            fn (Animal $animal): array => $this->getAnalyticsRecords($em, $animal),
+            $model,
+        );
+
+        $state['batchResults'] = $batchResults;
+        $state['batchStatus'] = $batchResults === [] ? 'Tous les animaux sont en bonne santé.' : '';
+        $this->storeAnalyticsState($request, $state);
+
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'predictor']);
+    }
+
+    #[Route('/analytics/send-vet-report', name: 'analytics_send_vet_report', methods: ['POST'])]
+    public function sendAnalyticsVetReport(
+        Request $request,
+        EntityManagerInterface $em,
+        AiPredictionService $aiPredictionService,
+        BrevoMailService $brevoMailService,
+    ): RedirectResponse {
+        $model = $aiPredictionService->normalizeModel((string) $request->request->get('model', 'general'));
+        $email = trim((string) $request->request->get('vetEmail'));
+        $state = $this->getAnalyticsState($request);
+        $state['selectedModel'] = $model;
+        $state['batchVetEmail'] = $email;
+        $state['batchEmailSuccess'] = null;
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $state['batchEmailStatus'] = 'Veuillez entrer l email du veterinaire.';
+            $this->storeAnalyticsState($request, $state);
+
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'predictor']);
+        }
+
+        $animals = $em->getRepository(Animal::class)->createQueryBuilder('a')
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+        $batchResults = $aiPredictionService->analyzeAll(
+            $animals,
+            fn (Animal $animal): array => $this->getAnalyticsRecords($em, $animal),
+            $model,
+        );
+        $state['batchResults'] = $batchResults;
+        $state['batchStatus'] = $batchResults === [] ? 'Tous les animaux sont en bonne santé.' : '';
+
+        if ($batchResults === []) {
+            $state['batchEmailStatus'] = 'Aucun résultat à envoyer.';
+            $this->storeAnalyticsState($request, $state);
+
+            return $this->redirectToRoute('animal_management_index', ['tab' => 'predictor']);
+        }
+
+        try {
+            $brevoMailService->sendTransactionalEmail(
+                $email,
+                'Rapport de Prédiction IA — ' . (new \DateTimeImmutable('today'))->format('Y-m-d'),
+                $aiPredictionService->buildBatchEmailBody($batchResults),
+            );
+            $state['batchEmailStatus'] = 'Rapport envoye avec succes.';
+            $state['batchEmailSuccess'] = true;
+        } catch (\Throwable $e) {
+            $state['batchEmailStatus'] = 'Echec : ' . $e->getMessage();
+            $state['batchEmailSuccess'] = false;
+        }
+
+        $this->storeAnalyticsState($request, $state);
+
+        return $this->redirectToRoute('animal_management_index', ['tab' => 'predictor']);
     }
 
     #[Route('/options/pdf/export', name: 'farm_report_pdf_export', methods: ['POST'])]
@@ -505,5 +671,37 @@ class AnimalManagementController extends AbstractController
         }
         $notes = trim((string) $request->request->get('notes'));
         $record->setNotes($notes === '' ? null : $notes);
+    }
+
+    private function getAnalyticsState(Request $request): array
+    {
+        if (!$request->hasSession()) {
+            return [];
+        }
+
+        $state = $request->getSession()->get('analytics_state');
+
+        return is_array($state) ? $state : [];
+    }
+
+    private function storeAnalyticsState(Request $request, array $state): void
+    {
+        if (!$request->hasSession()) {
+            return;
+        }
+
+        $request->getSession()->set('analytics_state', $state);
+    }
+
+    private function getAnalyticsRecords(EntityManagerInterface $em, Animal $animal): array
+    {
+        return $em->getRepository(AnimalHealthRecord::class)->createQueryBuilder('r')
+            ->andWhere('r.animal = :animal')
+            ->setParameter('animal', $animal)
+            ->orderBy('r.recordDate', 'DESC')
+            ->addOrderBy('r.id', 'DESC')
+            ->setMaxResults(10)
+            ->getQuery()
+            ->getResult();
     }
 }
