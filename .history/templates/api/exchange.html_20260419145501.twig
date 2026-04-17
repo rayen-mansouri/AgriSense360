@@ -1,0 +1,255 @@
+{# templates/api/exchange.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Taux de Change & Prix - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">💱 Taux de Change & Prix des produits</h1>
+        <p class="page-subtitle">Convertissez tous les prix dans la devise de votre choix</p>
+    </div>
+</div>
+
+<!-- SECTION 1 : CONVERSION LIBRE -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#2196f3;color:white">
+            <i class="fa-solid fa-calculator"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">🔄 Convertir un montant</h2>
+            <p class="form-card-subtitle">Convertissez n'importe quel montant de TND vers une autre devise</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; justify-content: center;">
+            <div>
+                <label style="display: block; margin-bottom: 5px;">💰 Montant (TND)</label>
+                <input type="number" id="freeAmount" class="form-control" value="100" step="10" style="width: 180px; padding: 12px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px;">🎯 Devise cible</label>
+                <select id="freeCurrency" class="form-control" style="width: 200px; padding: 12px;">
+                    <option value="EUR">🇪🇺 EUR - Euro</option>
+                    <option value="USD">🇺🇸 USD - Dollar US</option>
+                    <option value="GBP">🇬🇧 GBP - Livre Sterling</option>
+                    <option value="CAD">🇨🇦 CAD - Dollar Canadien</option>
+                    <option value="JPY">🇯🇵 JPY - Yen Japonais</option>
+                    <option value="CHF">🇨🇭 CHF - Franc Suisse</option>
+                    <option value="CNY">🇨🇳 CNY - Yuan Chinois</option>
+                </select>
+            </div>
+            <div>
+                <button id="convertFreeBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i> Convertir
+                </button>
+            </div>
+        </div>
+        
+        <div id="freeResult" style="margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 12px; text-align: center; display: none;">
+            <h2 id="convertedAmount" style="font-size: 28px; margin: 0;">-</h2>
+            <p id="conversionDetail" style="margin-top: 5px; color: #666;"></p>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2 : SÉLECTEUR DE DEVISES POUR PRODUITS -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#5a9814;color:white">
+            <i class="fa-solid fa-tags"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">🏷️ Convertir tous les prix des produits</h2>
+            <p class="form-card-subtitle">Choisissez une devise pour afficher les prix des produits</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; justify-content: center;">
+            <div>
+                <label style="display: block; margin-bottom: 5px;">💰 Devise d'affichage</label>
+                <select id="currencySelector" class="form-control" style="width: 250px; padding: 12px;">
+                    <option value="TND">🇹🇳 TND - Dinar Tunisien (prix originaux)</option>
+                    <option value="EUR">🇪🇺 EUR - Euro</option>
+                    <option value="USD">🇺🇸 USD - Dollar US</option>
+                    <option value="GBP">🇬🇧 GBP - Livre Sterling</option>
+                    <option value="CAD">🇨🇦 CAD - Dollar Canadien</option>
+                    <option value="JPY">🇯🇵 JPY - Yen Japonais</option>
+                    <option value="CHF">🇨🇭 CHF - Franc Suisse</option>
+                </select>
+            </div>
+            <div>
+                <button id="applyCurrencyBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-rotate-right"></i> Appliquer la conversion
+                </button>
+            </div>
+        </div>
+        
+        <div id="conversionInfo" style="margin-top: 15px; text-align: center; padding: 10px; background: #e8f5e9; border-radius: 8px; display: none;">
+            <span id="conversionMessage"></span>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 3 : TAUX DE CHANGE -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">📊 Taux de change du jour</h2>
+            <p class="form-card-subtitle">1 TND = ?</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div id="ratesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
+            <div class="text-muted">Chargement des taux...</div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 4 : PRIX DES PRODUITS -->
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#5a9814;color:white">
+            <i class="fa-solid fa-table-list"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">📋 Liste des produits</h2>
+            <p class="form-card-subtitle">Prix convertis selon la devise choisie</p>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table" id="productsTable">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Catégorie</th>
+                    <th id="priceHeader">Prix (TND)</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produit in produits %}
+                <tr data-price="{{ produit.prixUnitaire }}">
+                    <td><strong>{{ produit.nom }}</strong></td>
+                    <td>{{ produit.categorie }}</td>
+                    <td class="product-price">{{ produit.prixUnitaire }} DT</td>
+                    <td>
+                        {% set stock = produit.stockActuel %}
+                        {% if stock %}
+                            {{ stock.quantiteActuelle }} {{ stock.uniteMesure }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const flags = {
+    'EUR': '🇪🇺', 'USD': '🇺🇸', 'GBP': '🇬🇧', 'CAD': '🇨🇦', 'JPY': '🇯🇵',
+    'CHF': '🇨🇭', 'CNY': '🇨🇳', 'TND': '🇹🇳'
+};
+
+let currentRates = {};
+
+function fetchRates() {
+    return fetch('/api/exchange/rates')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentRates = data.rates;
+                
+                let html = '';
+                const currencies = ['EUR', 'USD', 'GBP', 'CAD', 'JPY', 'CHF', 'CNY'];
+                
+                for (const currency of currencies) {
+                    const rate = currentRates[currency];
+                    if (rate) {
+                        html += `
+                            <div style="background: #f5f5f5; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 28px;">${flags[currency] || '🌍'}</span>
+                                <div style="flex: 1;">
+                                    <strong>${currency}</strong>
+                                    <div style="font-size: 12px; color: #666;">1 TND = ${rate.toFixed(4)} ${currency}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                document.getElementById('ratesList').innerHTML = html;
+                return true;
+            }
+            return false;
+        })
+        .catch(() => false);
+}
+
+// Conversion libre
+document.getElementById('convertFreeBtn').addEventListener('click', function() {
+    const amount = parseFloat(document.getElementById('freeAmount').value);
+    const currency = document.getElementById('freeCurrency').value;
+    const rate = currentRates[currency];
+    const flag = flags[currency] || '🌍';
+    
+    if (rate) {
+        const converted = (amount / rate).toFixed(2);
+        document.getElementById('convertedAmount').innerHTML = `${flag} ${converted} ${currency}`;
+        document.getElementById('conversionDetail').innerHTML = `${amount} TND = ${converted} ${currency} (taux: 1 TND = ${rate.toFixed(4)} ${currency})`;
+        document.getElementById('freeResult').style.display = 'block';
+    } else {
+        document.getElementById('convertedAmount').innerHTML = 'Taux non disponible';
+        document.getElementById('freeResult').style.display = 'block';
+    }
+});
+
+// Conversion des prix des produits
+function convertAllPrices(currency) {
+    if (currency === 'TND') {
+        document.querySelectorAll('#productsTable tbody tr').forEach(row => {
+            const originalPrice = row.getAttribute('data-price');
+            row.querySelector('.product-price').innerHTML = `${originalPrice} DT`;
+        });
+        document.getElementById('priceHeader').innerHTML = 'Prix (TND)';
+        document.getElementById('conversionMessage').innerHTML = 'Affichage des prix en Dinars Tunisiens (TND)';
+        document.getElementById('conversionInfo').style.display = 'block';
+        return;
+    }
+    
+    const rate = currentRates[currency];
+    if (!rate) {
+        document.getElementById('conversionMessage').innerHTML = `Taux non disponible pour ${currency}`;
+        document.getElementById('conversionInfo').style.display = 'block';
+        return;
+    }
+    
+    document.querySelectorAll('#productsTable tbody tr').forEach(row => {
+        const originalPrice = parseFloat(row.getAttribute('data-price'));
+        const convertedPrice = (originalPrice / rate).toFixed(2);
+        row.querySelector('.product-price').innerHTML = `${convertedPrice} ${currency}`;
+    });
+    
+    document.getElementById('priceHeader').innerHTML = `Prix (${currency})`;
+    document.getElementById('conversionMessage').innerHTML = `Prix convertis en ${flags[currency]} ${currency} (1 TND = ${rate.toFixed(4)} ${currency})`;
+    document.getElementById('conversionInfo').style.display = 'block';
+}
+
+document.getElementById('applyCurrencyBtn').addEventListener('click', function() {
+    const selectedCurrency = document.getElementById('currencySelector').value;
+    convertAllPrices(selectedCurrency);
+});
+
+fetchRates();
+</script>
+{% endblock %}

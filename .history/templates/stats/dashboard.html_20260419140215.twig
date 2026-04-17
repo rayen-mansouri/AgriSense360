@@ -1,0 +1,76 @@
+{# templates/stats/dashboard.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Statistiques Avancées - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">📊 Statistiques Avancées</h1>
+        <p class="page-subtitle">Analyse détaillée de vos produits et stocks</p>
+    </div>
+</div>
+
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fa-solid fa-box"></i></div>
+        <div class="stat-label">Total Produits</div>
+        <div class="stat-value" id="totalProduits">-</div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fa-solid fa-warehouse"></i></div>
+        <div class="stat-label">Valeur Stock (DT)</div>
+        <div class="stat-value" id="valeurTotale">-</div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Catégories</div>
+        <div class="stat-value" id="nbCategories">-</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> Répartition par catégorie</h2>
+    <canvas id="chartCategories" height="120"></canvas>
+</div>
+
+<div class="card">
+    <h2 class="section-title"><i class="fa-solid fa-chart-bar"></i> Top 5 produits en stock</h2>
+    <div class="table-responsive">
+        <table class="data-table" id="topStocksTable">
+            <thead>
+                <tr><th>Produit</th><th>Quantité</th><th>Unité</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+fetch('/api/stats')
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('totalProduits').innerText = data.nb_produits;
+        document.getElementById('valeurTotale').innerText = data.valeur_totale.toFixed(2);
+        document.getElementById('nbCategories').innerText = Object.keys(data.par_categorie).length;
+        
+        // Graphique
+        new Chart(document.getElementById('chartCategories'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.par_categorie),
+                datasets: [{ label: 'Nombre de produits', data: Object.values(data.par_categorie), backgroundColor: '#5a9814' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        
+        // Tableau top stocks
+        let html = '';
+        data.top_stocks.forEach(s => {
+            html += `<tr><td>${s.nom}</td><td>${s.quantite}</td><td>${s.unite}</td></tr>`;
+        });
+        document.querySelector('#topStocksTable tbody').innerHTML = html;
+    });
+</script>
+{% endblock %}

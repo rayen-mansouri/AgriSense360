@@ -1,0 +1,215 @@
+{# templates/api/commodity.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Prix des matières premières - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">🌾 Prix des matières premières</h1>
+        <p class="page-subtitle">Comparaison entre les cours mondiaux et vos produits</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Produits analysés</div>
+        <div class="stat-value">{{ produits|length }}</div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fa-solid fa-tag"></i></div>
+        <div class="stat-label">Prix moyen marché</div>
+        <div class="stat-value">{{ prixMoyenMarche|default(290) }} USD</div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon"><i class="fa-solid fa-percent"></i></div>
+        <div class="stat-label">Produits comparables</div>
+        <div class="stat-value">{{ produitsCompatibles|default(produits|length) }}</div>
+    </div>
+</div>
+
+<!-- SECTION 1 : PRIX DES MATIÈRES PREMIÈRES -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">📈 Cours internationaux</h2>
+            <p class="form-card-subtitle">Prix de référence (Source: Banque Mondiale / Marchés)</p>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px;">
+        
+        <!-- Blé -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 16px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-wheat-awn" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Blé</h3>
+            </div>
+            <div id="wheat-price" class="commodity-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">245.50 USD</div>
+            <div style="font-size: 13px; color: #666; margin-top: 5px;">USD/tonne</div>
+            <div style="margin-top: 10px;"><span style="color: #4caf50;">▲ +2.3%</span></div>
+        </div>
+        
+        <!-- Maïs -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 16px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-corn" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Maïs</h3>
+            </div>
+            <div id="corn-price" class="commodity-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">198.30 USD</div>
+            <div style="font-size: 13px; color: #666; margin-top: 5px;">USD/tonne</div>
+            <div style="margin-top: 10px;"><span style="color: #4caf50;">▲ +1.2%</span></div>
+        </div>
+        
+        <!-- Soja -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 16px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-seedling" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Soja</h3>
+            </div>
+            <div id="soybean-price" class="commodity-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">425.80 USD</div>
+            <div style="font-size: 13px; color: #666; margin-top: 5px;">USD/tonne</div>
+            <div style="margin-top: 10px;"><span style="color: #f44336;">▼ -0.5%</span></div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- SECTION 2 : COMPARAISON AVEC VOS PRODUITS -->
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#2196f3;color:white">
+            <i class="fa-solid fa-chart-simple"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">📊 Comparaison avec vos produits</h2>
+            <p class="form-card-subtitle">Vos prix sont-ils compétitifs ?</p>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Votre produit</th>
+                    <th>Catégorie</th>
+                    <th>Votre prix (TND)</th>
+                    <th>Prix marché (USD)</th>
+                    <th>Écart</th>
+                    <th>Compétitivité</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produit in produits %}
+                <tr>
+                    <td><strong>{{ produit.nom }}</strong></td>
+                    <td>{{ produit.categorie }}</td>
+                    <td>{{ produit.prixUnitaire }} DT</td>
+                    <td class="prix-marche">---</td>
+                    <td class="ecart">---</td>
+                    <td class="competitivite">---</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Taux de change (1 USD ≈ 3 TND)
+let tauxChange = 3.0;
+
+// Récupérer le taux de change réel
+fetch('/api/exchange/rates')
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.rates.USD) {
+            tauxChange = data.rates.USD;
+        }
+    })
+    .finally(() => {
+        comparerProduits();
+    });
+
+// Prix de référence du marché
+const prixMarche = {
+    'Semences': 290,
+    'Engrais': 450,
+    'Pesticides': 350,
+    'Irrigation': 200,
+    'Outils & Matériel': 150,
+    'Alimentation animale': 320,
+    'default': 250
+};
+
+function comparerProduits() {
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    
+    rows.forEach(row => {
+        const categorie = row.querySelector('td:nth-child(2)').innerText;
+        const prixTND = parseFloat(row.querySelector('td:nth-child(3)').innerText);
+        const prixUSD = prixTND / tauxChange;
+        
+        // Prix marché selon catégorie
+        let prixMarcheCategorie = prixMarche[categorie] || prixMarche['default'];
+        
+        // Ajustement pour certains produits spécifiques
+        const nom = row.querySelector('td:first-child strong').innerText.toLowerCase();
+        if (nom.includes('blé') || nom.includes('maïs') || nom.includes('soja')) {
+            prixMarcheCategorie = 280;
+        }
+        
+        const ecart = prixUSD - prixMarcheCategorie;
+        const ecartPercent = (ecart / prixMarcheCategorie * 100).toFixed(1);
+        
+        row.querySelector('.prix-marche').innerHTML = `${prixMarcheCategorie.toFixed(2)} USD`;
+        row.querySelector('.ecart').innerHTML = `${ecart > 0 ? '+' : ''}${ecartPercent}%`;
+        
+        // Compétitivité
+        let competitivite = '';
+        let bgColor = '';
+        if (prixUSD <= prixMarcheCategorie * 0.85) {
+            competitivite = '✅ Très compétitif';
+            bgColor = '#e8f5e9';
+        } else if (prixUSD <= prixMarcheCategorie) {
+            competitivite = '👍 Compétitif';
+            bgColor = '#fff3e0';
+        } else if (prixUSD <= prixMarcheCategorie * 1.15) {
+            competitivite = '⚠️ Moyen';
+            bgColor = '#fff8e1';
+        } else {
+            competitivite = '🔴 Non compétitif';
+            bgColor = '#ffebee';
+        }
+        
+        row.querySelector('.competitivite').innerHTML = `<span style="background: ${bgColor}; padding: 4px 12px; border-radius: 20px; display: inline-block;">${competitivite}</span>`;
+    });
+}
+</script>
+
+<style>
+.stat-card.stat-orange .stat-icon { background: #fff3e0; color: #ff9800; }
+.commodity-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.commodity-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+.commodity-price {
+    font-size: 28px;
+    font-weight: bold;
+    color: #5a9814;
+}
+</style>
+{% endblock %}
