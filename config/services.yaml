@@ -16,3 +16,7 @@ services:
         arguments:
             $fromEmail: '%env(MAIL_FROM)%'
             $toEmail:   '%env(MAIL_TO)%'
+
+    App\Service\WeatherService:
+        arguments:
+            $apiKey: '%env(OPENWEATHER_API_KEY)%'        

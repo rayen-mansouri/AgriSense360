@@ -4,6 +4,7 @@ namespace App\Controller;
 use App\Entity\Parcelle;
 use App\Service\ParcelleService;
 use App\Service\CultureService;
+use App\Service\WeatherService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,7 +23,8 @@ class ParcelleController extends AbstractController
 
     public function __construct(
         private ParcelleService $parcelleService,
-        private CultureService  $cultureService
+        private CultureService  $cultureService,
+        private WeatherService  $weatherService,
     ) {}
 
     #[Route('', name: 'parcelle_index', methods: ['GET'])]
@@ -58,9 +60,15 @@ class ParcelleController extends AbstractController
 
         $cultures = $this->cultureService->getCulturesByParcelle($id);
 
+        // Fetch weather for this parcelle's gouvernorat (null-safe)
+        $weather = $parcelle->getLocalisation()
+            ? $this->weatherService->getWeatherForLocation($parcelle->getLocalisation())
+            : null;
+
         return $this->render('parcelle/show.html.twig', [
             'parcelle' => $parcelle,
             'cultures' => $cultures,
+            'weather'  => $weather,
         ]);
     }
 
