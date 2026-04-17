@@ -74,11 +74,11 @@ class ParcelleController extends AbstractController
         $statut       = $request->request->get('statut', 'Libre');
 
         $error = null;
-        if (!$nom || strlen($nom) < 3)             $error = '❌ Nom invalide (minimum 3 caractères)';
-        elseif (!is_numeric($surfaceTxt))           $error = '❌ Surface doit être un nombre';
-        elseif ((float)$surfaceTxt <= 0)            $error = '❌ Surface doit être positive';
-        elseif (!$localisation)                     $error = '❌ Veuillez sélectionner un gouvernorat';
-        elseif (!$typeSol)                          $error = '❌ Veuillez sélectionner le type de sol';
+        if (!$nom || strlen($nom) < 3)   $error = '❌ Nom invalide (minimum 3 caractères)';
+        elseif (!is_numeric($surfaceTxt)) $error = '❌ Surface doit être un nombre';
+        elseif ((float)$surfaceTxt <= 0)  $error = '❌ Surface doit être positive';
+        elseif (!$localisation)           $error = '❌ Veuillez sélectionner un gouvernorat';
+        elseif (!$typeSol)                $error = '❌ Veuillez sélectionner le type de sol';
 
         if ($error) {
             $this->addFlash('error', $error);
@@ -107,7 +107,7 @@ class ParcelleController extends AbstractController
         $statut       = $request->request->get('statut', 'Libre');
 
         $error = null;
-        if (!$nom || strlen($nom) < 3)  $error = '❌ Nom invalide (minimum 3 caractères)';
+        if (!$nom || strlen($nom) < 3)   $error = '❌ Nom invalide (minimum 3 caractères)';
         elseif (!is_numeric($surfaceTxt)) $error = '❌ Surface doit être un nombre';
         elseif ((float)$surfaceTxt <= 0)  $error = '❌ Surface doit être positive';
         elseif (!$localisation)           $error = '❌ Veuillez sélectionner un gouvernorat';

@@ -1,6 +1,7 @@
 <?php
 namespace App\Service;
 
+use App\Service\ParcelleHistoriqueService;
 use App\Entity\Culture;
 use App\Entity\Parcelle;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,7 +44,8 @@ class CultureService
     public function __construct(
         private EntityManagerInterface $em,
         private ParcelleService $parcelleService,
-        private MailService $mailService,          // ← injected automatically
+        private MailService $mailService,
+        private ParcelleHistoriqueService $historiqueService,          
     ) {}
 
     public static function getImageForNom(string $nom): string
@@ -124,6 +126,22 @@ class CultureService
 
         $this->em->persist($c);
         $this->em->flush();
+        $this->historiqueService->logAction(
+    ParcelleHistoriqueService::makeLog(
+        $parcelle->getId(),
+        'CULTURE_AJOUTEE',
+        $c->getId(),
+        $c->getNom(),
+        $c->getTypeCulture(),
+        $c->getSurface(),
+        null,
+        $c->getEtat(),
+        'Culture "' . $c->getNom() . '" (' . $c->getTypeCulture() . ') ajoutée · '
+            . $c->getSurface() . ' m² · du '
+            . $c->getDatePlantation()->format('Y-m-d') . ' au '
+            . $c->getDateRecolte()->format('Y-m-d')
+    )
+);
         $this->parcelleService->recalculateSurfaceRestant($parcelle->getId());
 
         // ── Auto-alert if harvest is today or already alerting ────────
@@ -196,6 +214,23 @@ class CultureService
 
         $this->em->flush();
 
+        $desc = 'Culture "' . $c->getNom() . '" modifiée.';
+// you can compare old vs new etat/surface here if you track them
+
+$this->historiqueService->logAction(
+    ParcelleHistoriqueService::makeLog(
+        $newParcelle->getId(),
+        'CULTURE_MODIFIEE',
+        $c->getId(),
+        $c->getNom(),
+        $c->getTypeCulture(),
+        $c->getSurface(),
+        null,      // etat_avant — pass old etat if you track it
+        $c->getEtat(),
+        $desc
+    )
+);
+
         if (!$sameParcelle)
             $this->parcelleService->recalculateSurfaceRestant($oldParcelle->getId());
         $this->parcelleService->recalculateSurfaceRestant($newParcelle->getId());
@@ -212,6 +247,19 @@ class CultureService
         $parcelleId = $c->getParcelle()->getId();
         $this->em->remove($c);
         $this->em->flush();
+        $this->historiqueService->logAction(
+    ParcelleHistoriqueService::makeLog(
+        $parcelleId,
+        'CULTURE_SUPPRIMEE',
+        $c->getId(),
+        $c->getNom(),
+        $c->getTypeCulture(),
+        $c->getSurface(),
+        $c->getEtat(),
+        null,
+        'Culture "' . $c->getNom() . '" supprimée · ' . $c->getSurface() . ' m² libérés.'
+    )
+);
         $this->parcelleService->recalculateSurfaceRestant($parcelleId);
     }
 

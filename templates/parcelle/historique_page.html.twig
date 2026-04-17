@@ -1,0 +1,179 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Historique — {{ parcelle.nom }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('parcelle/historique-page.css') }}">
+{% endblock %}
+
+{% block content %}
+{#
+  IMPORTANT: .historique-page-wrapper provides the dark background
+  scoped to this page only — it does NOT override body styles from base.html.twig
+#}
+<div class="historique-page-wrapper">
+<div class="historique-container">
+
+    {# ── Back Button ────────────────────────────────────────────── #}
+    <a href="{{ path('parcelle_index') }}" class="back-button">
+        ← Retour aux parcelles
+    </a>
+
+    {# ── Header ─────────────────────────────────────────────────── #}
+    <div class="historique-header">
+        <h1>
+            📋 Historique
+            <span class="evt-count">{{ historique|length }} événement(s)</span>
+        </h1>
+        <div class="parcelle-location">
+            🗺️ {{ parcelle.nom }} · 📍 {{ parcelle.localisation }}
+        </div>
+
+        <div class="historique-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats['CULTURE_AJOUTEE'] ?? 0 }}</div>
+                <div class="stat-label">🌱 Ajouts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats['CULTURE_MODIFIEE'] ?? 0 }}</div>
+                <div class="stat-label">✏️ Modifications</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats['CULTURE_SUPPRIMEE'] ?? 0 }}</div>
+                <div class="stat-label">🗑 Suppressions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats['RECOLTE'] ?? 0 }}</div>
+                <div class="stat-label">🌾 Récoltes</div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Filters ────────────────────────────────────────────────── #}
+    <div class="historique-filters">
+        <div class="filters-title">📌 Filtrer par type d'événement</div>
+        <div class="filter-buttons">
+            <button class="filter-btn all {{ typeFilter == '' ? 'active' : '' }}" data-type="">
+                📊 Tous ({{ (stats['CULTURE_AJOUTEE'] ?? 0) + (stats['CULTURE_MODIFIEE'] ?? 0) + (stats['CULTURE_SUPPRIMEE'] ?? 0) + (stats['RECOLTE'] ?? 0) }})
+            </button>
+            <button class="filter-btn add {{ typeFilter == 'CULTURE_AJOUTEE' ? 'active' : '' }}" data-type="CULTURE_AJOUTEE">
+                🌱 Ajouts ({{ stats['CULTURE_AJOUTEE'] ?? 0 }})
+            </button>
+            <button class="filter-btn edit {{ typeFilter == 'CULTURE_MODIFIEE' ? 'active' : '' }}" data-type="CULTURE_MODIFIEE">
+                ✏️ Modifications ({{ stats['CULTURE_MODIFIEE'] ?? 0 }})
+            </button>
+            <button class="filter-btn delete {{ typeFilter == 'CULTURE_SUPPRIMEE' ? 'active' : '' }}" data-type="CULTURE_SUPPRIMEE">
+                🗑 Suppressions ({{ stats['CULTURE_SUPPRIMEE'] ?? 0 }})
+            </button>
+            <button class="filter-btn harvest {{ typeFilter == 'RECOLTE' ? 'active' : '' }}" data-type="RECOLTE">
+                🌾 Récoltes ({{ stats['RECOLTE'] ?? 0 }})
+            </button>
+        </div>
+    </div>
+
+    {# ── Timeline ───────────────────────────────────────────────── #}
+    <div class="timeline">
+
+        {% if historique is empty %}
+            <div class="empty-state">
+                <span class="empty-icon">🌿</span>
+                <div class="empty-title">Aucun événement enregistré</div>
+                <div class="empty-subtitle">L'historique des cultures apparaîtra ici</div>
+            </div>
+
+        {% else %}
+            {% set currentDate = null %}
+
+            {% for h in historique %}
+                {% set dateKey = h.dateAction|date('d F Y') %}
+
+                {# ── Date separator ── #}
+                {% if dateKey != currentDate %}
+                    {% set currentDate = dateKey %}
+                    <div class="date-separator">
+                        <span class="date-separator-label">📅 {{ dateKey }}</span>
+                    </div>
+                {% endif %}
+
+                {# ── Map typeAction → CSS class ── #}
+                {% set evtClass = '' %}
+                {% if h.typeAction == 'CULTURE_AJOUTEE' %}
+                    {% set evtClass = 'add' %}
+                {% elseif h.typeAction == 'CULTURE_MODIFIEE' %}
+                    {% set evtClass = 'edit' %}
+                {% elseif h.typeAction == 'CULTURE_SUPPRIMEE' %}
+                    {% set evtClass = 'delete' %}
+                {% elseif h.typeAction == 'RECOLTE' %}
+                    {% set evtClass = 'harvest' %}
+                {% endif %}
+
+                {# ── Event card ── #}
+                {#
+                   IMPORTANT: .event-bar is a REAL div (not ::before pseudo-element).
+                   This is necessary because overflow:hidden on .event-card clips
+                   pseudo-elements in some browsers.
+                #}
+                <div class="event-card {{ evtClass }}">
+                    <div class="event-bar"></div>
+                    <div class="event-inner">
+
+                        <div class="event-header">
+                            <span class="event-badge {{ evtClass }}">
+                                {{ h.typeIcon }} {{ h.typeLabelFr }}
+                            </span>
+                            <span class="event-time">🕐 {{ h.dateAction|date('H:i') }}</span>
+                        </div>
+
+                        <div class="event-culture-name">{{ h.cultureNom ?? '—' }}</div>
+
+                        {% if h.description %}
+                            <div class="event-description">{{ h.description }}</div>
+                        {% endif %}
+
+                        <div class="event-details">
+                            {% if h.typeCulture %}
+                                <span class="detail-chip">📂 {{ h.typeCulture }}</span>
+                            {% endif %}
+                            {% if h.surface %}
+                                <span class="detail-chip">📐 {{ h.surface|number_format(2, ',') }} m²</span>
+                            {% endif %}
+                            {% if h.etatAvant and h.etatApres %}
+                                <span class="detail-chip state-chip">🔄 {{ h.etatAvant }} → {{ h.etatApres }}</span>
+                            {% elseif h.etatApres %}
+                                <span class="detail-chip state-chip">📌 {{ h.etatApres }}</span>
+                            {% endif %}
+                            {% if h.quantiteRecolte %}
+                                <span class="detail-chip harvest-chip">🌾 {{ h.quantiteRecolte|number_format(1, ',') }} kg récoltés</span>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+
+            {% endfor %}
+        {% endif %}
+
+    </div>{# end .timeline #}
+
+</div>{# end .historique-container #}
+</div>{# end .historique-page-wrapper #}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.filter-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const type = this.getAttribute('data-type');
+            const url  = new URL(window.location.href);
+            if (type) {
+                url.searchParams.set('type', type);
+            } else {
+                url.searchParams.delete('type');
+            }
+            window.location.href = url.toString();
+        });
+    });
+});
+</script>
+
+{% endblock %}
