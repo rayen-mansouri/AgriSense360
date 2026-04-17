@@ -24,16 +24,9 @@ https://openreview.net/forum?id=X4nq0W2qZX#discussion
 '''
 
 BASE = Path(__file__).parent
+FEATURES = ["type_enc", "vaccinated", "weight",
+            "appetite_enc", "record_month", "record_dayofyear", "production"]
 
-animals = pd.read_csv(BASE / "animal.csv")
-records = pd.read_csv(BASE / "healthRecord.csv")
-
-animals_sel = animals[["id", "type", "vaccinated"]].copy()
-animals_sel["id"] = range(1, len(animals_sel) + 1)
-records_sel = records[["animal", "weight", "appetite", "conditionStatus",
-                        "recordDate", "milkYield", "eggCount", "woolLength"]]
-
-df = records_sel.merge(animals_sel, left_on="animal", right_on="id")
 
 def pick_production(row):
     t = row["type"]
@@ -44,51 +37,76 @@ def pick_production(row):
     else:
         return row["eggCount"]
 
-df["production"] = df.apply(pick_production, axis=1)
 
-df["recordDate"] = pd.to_datetime(df["recordDate"])
-df["record_month"] = df["recordDate"].dt.month
-df["record_dayofyear"] = df["recordDate"].dt.dayofyear
+def train_model(custom=False):
+    animals = pd.read_csv(BASE / "animal.csv")
+    records = pd.read_csv(BASE / "healthRecord.csv")
 
-le_type      = LabelEncoder()
-le_appetite  = LabelEncoder()
-le_condition = LabelEncoder()
+    animals_sel = animals[["id", "type", "vaccinated"]].copy()
+    animals_sel["id"] = range(1, len(animals_sel) + 1)
+    records_sel = records[["animal", "weight", "appetite", "conditionStatus",
+                           "recordDate", "milkYield", "eggCount", "woolLength"]]
 
-df["type_enc"]      = le_type.fit_transform(df["type"])
-df["appetite_enc"]  = le_appetite.fit_transform(df["appetite"])
-df["condition_enc"] = le_condition.fit_transform(df["conditionStatus"])
+    df = records_sel.merge(animals_sel, left_on="animal", right_on="id")
+    df["production"] = df.apply(pick_production, axis=1)
+    df["recordDate"] = pd.to_datetime(df["recordDate"])
+    df["record_month"] = df["recordDate"].dt.month
+    df["record_dayofyear"] = df["recordDate"].dt.dayofyear
 
-FEATURES = ["type_enc", "vaccinated", "weight",
-            "appetite_enc", "record_month", "record_dayofyear", "production"]
+    le_type = LabelEncoder()
+    le_appetite = LabelEncoder()
+    le_condition = LabelEncoder()
 
-X = df[FEATURES].values
-y = df["condition_enc"].values
+    df["type_enc"] = le_type.fit_transform(df["type"])
+    df["appetite_enc"] = le_appetite.fit_transform(df["appetite"])
+    df["condition_enc"] = le_condition.fit_transform(df["conditionStatus"])
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+    X = df[FEATURES].values
+    y = df["condition_enc"].values
 
-clf = RandomForestClassifier(n_estimators=200, max_depth=12, random_state=42, n_jobs=-1,
-                             class_weight='balanced')
-clf.fit(X_train, y_train)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-y_pred = clf.predict(X_test)
+    clf = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=12,
+        random_state=42,
+        n_jobs=-1,
+        class_weight='balanced'
+    )
+    clf.fit(X_train, y_train)
 
-print(f"\nAccuracy: {accuracy_score(y_test, y_pred):.4f}\n")
-print(classification_report(y_test, y_pred, target_names=le_condition.classes_))
+    y_pred = clf.predict(X_test)
+    accuracy = float(accuracy_score(y_test, y_pred))
+    report = classification_report(y_test, y_pred, target_names=le_condition.classes_)
 
-print("Feature importances:")
-for name, imp in sorted(zip(FEATURES, clf.feature_importances_), key=lambda x: -x[1]):
-    print(f"  {name:<22} {imp:.4f}")
+    print(f"\nAccuracy: {accuracy:.4f}\n")
+    print(report)
+    print("Feature importances:")
+    for name, imp in sorted(zip(FEATURES, clf.feature_importances_), key=lambda x: -x[1]):
+        print(f"  {name:<22} {imp:.4f}")
 
-bundle = {
-    "model": clf,
-    "le_type": le_type,
-    "le_appetite": le_appetite,
-    "le_condition": le_condition,
-    "feature_names": FEATURES,
-}
+    bundle = {
+        "model": clf,
+        "le_type": le_type,
+        "le_appetite": le_appetite,
+        "le_condition": le_condition,
+        "feature_names": FEATURES,
+    }
 
-model_path = BASE / ("custom_model.pkl" if "--custom" in sys.argv else "condition_model.pkl")
-joblib.dump(bundle, model_path)
-print(f"\nModel saved to {model_path}")
+    model_path = BASE / ("custom_model.pkl" if custom else "condition_model.pkl")
+    joblib.dump(bundle, model_path)
+    print(f"\nModel saved to {model_path}")
+
+    return {
+        "accuracy": round(accuracy, 4),
+        "report": report,
+        "model_path": str(model_path),
+        "record_count": int(len(records)),
+        "animal_count": int(len(animals)),
+    }
+
+
+if __name__ == "__main__":
+    train_model("--custom" in sys.argv)

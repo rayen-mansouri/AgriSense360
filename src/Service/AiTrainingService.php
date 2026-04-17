@@ -5,8 +5,7 @@ namespace App\Service;
 use App\Entity\Animal;
 use App\Entity\AnimalHealthRecord;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class AiTrainingService
 {
@@ -14,6 +13,7 @@ class AiTrainingService
 
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly HttpClientInterface $httpClient,
     ) {
     }
 
@@ -52,32 +52,7 @@ class AiTrainingService
         $pythonDir = $this->getPythonDir();
         $this->exportAnimalCsv($pythonDir, $animals);
         $this->exportHealthRecordCsv($pythonDir, $records, $animals);
-
-        $commands = [
-            ['python', 'train.py', '--custom'],
-            ['py', '-3', 'train.py', '--custom'],
-        ];
-
-        $lastFailure = null;
-
-        foreach ($commands as $command) {
-            $process = new Process($command, $pythonDir);
-            $process->setTimeout(600);
-
-            try {
-                $process->mustRun();
-
-                return;
-            } catch (\Throwable $exception) {
-                $lastFailure = $exception;
-            }
-        }
-
-        if ($lastFailure instanceof ProcessFailedException) {
-            throw new \RuntimeException('Echec de l entrainement du modele personnalise.');
-        }
-
-        throw new \RuntimeException('Python introuvable pour lancer train.py.');
+        $this->requestCustomTraining();
     }
 
     private function exportAnimalCsv(string $pythonDir, array $animals): void
@@ -124,6 +99,37 @@ class AiTrainingService
         }
 
         file_put_contents($pythonDir . DIRECTORY_SEPARATOR . 'healthRecord.csv', $content);
+    }
+
+    private function requestCustomTraining(): void
+    {
+        try {
+            $response = $this->httpClient->request('POST', 'http://localhost:8000/train-custom', [
+                'timeout' => 600,
+            ]);
+        } catch (\Throwable) {
+            throw new \RuntimeException('Impossible de contacter le serveur IA. Assurez-vous que api.py tourne sur le port 8000.');
+        }
+
+        $statusCode = $response->getStatusCode();
+        $body = $response->getContent(false);
+
+        if ($statusCode === 404) {
+            throw new \RuntimeException('Le serveur IA actif ne contient pas la route /train-custom. Redemarrez uvicorn depuis C:/Users/aminp/Documents/GitHub/AgriSense360/src/main/python.');
+        }
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            $detail = 'Erreur du serveur IA.';
+            $data = json_decode($body, true);
+
+            if (is_array($data) && isset($data['detail']) && is_string($data['detail']) && trim($data['detail']) !== '') {
+                $detail = trim($data['detail']);
+            } elseif (trim($body) !== '') {
+                $detail = trim($body);
+            }
+
+            throw new \RuntimeException('Echec de l entrainement du modele personnalise. ' . $detail);
+        }
     }
 
     private function getPythonDir(): string

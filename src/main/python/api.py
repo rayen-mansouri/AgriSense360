@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, field_validator
+from train import train_model
 
 BASE = Path(__file__).parent
 GENERAL_MODEL_PATH = BASE / "condition_model.pkl"
@@ -19,6 +20,11 @@ general_bundle = joblib.load(GENERAL_MODEL_PATH)
 custom_bundle: Optional[dict] = None
 if CUSTOM_MODEL_PATH.exists():
     custom_bundle = joblib.load(CUSTOM_MODEL_PATH)
+
+
+def reload_custom_bundle() -> None:
+    global custom_bundle
+    custom_bundle = joblib.load(CUSTOM_MODEL_PATH) if CUSTOM_MODEL_PATH.exists() else None
 
 
 def get_bundle(model_name: str) -> dict:
@@ -64,6 +70,14 @@ class PredictionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     condition: str
     probabilities: dict[str, float]
+
+
+class TrainResponse(BaseModel):
+    status: str
+    accuracy: float
+    model_path: str
+    record_count: int
+    animal_count: int
 
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -115,6 +129,23 @@ def health_check():
 @app.get("/custom_model_available")
 def custom_model_available():
     return {"available": CUSTOM_MODEL_PATH.exists()}
+
+
+@app.post("/train-custom", response_model=TrainResponse)
+def train_custom():
+    try:
+        result = train_model(custom=True)
+        reload_custom_bundle()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return TrainResponse(
+        status="ok",
+        accuracy=result["accuracy"],
+        model_path=result["model_path"],
+        record_count=result["record_count"],
+        animal_count=result["animal_count"],
+    )
 
 
 @app.get("/classes")
