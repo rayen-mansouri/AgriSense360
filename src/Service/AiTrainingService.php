@@ -10,6 +10,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class AiTrainingService
 {
     public const TRAIN_THRESHOLD = 1000;
+    private const API_BASE_URL = 'http://127.0.0.1:8001';
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -104,18 +105,18 @@ class AiTrainingService
     private function requestCustomTraining(): void
     {
         try {
-            $response = $this->httpClient->request('POST', 'http://localhost:8000/train-custom', [
+            $response = $this->httpClient->request('POST', self::API_BASE_URL . '/train-custom', [
                 'timeout' => 600,
             ]);
         } catch (\Throwable) {
-            throw new \RuntimeException('Impossible de contacter le serveur IA. Assurez-vous que api.py tourne sur le port 8000.');
+            throw new \RuntimeException('Impossible de contacter le serveur IA. Assurez-vous que api.py tourne sur 127.0.0.1:8001.');
         }
 
         $statusCode = $response->getStatusCode();
         $body = $response->getContent(false);
 
         if ($statusCode === 404) {
-            throw new \RuntimeException('Le serveur IA actif ne contient pas la route /train-custom. Redemarrez uvicorn depuis C:/Users/aminp/Documents/GitHub/AgriSense360/src/main/python.');
+            throw new \RuntimeException('Le serveur IA actif sur 127.0.0.1:8001 ne contient pas la route /train-custom. Redemarrez uvicorn depuis C:/Users/aminp/Documents/GitHub/AgriSense360/src/main/python.');
         }
 
         if ($statusCode < 200 || $statusCode >= 300) {

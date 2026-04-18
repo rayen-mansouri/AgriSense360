@@ -8,6 +8,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class AiPredictionService
 {
+    private const API_BASE_URL = 'http://127.0.0.1:8001';
+
     public function __construct(
         private readonly HttpClientInterface $httpClient,
     ) {
@@ -123,12 +125,12 @@ class AiPredictionService
     private function callApi(array $payload, string $model): array
     {
         try {
-            $response = $this->httpClient->request('POST', 'http://localhost:8000/predict', [
+            $response = $this->httpClient->request('POST', self::API_BASE_URL . '/predict', [
                 'query' => ['model' => $this->normalizeModel($model)],
                 'json' => $payload,
             ]);
         } catch (\Throwable) {
-            throw new \RuntimeException('Impossible de contacter le serveur IA. Assurez-vous que api.py tourne sur le port 8000.');
+            throw new \RuntimeException('Impossible de contacter le serveur IA. Assurez-vous que api.py tourne sur 127.0.0.1:8001.');
         }
 
         $statusCode = $response->getStatusCode();
