@@ -17,6 +17,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\UX\Chartjs\Builder\ChartBuilderInterface;
+use Symfony\UX\Chartjs\Model\Chart;
 
 class AnimalManagementController extends AbstractController
 {
@@ -27,6 +29,7 @@ class AnimalManagementController extends AbstractController
         EnumOptionService $enumOptionService,
         AiPredictionService $aiPredictionService,
         AiTrainingService $aiTrainingService,
+        ChartBuilderInterface $chartBuilder,
     ): Response
     {
         $availableTabs = ['animaux', 'dossiers', 'options', 'predictor', 'analytics'];
@@ -133,6 +136,9 @@ class AnimalManagementController extends AbstractController
         $healthRecordCount = $aiTrainingService->getHealthRecordCount();
         $canTrainCustomModel = $healthRecordCount >= AiTrainingService::TRAIN_THRESHOLD;
         $customModelAvailable = $aiPredictionService->hasCustomModel();
+        $analyticsDashboard = $currentTab === 'analytics'
+            ? $this->buildAnalyticsDashboard($em, $chartBuilder)
+            : $this->getEmptyAnalyticsDashboard();
         $recordSortMap = [
             'id' => 'id',
             'recordDate' => 'recordDate',
@@ -215,6 +221,12 @@ class AnimalManagementController extends AbstractController
             'trainThreshold' => AiTrainingService::TRAIN_THRESHOLD,
             'canTrainCustomModel' => $canTrainCustomModel,
             'customModelAvailable' => $customModelAvailable,
+            'analyticsSummary' => $analyticsDashboard['summary'],
+            'analyticsHasConditionData' => $analyticsDashboard['hasConditionData'],
+            'analyticsHasTypeData' => $analyticsDashboard['hasTypeData'],
+            'analyticsConditionChart' => $analyticsDashboard['conditionChart'],
+            'analyticsTypeChart' => $analyticsDashboard['typeChart'],
+            'analyticsLocations' => $analyticsDashboard['locations'],
             'selectedAiModel' => (string) ($analyticsState['selectedModel'] ?? 'general'),
             'selectedAiAnimalId' => (int) ($analyticsState['selectedAnimalId'] ?? 0),
             'predictionResult' => $analyticsState['prediction'] ?? null,
@@ -703,5 +715,202 @@ class AnimalManagementController extends AbstractController
             ->setMaxResults(10)
             ->getQuery()
             ->getResult();
+    }
+
+    private function buildAnalyticsDashboard(EntityManagerInterface $em, ChartBuilderInterface $chartBuilder): array
+    {
+        $animals = $em->getRepository(Animal::class)->createQueryBuilder('a')
+            ->orderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+        $records = $em->getRepository(AnimalHealthRecord::class)->createQueryBuilder('r')
+            ->orderBy('r.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $totalAnimals = count($animals);
+        $totalRecords = count($records);
+        $vaccinatedCount = count(array_filter($animals, static fn (Animal $animal): bool => $animal->isVaccinated()));
+        $vaccinationRate = $totalAnimals === 0 ? 0.0 : ($vaccinatedCount / $totalAnimals) * 100;
+        $atRiskCount = count(array_filter($animals, static function (Animal $animal): bool {
+            $status = strtolower((string) $animal->getHealthStatus());
+
+            return $status !== '' && $status !== 'healthy';
+        }));
+
+        $conditionCounts = [
+            'Healthy' => 0,
+            'Sick' => 0,
+            'Injured' => 0,
+            'Critical' => 0,
+        ];
+
+        foreach ($records as $record) {
+            $key = $this->formatAnalyticsLabel((string) $record->getConditionStatus());
+
+            if (array_key_exists($key, $conditionCounts)) {
+                ++$conditionCounts[$key];
+            }
+        }
+
+        $conditionLabels = [];
+        $conditionValues = [];
+        $conditionColors = [];
+        $conditionPalette = [
+            'Healthy' => '#43a047',
+            'Sick' => '#f57c00',
+            'Injured' => '#1e88e5',
+            'Critical' => '#e53935',
+        ];
+
+        foreach ($conditionCounts as $label => $value) {
+            if ($value <= 0) {
+                continue;
+            }
+
+            $conditionLabels[] = $label . '  ' . $value;
+            $conditionValues[] = $value;
+            $conditionColors[] = $conditionPalette[$label];
+        }
+
+        $typeCounts = [];
+        foreach ($animals as $animal) {
+            $type = trim((string) $animal->getType());
+            if ($type === '') {
+                continue;
+            }
+
+            $label = $this->formatAnalyticsLabel($type);
+            $typeCounts[$label] = ($typeCounts[$label] ?? 0) + 1;
+        }
+        arsort($typeCounts);
+
+        $locationCounts = [];
+        foreach ($animals as $animal) {
+            $location = trim((string) $animal->getLocation());
+            if ($location === '') {
+                continue;
+            }
+
+            $label = $this->formatAnalyticsLabel($location);
+            $locationCounts[$label] = ($locationCounts[$label] ?? 0) + 1;
+        }
+        arsort($locationCounts);
+
+        $conditionChart = $chartBuilder->createChart(Chart::TYPE_PIE);
+        $conditionChart->setData([
+            'labels' => $conditionLabels,
+            'datasets' => [[
+                'data' => $conditionValues,
+                'backgroundColor' => $conditionColors,
+                'borderColor' => '#ffffff',
+                'borderWidth' => 2,
+                'hoverOffset' => 10,
+            ]],
+        ]);
+        $conditionChart->setOptions([
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'plugins' => [
+                'legend' => [
+                    'position' => 'bottom',
+                    'labels' => [
+                        'boxWidth' => 14,
+                        'padding' => 18,
+                        'color' => '#22301b',
+                        'font' => [
+                            'size' => 12,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $typeChart = $chartBuilder->createChart(Chart::TYPE_BAR);
+        $typeChart->setData([
+            'labels' => array_keys($typeCounts),
+            'datasets' => [[
+                'label' => 'Animaux',
+                'data' => array_values($typeCounts),
+                'backgroundColor' => '#5a9814',
+                'borderRadius' => 8,
+                'maxBarThickness' => 56,
+            ]],
+        ]);
+        $typeChart->setOptions([
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'plugins' => [
+                'legend' => [
+                    'display' => false,
+                ],
+            ],
+            'scales' => [
+                'x' => [
+                    'grid' => [
+                        'display' => false,
+                    ],
+                    'ticks' => [
+                        'color' => '#22301b',
+                    ],
+                ],
+                'y' => [
+                    'beginAtZero' => true,
+                    'ticks' => [
+                        'precision' => 0,
+                        'color' => '#22301b',
+                    ],
+                    'grid' => [
+                        'color' => 'rgba(34, 48, 27, 0.08)',
+                    ],
+                ],
+            ],
+        ]);
+
+        return [
+            'summary' => [
+                'totalAnimals' => $totalAnimals,
+                'totalRecords' => $totalRecords,
+                'vaccinationRate' => round($vaccinationRate),
+                'atRiskCount' => $atRiskCount,
+            ],
+            'hasConditionData' => $conditionValues !== [],
+            'hasTypeData' => $typeCounts !== [],
+            'conditionChart' => $conditionChart,
+            'typeChart' => $typeChart,
+            'locations' => array_map(
+                static fn (string $name, int $count): array => ['name' => $name, 'count' => $count],
+                array_keys($locationCounts),
+                array_values($locationCounts),
+            ),
+        ];
+    }
+
+    private function getEmptyAnalyticsDashboard(): array
+    {
+        return [
+            'summary' => [
+                'totalAnimals' => 0,
+                'totalRecords' => 0,
+                'vaccinationRate' => 0,
+                'atRiskCount' => 0,
+            ],
+            'hasConditionData' => false,
+            'hasTypeData' => false,
+            'conditionChart' => null,
+            'typeChart' => null,
+            'locations' => [],
+        ];
+    }
+
+    private function formatAnalyticsLabel(string $value): string
+    {
+        $normalized = strtolower(trim($value));
+
+        if ($normalized === '') {
+            return '';
+        }
+
+        return ucfirst($normalized);
     }
 }

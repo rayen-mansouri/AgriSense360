@@ -301,3 +301,122 @@
     gap: 12px;
     padding: 10px 12px;
 }
+
+.analytics-kpi-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 20px;
+}
+
+.analytics-kpi-card {
+    align-items: center;
+    background: linear-gradient(to bottom right, #ffffff, #f4f8ed);
+    border: 1px solid rgba(43, 59, 31, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+    min-height: 120px;
+    padding: 18px;
+}
+
+.analytics-kpi-card-danger {
+    background: linear-gradient(to bottom right, #fff8f7, #fff0ee);
+}
+
+.analytics-kpi-value {
+    color: #2d4a21;
+    font-size: 36px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.analytics-kpi-value-danger {
+    color: #c62828;
+}
+
+.analytics-kpi-label {
+    color: rgba(35, 48, 27, 0.68);
+    font-size: 13px;
+    text-align: center;
+}
+
+.analytics-chart-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-chart-shell {
+    height: 320px;
+    position: relative;
+    width: 100%;
+}
+
+.analytics-location-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.analytics-location-card {
+    align-items: center;
+    background: linear-gradient(to bottom right, #ffffff, #f4f8ed);
+    border: 1px solid rgba(43, 59, 31, 0.1);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    min-height: 96px;
+    padding: 16px;
+    text-align: center;
+}
+
+.analytics-location-count {
+    color: #2d4a21;
+    font-size: 30px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.analytics-location-name {
+    color: rgba(35, 48, 27, 0.68);
+    font-size: 13px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1100px) {
+    .analytics-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .analytics-chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .mgmt-page {
+        padding: 18px 14px;
+    }
+
+    .mgmt-tabs {
+        flex-wrap: wrap;
+    }
+
+    .mgmt-grid,
+    .options-grid,
+    .analytics-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
