@@ -37,6 +37,24 @@ class Culture
     #[ORM\JoinColumn(name: 'parcelle_Id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private Parcelle $parcelle;
 
+    // ── NEW FIELDS — added for IA harvest feature ─────────────────────────────
+
+    /**
+     * IA-computed harvest quantity in kg.
+     * Filled when the farmer confirms the harvest via the IA modal.
+     */
+    #[ORM\Column(name: 'quantite_recolte', type: 'float', nullable: true)]
+    private ?float $quantiteRecolte = null;
+
+    /**
+     * IA quality score 0-100.
+     * Reflects surface efficiency × lateness penalty × weather impact.
+     */
+    #[ORM\Column(name: 'ia_score', type: 'float', nullable: true)]
+    private ?float $iaScore = null;
+
+    // ── Original getters/setters (unchanged) ─────────────────────────────────
+
     public function getId(): ?int { return $this->id; }
 
     public function getNom(): string { return $this->nom; }
@@ -62,4 +80,37 @@ class Culture
 
     public function getParcelle(): Parcelle { return $this->parcelle; }
     public function setParcelle(Parcelle $v): self { $this->parcelle = $v; return $this; }
+
+    // ── New getters/setters ───────────────────────────────────────────────────
+
+    public function getQuantiteRecolte(): ?float { return $this->quantiteRecolte; }
+    public function setQuantiteRecolte(?float $v): self { $this->quantiteRecolte = $v; return $this; }
+
+    public function getIaScore(): ?float { return $this->iaScore; }
+    public function setIaScore(?float $v): self { $this->iaScore = $v; return $this; }
+
+    // ── Convenience helpers ───────────────────────────────────────────────────
+
+    /**
+     * Returns true when the culture is within 10 days of harvest
+     * OR already overdue — used by Twig to show the Récolter button.
+     */
+    public function isReadyToHarvest(): bool
+    {
+        if (!$this->dateRecolte) return false;
+        $today = new \DateTime('today');
+        $dr    = \DateTime::createFromInterface($this->dateRecolte)->setTime(0, 0, 0);
+        $diff  = (int) $today->diff($dr)->days * ($dr >= $today ? 1 : -1);
+        // Show button if ≤ 10 days away or already past
+        return $diff <= 10;
+    }
+
+    public function getDaysLate(): int
+    {
+        if (!$this->dateRecolte) return 0;
+        $today = new \DateTime('today');
+        $dr    = \DateTime::createFromInterface($this->dateRecolte)->setTime(0, 0, 0);
+        if ($dr >= $today) return 0;
+        return (int) $dr->diff($today)->days;
+    }
 }

@@ -24,3 +24,10 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+ia_service/venv/
+ia_service/model/harvest_model.pkl
+ia_service/__pycache__/
+ia_service/*.pyc
+/venv/
+ia_service/data/

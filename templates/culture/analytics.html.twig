@@ -1,0 +1,335 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Analytique IA — Rendements{% endblock %}
+
+{% block content %}
+
+{# ══════════════════════════════════════════════════════
+   PAGE HEADER
+   ══════════════════════════════════════════════════════ #}
+<div class="page-header">
+    <div class="page-header-left">
+        <p class="page-breadcrumb">
+            <a href="{{ path('home') }}">🏠 Accueil</a> /
+            <a href="{{ path('culture_index') }}">Cultures</a> /
+            Analytique IA
+        </p>
+        <h1 class="page-title">🤖 Analytique IA — Rendements</h1>
+        <p class="page-subtitle">Analyse des {{ harvests|length }} récolte(s) enregistrée(s) par le modèle IA</p>
+    </div>
+    <div>
+        <a href="{{ path('culture_index') }}" class="btn btn-secondary">← Retour aux cultures</a>
+    </div>
+</div>
+
+{# ── Compute totals in twig ────────────────────────────────────────── #}
+{% set totalKg   = 0 %}
+{% set totalSurf = 0 %}
+{% set byNom     = {} %}
+
+{% for h in harvests %}
+    {% set totalKg   = totalKg   + (h.quantiteRecolte ?? 0) %}
+    {% set totalSurf = totalSurf + (h.surface ?? 0) %}
+    {% set nom = h.cultureNom ?? 'Inconnu' %}
+    {% if byNom[nom] is not defined %}
+        {% set byNom = byNom|merge({(nom): {qty: 0, count: 0, surface: 0}}) %}
+    {% endif %}
+    {% set byNom = byNom|merge({(nom): {
+        qty:     byNom[nom].qty     + (h.quantiteRecolte ?? 0),
+        count:   byNom[nom].count   + 1,
+        surface: byNom[nom].surface + (h.surface ?? 0)
+    }}) %}
+{% endfor %}
+
+{# ══════════════════════════════════════════════════════
+   KPI CARDS
+   ══════════════════════════════════════════════════════ #}
+{% if harvests is empty %}
+<div class="empty-state">
+    <div class="empty-icon">🤖</div>
+    <div class="empty-title">Aucune récolte IA enregistrée</div>
+    <div class="empty-subtitle">
+        Utilisez le bouton 🌾 Récolter sur les cartes culture pour commencer à collecter des données.
+    </div>
+</div>
+{% else %}
+
+<div class="analytics-kpi-grid">
+    <div class="analytics-kpi-card kpi-green">
+        <div class="kpi-icon">🌾</div>
+        <div class="kpi-value">{{ totalKg|number_format(1) }} kg</div>
+        <div class="kpi-label">Production totale estimée</div>
+    </div>
+    <div class="analytics-kpi-card kpi-blue">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-value">{{ harvests|length }}</div>
+        <div class="kpi-label">Récoltes enregistrées</div>
+    </div>
+    <div class="analytics-kpi-card kpi-amber">
+        <div class="kpi-icon">📐</div>
+        <div class="kpi-value">{{ totalSurf|number_format(0) }} m²</div>
+        <div class="kpi-label">Surface totale récoltée</div>
+    </div>
+    <div class="analytics-kpi-card kpi-teal">
+        <div class="kpi-icon">⚡</div>
+        <div class="kpi-value">
+            {{ totalSurf > 0 ? (totalKg / totalSurf)|number_format(2) : '—' }} kg/m²
+        </div>
+        <div class="kpi-label">Rendement moyen global</div>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════
+   CHART — Chart.js bar chart of yield by culture name
+   ══════════════════════════════════════════════════════ #}
+<div class="analytics-card" style="margin-bottom:28px;">
+    <div class="analytics-card-header">
+        <h3 class="analytics-card-title">📊 Production par culture</h3>
+    </div>
+    <div style="padding:20px;">
+        <canvas id="yieldChart" height="80"></canvas>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════
+   TABLE — Per-culture breakdown
+   ══════════════════════════════════════════════════════ #}
+<div class="analytics-card" style="margin-bottom:28px;">
+    <div class="analytics-card-header">
+        <h3 class="analytics-card-title">🌱 Détail par type de culture</h3>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="analytics-table">
+            <thead>
+                <tr>
+                    <th>Culture</th>
+                    <th>Nb récoltes</th>
+                    <th>Qté totale (kg)</th>
+                    <th>Surface totale (m²)</th>
+                    <th>Rendement moy. (kg/m²)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for nom, data in byNom %}
+                <tr>
+                    <td><strong>{{ nom }}</strong></td>
+                    <td>{{ data.count }}</td>
+                    <td style="color:var(--green-600, #3B6D11); font-weight:700;">
+                        {{ data.qty|number_format(2) }}
+                    </td>
+                    <td>{{ data.surface|number_format(1) }}</td>
+                    <td>
+                        {% if data.surface > 0 %}
+                            {{ (data.qty / data.surface)|number_format(3) }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight:700; background:var(--green-50, #f0fdf4);">
+                    <td>Total</td>
+                    <td>{{ harvests|length }}</td>
+                    <td>{{ totalKg|number_format(2) }}</td>
+                    <td>{{ totalSurf|number_format(1) }}</td>
+                    <td>{{ totalSurf > 0 ? (totalKg / totalSurf)|number_format(3) : '—' }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════
+   TABLE — Recent harvests
+   ══════════════════════════════════════════════════════ #}
+<div class="analytics-card">
+    <div class="analytics-card-header">
+        <h3 class="analytics-card-title">🕐 Récoltes récentes</h3>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="analytics-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Culture</th>
+                    <th>Type</th>
+                    <th>Quantité IA</th>
+                    <th>Surface</th>
+                    <th>Détail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in harvests %}
+                <tr>
+                    <td>{{ h.dateAction|date('d/m/Y') }}</td>
+                    <td><strong>{{ h.cultureNom ?? '—' }}</strong></td>
+                    <td>{{ h.typeCulture ?? '—' }}</td>
+                    <td style="color:var(--green-600, #3B6D11); font-weight:700;">
+                        {{ h.quantiteRecolte is not null ? h.quantiteRecolte|number_format(2) ~ ' kg' : '—' }}
+                    </td>
+                    <td>{{ h.surface is not null ? h.surface|number_format(1) ~ ' m²' : '—' }}</td>
+                    <td style="font-size:0.78rem; color:var(--text-light); max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        {{ h.description ?? '' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════
+   Chart.js script
+   ══════════════════════════════════════════════════════ #}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function() {
+    const byNom = {{ byNom|json_encode|raw }};
+    const labels = Object.keys(byNom);
+    const qtys   = labels.map(n => Math.round(byNom[n].qty * 100) / 100);
+    const yields = labels.map(n => byNom[n].surface > 0
+        ? Math.round((byNom[n].qty / byNom[n].surface) * 1000) / 1000
+        : 0
+    );
+
+    const colors = [
+        '#639922','#1D9E75','#378ADD','#EF9F27','#D85A30',
+        '#7F77DD','#D4537E','#888780','#5DCAA5','#BA7517',
+    ];
+
+    const ctx = document.getElementById('yieldChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Quantité totale (kg)',
+                    data: qtys,
+                    backgroundColor: labels.map((_, i) => colors[i % colors.length] + 'CC'),
+                    borderColor:     labels.map((_, i) => colors[i % colors.length]),
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'Rendement (kg/m²)',
+                    data: yields,
+                    type: 'line',
+                    borderColor: '#E24B4A',
+                    backgroundColor: 'rgba(226,75,74,0.08)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#E24B4A',
+                    tension: 0.3,
+                    yAxisID: 'y2',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 12 } } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label === 'Quantité totale (kg)'
+                            ? `${ctx.dataset.label}: ${ctx.parsed.y} kg`
+                            : `${ctx.dataset.label}: ${ctx.parsed.y} kg/m²`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: 'kg', font: { size: 11 } },
+                    beginAtZero: true,
+                },
+                y2: {
+                    type: 'linear',
+                    position: 'right',
+                    title: { display: true, text: 'kg/m²', font: { size: 11 } },
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false },
+                }
+            }
+        }
+    });
+})();
+</script>
+
+{% endif %}{# /if harvests not empty #}
+
+{# ══════════════════════════════════════════════════════
+   CSS
+   ══════════════════════════════════════════════════════ #}
+<style>
+.analytics-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.analytics-kpi-card {
+    display: flex; flex-direction: column; align-items: flex-start;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+}
+.kpi-green { background:#f0fdf4; border-color:#86efac; }
+.kpi-blue  { background:#eff6ff; border-color:#93c5fd; }
+.kpi-amber { background:#fffbeb; border-color:#fcd34d; }
+.kpi-teal  { background:#f0fdfa; border-color:#5DCAA5; }
+.kpi-icon  { font-size:1.6rem; margin-bottom:8px; }
+.kpi-value { font-size:1.7rem; font-weight:800; color:var(--text-dark); line-height:1; }
+.kpi-label { font-size:0.78rem; color:var(--text-light); margin-top:4px; }
+
+.analytics-card {
+    background: #fff;
+    border: 1px solid var(--green-200, #bbf7d0);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.analytics-card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--green-200, #bbf7d0);
+    background: var(--green-50, #f0fdf4);
+}
+.analytics-card-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.analytics-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-light);
+    border-bottom: 1px solid var(--green-200, #bbf7d0);
+    background: var(--green-50, #f0fdf4);
+}
+.analytics-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--green-100, #dcfce7);
+    color: var(--text-dark);
+}
+.analytics-table tr:last-child td { border-bottom: none; }
+.analytics-table tbody tr:hover td { background: var(--green-50, #f0fdf4); }
+</style>
+
+{% endblock %}

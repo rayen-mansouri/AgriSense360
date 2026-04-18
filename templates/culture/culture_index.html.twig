@@ -17,6 +17,7 @@
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
         <a href="{{ path('parcelle_index') }}" class="btn btn-secondary">🗺️ Voir les parcelles</a>
+        <a href="{{ path('culture_analytics') }}" class="btn btn-secondary">🤖 Analytique IA</a>
         <button class="btn btn-secondary" onclick="openAgendaModal()">📅 Agenda</button>
         <button class="btn btn-primary" onclick="openModal('modal-add')">
             ➕ Nouvelle culture
@@ -59,8 +60,7 @@
 </div>
 
 {# ═══════════════════════════════════════════════════
-   DONNÉES JS — stockées ici pour éviter les problèmes
-   d'échappement dans les attributs ondblclick inline
+   DONNÉES JS
    ═══════════════════════════════════════════════════ #}
 <script>
 const CULTURES_DATA = [
@@ -74,7 +74,9 @@ const CULTURES_DATA = [
         datePlantation: {{ culture.datePlantation ? culture.datePlantation|date('Y-m-d')|json_encode|raw : 'null' }},
         dateRecolte: {{ culture.dateRecolte ? culture.dateRecolte|date('Y-m-d')|json_encode|raw : 'null' }},
         img: {{ culture.img|json_encode|raw }},
-        parcelleName: {{ (parcelleMap[culture.parcelle.id] ?? 'N/A')|json_encode|raw }}
+        parcelleName: {{ (parcelleMap[culture.parcelle.id] ?? 'N/A')|json_encode|raw }},
+        quantiteRecolte: {{ culture.quantiteRecolte is not null ? culture.quantiteRecolte : 'null' }},
+        iaScore: {{ culture.iaScore is not null ? culture.iaScore : 'null' }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
@@ -113,6 +115,13 @@ const CULTURES_DATA = [
                     {{ cultureTypeEmoji(culture.typeCulture) }}
                 </div>
             {% endif %}
+
+            {# ── IA Récolte badge — shown if already harvested ── #}
+            {% if culture.etat == 'Récolte' and culture.quantiteRecolte is not null %}
+            <div class="ia-harvested-badge">
+                🌾 {{ culture.quantiteRecolte|number_format(1) }} kg
+            </div>
+            {% endif %}
         </div>
 
         <div class="culture-card-body">
@@ -146,6 +155,8 @@ const CULTURES_DATA = [
         </div>
 
         <div class="culture-card-footer">
+            {# ── Standard edit button (hidden when already harvested) ── #}
+            {% if culture.etat != 'Récolte' %}
             <button class="btn btn-secondary btn-sm"
                     onclick="event.stopPropagation(); openEditModal({{ culture.id }},
                         '{{ culture.nom|e('js') }}',
@@ -156,7 +167,22 @@ const CULTURES_DATA = [
                         {{ culture.parcelle.id }})">
                 ✏️ Modifier
             </button>
+            {% endif %}
 
+            {# ── 🌾 RÉCOLTER button — only when close to or past harvest date ── #}
+            {% if culture.isReadyToHarvest() and culture.etat != 'Récolte' %}
+            <button class="btn btn-harvest btn-sm"
+                    onclick="event.stopPropagation(); openHarvestModal(
+                        {{ culture.id }},
+                        {{ culture.nom|json_encode|raw }},
+                        {{ culture.surface ?? 0 }},
+                        {{ csrf_token('harvest-culture-' ~ culture.id)|json_encode|raw }}
+                    )">
+                🌾 Récolter
+            </button>
+            {% endif %}
+
+            {# ── Delete button ── #}
             <form method="post" action="{{ path('culture_delete', {id: culture.id}) }}"
                   onsubmit="return confirm('Supprimer « {{ culture.nom|e('js') }} » ?')"
                   onclick="event.stopPropagation();">
@@ -180,7 +206,6 @@ const CULTURES_DATA = [
             <span class="modal-title">🌱 Nouvelle culture</span>
             <button class="modal-close" onclick="closeModal('modal-add')">×</button>
         </div>
-        {# NO html5 required/pattern — all validation done in JS #}
         <form id="form-add" method="post" action="{{ path('culture_new') }}"
               onsubmit="return validateCultureForm('add')">
             <div class="modal-body">
@@ -191,7 +216,6 @@ const CULTURES_DATA = [
                 </div>
                 {% endif %}
 
-                {# TYPE #}
                 <div class="form-group">
                     <label class="form-label">Type de culture <span class="required">*</span></label>
                     <select name="type_culture" id="add-type" class="form-control"
@@ -204,7 +228,6 @@ const CULTURES_DATA = [
                     <span class="field-error" id="add-type-err"></span>
                 </div>
 
-                {# NOM (filtered by type) #}
                 <div class="form-group">
                     <label class="form-label">Culture <span class="required">*</span></label>
                     <select name="nom" id="add-nom" class="form-control"
@@ -214,7 +237,6 @@ const CULTURES_DATA = [
                     <span class="field-error" id="add-nom-err"></span>
                 </div>
 
-                {# PARCELLE #}
                 <div class="form-group">
                     <label class="form-label">Parcelle <span class="required">*</span></label>
                     <select name="parcelle_id" id="add-parcelle" class="form-control">
@@ -231,7 +253,6 @@ const CULTURES_DATA = [
                 </div>
 
                 <div class="form-row">
-                    {# DATE PLANTATION #}
                     <div class="form-group">
                         <label class="form-label">Date de plantation <span class="required">*</span></label>
                         <input type="date" name="date_plantation" id="add-date-plantation"
@@ -239,8 +260,6 @@ const CULTURES_DATA = [
                                onchange="fetchHarvestDate('add')">
                         <span class="field-error" id="add-date-plantation-err"></span>
                     </div>
-
-                    {# SURFACE #}
                     <div class="form-group">
                         <label class="form-label">Surface (m²) <span class="required">*</span></label>
                         <input type="text" name="surface" id="add-surface" class="form-control"
@@ -249,7 +268,6 @@ const CULTURES_DATA = [
                     </div>
                 </div>
 
-                {# DATE RÉCOLTE — auto-calculated #}
                 <div class="form-group">
                     <label class="form-label">Date de récolte</label>
                     <input type="date" name="date_recolte" id="add-date-recolte" class="form-control">
@@ -287,7 +305,6 @@ const CULTURES_DATA = [
                 </div>
                 {% endif %}
 
-                {# TYPE #}
                 <div class="form-group">
                     <label class="form-label">Type de culture <span class="required">*</span></label>
                     <select name="type_culture" id="edit-type" class="form-control"
@@ -300,7 +317,6 @@ const CULTURES_DATA = [
                     <span class="field-error" id="edit-type-err"></span>
                 </div>
 
-                {# NOM #}
                 <div class="form-group">
                     <label class="form-label">Culture <span class="required">*</span></label>
                     <select name="nom" id="edit-nom" class="form-control"
@@ -310,7 +326,6 @@ const CULTURES_DATA = [
                     <span class="field-error" id="edit-nom-err"></span>
                 </div>
 
-                {# PARCELLE #}
                 <div class="form-group">
                     <label class="form-label">Parcelle <span class="required">*</span></label>
                     <select name="parcelle_id" id="edit-parcelle" class="form-control">
@@ -325,7 +340,6 @@ const CULTURES_DATA = [
                 </div>
 
                 <div class="form-row">
-                    {# DATE PLANTATION #}
                     <div class="form-group">
                         <label class="form-label">Date de plantation <span class="required">*</span></label>
                         <input type="date" name="date_plantation" id="edit-date-plantation"
@@ -333,8 +347,6 @@ const CULTURES_DATA = [
                                onchange="fetchHarvestDate('edit')">
                         <span class="field-error" id="edit-date-plantation-err"></span>
                     </div>
-
-                    {# SURFACE #}
                     <div class="form-group">
                         <label class="form-label">Surface (m²) <span class="required">*</span></label>
                         <input type="text" name="surface" id="edit-surface" class="form-control">
@@ -342,7 +354,6 @@ const CULTURES_DATA = [
                     </div>
                 </div>
 
-                {# DATE RÉCOLTE #}
                 <div class="form-group">
                     <label class="form-label">Date de récolte</label>
                     <input type="date" name="date_recolte" id="edit-date-recolte" class="form-control">
@@ -360,10 +371,101 @@ const CULTURES_DATA = [
     </div>
 </div>
 
+{# ═══════════════════════════════════════════════════
+   MODAL — IA HARVEST (NEW)
+   ═══════════════════════════════════════════════════ #}
+<div id="modal-harvest" class="modal-backdrop" style="display:none;"
+     onclick="if(event.target===this)closeModal('modal-harvest')">
+    <div class="modal" style="max-width:540px;">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1e3c2c,#2a5a3a);">
+            <span class="modal-title" style="color:#fff;">🌾 Récolte — Estimation IA</span>
+            <button class="modal-close" style="color:#fff;" onclick="closeModal('modal-harvest')">×</button>
+        </div>
 
-{# ══════════════════════════════════════════════════════
-   MODAL AGENDA — iframe vers /agenda
-   ══════════════════════════════════════════════════════ #}
+        <div id="harvest-modal-body" style="padding:24px;">
+
+            {# Loading #}
+            <div id="harvest-loading" style="text-align:center;padding:40px 0;">
+                <div style="font-size:2.5rem;margin-bottom:12px;">⏳</div>
+                <p style="color:#6b7280;font-size:0.95rem;">Calcul IA en cours…</p>
+            </div>
+
+            {# Result (hidden until fetch completes) #}
+            <div id="harvest-result" style="display:none;">
+
+                {# Score ring + header #}
+                <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;">
+                    <div style="position:relative;width:100px;height:100px;flex-shrink:0;">
+                        <canvas id="score-canvas" width="100" height="100"></canvas>
+                        <div id="score-label" style="
+                            position:absolute;inset:0;display:flex;flex-direction:column;
+                            align-items:center;justify-content:center;
+                            font-weight:800;font-size:1.15rem;color:#1e3c2c;line-height:1.1;"></div>
+                    </div>
+                    <div style="flex:1;">
+                        <div id="harvest-culture-name" style="font-size:1.2rem;font-weight:700;color:#1e3c2c;margin-bottom:4px;"></div>
+                        <div id="harvest-confidence" style="font-size:0.78rem;color:#6b7280;margin-bottom:2px;"></div>
+                        <div id="harvest-source-label" style="font-size:0.72rem;color:#9ca3af;"></div>
+                    </div>
+                </div>
+
+                {# KPI row #}
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+                    <div class="ia-kpi">
+                        <div class="ia-kpi-label">Quantité estimée</div>
+                        <div class="ia-kpi-value" id="ia-quantite" style="color:#1e3c2c;"></div>
+                    </div>
+                    <div class="ia-kpi">
+                        <div class="ia-kpi-label">Score latence</div>
+                        <div class="ia-kpi-value" id="ia-lateness"></div>
+                    </div>
+                    <div class="ia-kpi">
+                        <div class="ia-kpi-label">Score météo</div>
+                        <div class="ia-kpi-value" id="ia-weather"></div>
+                    </div>
+                </div>
+
+                {# Breakdown #}
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
+                                letter-spacing:0.06em;color:#6b7280;margin-bottom:8px;">
+                        Facteurs détectés
+                    </div>
+                    <div id="breakdown-list"></div>
+                </div>
+
+                {# Confirm form #}
+                <form method="post" id="harvest-confirm-form" onsubmit="return _submitHarvest()">
+                    <input type="hidden" name="_token"           id="harvest-csrf-token">
+                    <input type="hidden" name="quantite_recolte" id="harvest-qty-input">
+                    <input type="hidden" name="ia_score"         id="harvest-score-input">
+                    <input type="hidden" name="ia_source"        id="harvest-source-input">
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary"
+                                onclick="closeModal('modal-harvest')">Annuler</button>
+                        <button type="submit" id="harvest-confirm-btn" class="btn btn-primary"
+                                style="background:#1e3c2c;">
+                            ✅ Confirmer la récolte
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {# Error state #}
+            <div id="harvest-error" style="display:none;text-align:center;padding:20px;">
+                <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+                <p id="harvest-error-msg" style="color:#dc2626;"></p>
+                <button class="btn btn-secondary btn-sm" style="margin-top:12px;"
+                        onclick="closeModal('modal-harvest')">Fermer</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   MODAL AGENDA
+   ═══════════════════════════════════════════════════ #}
 <div id="modal-agenda" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;"
      onclick="if(event.target===this)closeAgendaModal()">
     <div style="
@@ -391,185 +493,158 @@ const CULTURES_DATA = [
 
 {% block javascripts %}
 <style>
-/* ── Inline field error messages ── */
-.field-error {
-    display: block;
-    color: #d32f2f;
-    font-size: 12px;
-    margin-top: 4px;
-    min-height: 16px;
-    font-weight: 500;
-}
-.field-error:empty { margin-top: 0; }
+/* ── Field errors ── */
+.field-error { display:block;color:#d32f2f;font-size:12px;margin-top:4px;min-height:16px;font-weight:500; }
+.field-error:empty { margin-top:0; }
+.form-control.is-invalid { border-color:#d32f2f !important;box-shadow:0 0 0 2px rgba(211,47,47,.15); }
 
-.form-control.is-invalid {
-    border-color: #d32f2f !important;
-    box-shadow: 0 0 0 2px rgba(211,47,47,.15);
+/* ── Harvest button ── */
+.btn-harvest {
+    background: #1e3c2c;
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    transition: background 0.15s;
 }
+.btn-harvest:hover { background: #2a5a3a; }
+
+/* ── IA harvested badge on card image ── */
+.ia-harvested-badge {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    background: rgba(30,60,44,0.88);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+.culture-card-image { position: relative; }
+
+/* ── IA modal KPI cards ── */
+.ia-kpi {
+    padding: 10px 12px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 10px;
+    text-align: center;
+}
+.ia-kpi-label { font-size:0.68rem;font-weight:700;text-transform:uppercase;color:#6b7280;margin-bottom:4px; }
+.ia-kpi-value { font-size:1.05rem;font-weight:800;color:#1e3c2c; }
+
+/* ── Breakdown items ── */
+.ia-bd-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    border-left: 3px solid transparent;
+}
+.ia-bd-item.danger  { background:#fff5f5; border-left-color:#dc2626; }
+.ia-bd-item.warning { background:#fffbeb; border-left-color:#d97706; }
+.ia-bd-item.info    { background:#eff6ff; border-left-color:#3b82f6; }
+.ia-bd-item.success { background:#f0fdf4; border-left-color:#16a34a; }
+.ia-bd-icon  { font-size:1rem;flex-shrink:0;margin-top:1px; }
+.ia-bd-label { font-weight:600;color:#1f2937; }
+.ia-bd-impact{ font-size:0.77rem;color:#6b7280;margin-top:1px; }
 </style>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// Culture map — same as Java CultureController.CULTURE_MAP
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// CULTURE MAP
+// ═══════════════════════════════════════
 const CULTURE_MAP = {{ cultureMap|json_encode|raw }};
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // VALIDATION HELPERS
-// ═══════════════════════════════════════════════════════════════
-function setError(inputEl, errEl, msg) {
-    errEl.textContent = msg;
-    inputEl.classList.add('is-invalid');
-}
+// ═══════════════════════════════════════
+function setError(inputEl, errEl, msg) { errEl.textContent = msg; inputEl.classList.add('is-invalid'); }
+function clearError(inputEl, errEl)    { errEl.textContent = '';  inputEl.classList.remove('is-invalid'); }
 
-function clearError(inputEl, errEl) {
-    errEl.textContent = '';
-    inputEl.classList.remove('is-invalid');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// validateCultureForm(prefix)
-//   prefix = 'add' | 'edit'
-//   Rules:
-//     type_culture    : must be selected
-//     nom             : must be selected (not empty)
-//     parcelle_id     : must be selected
-//     date_plantation : required
-//     surface         : required, positive number
-// ═══════════════════════════════════════════════════════════════
 function validateCultureForm(prefix) {
     let valid = true;
+    const fields = [
+        [prefix+'-type',            prefix+'-type-err',            '⚠️ Veuillez sélectionner un type de culture'],
+        [prefix+'-nom',             prefix+'-nom-err',             '⚠️ Veuillez sélectionner une culture'],
+        [prefix+'-parcelle',        prefix+'-parcelle-err',        '⚠️ Veuillez sélectionner une parcelle'],
+        [prefix+'-date-plantation', prefix+'-date-plantation-err', '⚠️ La date de plantation est obligatoire'],
+    ];
+    fields.forEach(([id, errId, msg]) => {
+        const el = document.getElementById(id);
+        const err = document.getElementById(errId);
+        if (!el.value) { setError(el, err, msg); valid = false; }
+        else clearError(el, err);
+    });
 
-    /* ── TYPE ── */
-    const typeEl  = document.getElementById(prefix + '-type');
-    const typeErr = document.getElementById(prefix + '-type-err');
-    if (!typeEl.value) {
-        setError(typeEl, typeErr, '⚠️ Veuillez sélectionner un type de culture');
-        valid = false;
-    } else {
-        clearError(typeEl, typeErr);
-    }
-
-    /* ── NOM (depends on type being selected first) ── */
-    const nomEl  = document.getElementById(prefix + '-nom');
-    const nomErr = document.getElementById(prefix + '-nom-err');
-    if (!nomEl.value) {
-        setError(nomEl, nomErr, '⚠️ Veuillez sélectionner une culture');
-        valid = false;
-    } else {
-        clearError(nomEl, nomErr);
-    }
-
-    /* ── PARCELLE ── */
-    const parcelleEl  = document.getElementById(prefix + '-parcelle');
-    const parcelleErr = document.getElementById(prefix + '-parcelle-err');
-    if (!parcelleEl.value) {
-        setError(parcelleEl, parcelleErr, '⚠️ Veuillez sélectionner une parcelle');
-        valid = false;
-    } else {
-        clearError(parcelleEl, parcelleErr);
-    }
-
-    /* ── DATE PLANTATION ── */
-    const dpEl  = document.getElementById(prefix + '-date-plantation');
-    const dpErr = document.getElementById(prefix + '-date-plantation-err');
-    if (!dpEl.value) {
-        setError(dpEl, dpErr, '⚠️ La date de plantation est obligatoire');
-        valid = false;
-    } else {
-        clearError(dpEl, dpErr);
-    }
-
-    /* ── SURFACE ── */
-    const surfEl  = document.getElementById(prefix + '-surface');
-    const surfErr = document.getElementById(prefix + '-surface-err');
+    const surfEl  = document.getElementById(prefix+'-surface');
+    const surfErr = document.getElementById(prefix+'-surface-err');
     const surfVal = surfEl.value.trim();
-    if (surfVal === '') {
-        setError(surfEl, surfErr, '⚠️ La surface est obligatoire');
-        valid = false;
-    } else if (isNaN(surfVal) || isNaN(parseFloat(surfVal))) {
-        setError(surfEl, surfErr, '⚠️ Entrez un nombre valide');
-        valid = false;
-    } else if (parseFloat(surfVal) <= 0) {
-        setError(surfEl, surfErr, '⚠️ La surface doit être supérieure à 0');
-        valid = false;
-    } else {
-        clearError(surfEl, surfErr);
-    }
+    if (!surfVal)                        { setError(surfEl, surfErr, '⚠️ La surface est obligatoire'); valid = false; }
+    else if (isNaN(surfVal))             { setError(surfEl, surfErr, '⚠️ Entrez un nombre valide');   valid = false; }
+    else if (parseFloat(surfVal) <= 0)   { setError(surfEl, surfErr, '⚠️ La surface doit être > 0');  valid = false; }
+    else clearError(surfEl, surfErr);
 
     return valid;
 }
 
-// ── Clear errors live as user interacts ──────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-    ['add', 'edit'].forEach(function(prefix) {
-        var fields = [
-            ['type',            'change'],
-            ['nom',             'change'],
-            ['parcelle',        'change'],
-            ['date-plantation', 'change'],
-            ['surface',         'input'],
-        ];
-
-        fields.forEach(function([field, evt]) {
-            var el  = document.getElementById(prefix + '-' + field);
-            var err = document.getElementById(prefix + '-' + field + '-err');
-            if (el && err) {
-                el.addEventListener(evt, function() { clearError(el, err); });
-            }
+    ['add','edit'].forEach(function(prefix) {
+        [['type','change'],['nom','change'],['parcelle','change'],['date-plantation','change'],['surface','input']]
+        .forEach(function([field, evt]) {
+            const el  = document.getElementById(prefix+'-'+field);
+            const err = document.getElementById(prefix+'-'+field+'-err');
+            if (el && err) el.addEventListener(evt, () => clearError(el, err));
         });
     });
 });
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // MODAL HELPERS
-// ═══════════════════════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+// ═══════════════════════════════════════
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; document.body.style.overflow = 'hidden'; }
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
-    // Reset all error states when modal is closed
-    document.querySelectorAll('#' + id + ' .field-error').forEach(function(el) { el.textContent = ''; });
-    document.querySelectorAll('#' + id + ' .form-control.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
+    document.body.style.overflow = '';
+    document.querySelectorAll('#'+id+' .field-error').forEach(el => el.textContent = '');
+    document.querySelectorAll('#'+id+' .form-control.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 }
 
-// Auto-open on redirect with ?modal=add
 {% if app.request.query.get('modal') == 'add' %}
     window.addEventListener('DOMContentLoaded', () => openModal('modal-add'));
 {% endif %}
 
-// ═══════════════════════════════════════════════════════════════
-// CROP LIST — filtered by type (mirrors Java type→crop filtering)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// CROP LIST
+// ═══════════════════════════════════════
 function updateCropList(prefix) {
-    const type = document.getElementById(prefix + '-type').value;
-    const nomSelect = document.getElementById(prefix + '-nom');
+    const type = document.getElementById(prefix+'-type').value;
+    const nomSelect = document.getElementById(prefix+'-nom');
     nomSelect.innerHTML = '<option value="">— Sélectionner —</option>';
-
     if (type && CULTURE_MAP[type]) {
         CULTURE_MAP[type].forEach(crop => {
             const opt = document.createElement('option');
-            opt.value = crop;
-            opt.textContent = crop;
+            opt.value = opt.textContent = crop;
             nomSelect.appendChild(opt);
         });
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HARVEST DATE — AJAX auto-calculate (mirrors CultureDurations.java)
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// HARVEST DATE AUTO-CALCULATE
+// ═══════════════════════════════════════
 async function fetchHarvestDate(prefix) {
-    const nom = document.getElementById(prefix + '-nom').value;
-    const dp  = document.getElementById(prefix + '-date-plantation').value;
-    const recolteInput = document.getElementById(prefix + '-date-recolte');
-    const previewDiv   = document.getElementById(prefix + '-harvest-preview');
-
+    const nom = document.getElementById(prefix+'-nom').value;
+    const dp  = document.getElementById(prefix+'-date-plantation').value;
+    const recolteInput = document.getElementById(prefix+'-date-recolte');
+    const previewDiv   = document.getElementById(prefix+'-harvest-preview');
     if (!nom || !dp) return;
-
     try {
         const res  = await fetch(`{{ path('culture_harvest_date') }}?nom=${encodeURIComponent(nom)}&date=${dp}`);
         const data = await res.json();
-
         if (data.date) {
             recolteInput.value = data.date;
             previewDiv.innerHTML = `🗓️ Récolte estimée : <strong>${formatDate(data.date)}</strong>
@@ -580,33 +655,26 @@ async function fetchHarvestDate(prefix) {
     } catch(e) { console.warn('Harvest date fetch failed', e); }
 }
 
-function formatDate(iso) {
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
-}
+function formatDate(iso) { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
 
-// ═══════════════════════════════════════════════════════════════
-// EDIT MODAL — prefill
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// EDIT MODAL
+// ═══════════════════════════════════════
 function openEditModal(id, nom, type, dp, dr, surface, parcelleId) {
     document.getElementById('form-edit').action = `/culture/${id}/edit`;
-
     const typeEl = document.getElementById('edit-type');
     typeEl.value = type;
     updateCropList('edit');
-
     setTimeout(() => {
-        document.getElementById('edit-nom').value = nom;
-        document.getElementById('edit-date-plantation').value = dp || '';
-        document.getElementById('edit-date-recolte').value = dr || '';
-        document.getElementById('edit-surface').value = surface;
-        document.getElementById('edit-parcelle').value = parcelleId;
+        document.getElementById('edit-nom').value            = nom;
+        document.getElementById('edit-date-plantation').value= dp || '';
+        document.getElementById('edit-date-recolte').value   = dr || '';
+        document.getElementById('edit-surface').value        = surface;
+        document.getElementById('edit-parcelle').value       = parcelleId;
     }, 10);
-
     openModal('modal-edit');
 }
 
-// Auto-open edit modal on redirect back from controller validation error
 {% if app.request.query.get('edit_id') %}
     window.addEventListener('DOMContentLoaded', () => {
         {% for culture in cultures %}
@@ -626,72 +694,195 @@ function openEditModal(id, nom, type, dp, dr, surface, parcelleId) {
 {% endif %}
 
 // ═══════════════════════════════════════════════════════════════
-// DETAILS PANEL (double-click on card) — reads from CULTURES_DATA
-// No inline twig escaping issues
+// IA HARVEST MODAL
+// ═══════════════════════════════════════════════════════════════
+
+async function openHarvestModal(id, nom, surface, csrfToken) {
+    // Reset modal state
+    document.getElementById('harvest-loading').style.display = 'block';
+    document.getElementById('harvest-result').style.display  = 'none';
+    document.getElementById('harvest-error').style.display   = 'none';
+    openModal('modal-harvest');
+
+    try {
+        const res  = await fetch(`/culture/${id}/ia-preview`);
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+        _fillHarvestModal(id, nom, csrfToken, data);
+        document.getElementById('harvest-loading').style.display = 'none';
+        document.getElementById('harvest-result').style.display  = 'block';
+    } catch (err) {
+        console.error('IA preview error:', err);
+        document.getElementById('harvest-loading').style.display = 'none';
+        document.getElementById('harvest-error').style.display   = 'block';
+        document.getElementById('harvest-error-msg').textContent = 'Erreur IA : ' + err.message;
+    }
+}
+
+function _fillHarvestModal(id, nom, csrfToken, data) {
+    // Form wiring
+    document.getElementById('harvest-confirm-form').action = `/culture/${id}/harvest`;
+    document.getElementById('harvest-csrf-token').value    = csrfToken;
+    document.getElementById('harvest-qty-input').value     = data.quantite;
+    document.getElementById('harvest-score-input').value   = data.iaScore;
+    document.getElementById('harvest-source-input').value  = data.source || 'php_fallback';
+
+    // Header
+    document.getElementById('harvest-culture-name').textContent = `🌾 ${nom}`;
+    document.getElementById('harvest-confidence').textContent   =
+        `Confiance : ${data.confidence}  ·  ${data.logsCount} jour(s) météo enregistré(s)`;
+    document.getElementById('harvest-source-label').textContent =
+        data.source === 'ml' ? '🤖 Modèle ML Python (Random Forest)' : '🧮 Formule agronomique PHP';
+
+    // Score ring
+    _drawScoreRing(data.iaScore);
+    document.getElementById('score-label').innerHTML =
+        `<span>${Math.round(data.iaScore)}%</span><span style="font-size:0.55rem;font-weight:500;">qualité</span>`;
+
+    // KPI cards
+    document.getElementById('ia-quantite').textContent = `${data.quantite} kg`;
+
+    const lEl = document.getElementById('ia-lateness');
+    lEl.textContent = `${data.latenessScore}%`;
+    lEl.style.color = data.latenessScore < 80 ? '#dc2626' : data.latenessScore < 95 ? '#d97706' : '#16a34a';
+
+    const wEl = document.getElementById('ia-weather');
+    wEl.textContent = `${data.weatherScore}%`;
+    wEl.style.color = data.weatherScore < 60 ? '#dc2626' : data.weatherScore < 80 ? '#d97706' : '#16a34a';
+
+    // Breakdown
+    const container = document.getElementById('breakdown-list');
+    container.innerHTML = '';
+    if (!data.breakdown || data.breakdown.length === 0) {
+        container.innerHTML = `<div class="ia-bd-item success">
+            <span class="ia-bd-icon">✅</span>
+            <div><div class="ia-bd-label">Aucun facteur négatif détecté</div>
+                 <div class="ia-bd-impact">Conditions idéales pendant toute la croissance</div></div></div>`;
+    } else {
+        data.breakdown.forEach(item => {
+            const div = document.createElement('div');
+            div.className = `ia-bd-item ${item.type || 'info'}`;
+            div.innerHTML = `<span class="ia-bd-icon">${item.icon}</span>
+                <div><div class="ia-bd-label">${item.label}</div>
+                     <div class="ia-bd-impact">${item.impact}</div></div>`;
+            container.appendChild(div);
+        });
+    }
+
+    // Style confirm button by score
+    const btn = document.getElementById('harvest-confirm-btn');
+    if (data.iaScore < 50) {
+        btn.style.background = '#dc2626';
+        btn.textContent = '⚠️ Confirmer malgré les pertes';
+    } else {
+        btn.style.background = '#1e3c2c';
+        btn.textContent = '✅ Confirmer la récolte';
+    }
+}
+
+function _drawScoreRing(score) {
+    const canvas = document.getElementById('score-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx  = 50, cy = 50, r = 42;
+    const pct = Math.min(100, Math.max(0, score)) / 100;
+    ctx.clearRect(0, 0, 100, 100);
+
+    // Background track
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI);
+    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 8; ctx.stroke();
+
+    // Progress arc
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, -Math.PI/2, -Math.PI/2 + pct*2*Math.PI);
+    ctx.strokeStyle = pct > 0.75 ? '#16a34a' : pct > 0.5 ? '#d97706' : '#dc2626';
+    ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.stroke();
+}
+
+function _submitHarvest() {
+    const btn = document.getElementById('harvest-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Enregistrement…';
+    return true;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DETAILS PANEL (double-click on card)
 // ═══════════════════════════════════════════════════════════════
 function openCultureDetail(id) {
     const c = CULTURES_DATA.find(x => x.id === id);
     if (!c) return;
 
-    // Remove any existing panel
     const existing = document.getElementById('culture-details-panel');
-    const existingBackdrop = document.getElementById('culture-details-backdrop');
+    const existingBd = document.getElementById('culture-details-backdrop');
     if (existing) {
-        if (existing.dataset.cultureId == id) {
-            existing.remove();
-            if (existingBackdrop) existingBackdrop.remove();
-            return; // toggle off
-        }
-        existing.remove();
-        if (existingBackdrop) existingBackdrop.remove();
+        if (existing.dataset.cultureId == id) { existing.remove(); existingBd?.remove(); return; }
+        existing.remove(); existingBd?.remove();
     }
 
-    const fmtDate = (iso) => {
-        if (!iso) return '—';
-        const [y, m, d] = iso.split('-');
-        return `${d}/${m}/${y}`;
-    };
-
+    const fmtDate = iso => { if (!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
     const etatClass = etatToCssClass(c.etat);
 
     const panel = document.createElement('div');
     panel.id = 'culture-details-panel';
     panel.dataset.cultureId = id;
     panel.style.cssText = `
-        position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-        background:white; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
-        padding:28px; z-index:9999; width:min(700px,90vw); max-height:85vh; overflow-y:auto;
-    `;
+        position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+        padding:28px;z-index:9999;width:min(700px,90vw);max-height:85vh;overflow-y:auto;`;
+
+    // IA harvest info block — shown if already harvested
+    const iaBlock = c.quantiteRecolte !== null ? `
+        <div style="margin-top:16px;padding:14px 16px;background:#f0fdf4;
+                    border:1px solid #86efac;border-radius:10px;">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
+                        color:#1e3c2c;margin-bottom:8px;letter-spacing:0.05em;">
+                🤖 Résultat IA — Récolte confirmée
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+                <div>
+                    <div style="font-size:0.7rem;color:#6b7280;">Quantité récoltée</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:#1e3c2c;">${c.quantiteRecolte} kg</div>
+                </div>
+                ${c.iaScore !== null ? `<div>
+                    <div style="font-size:0.7rem;color:#6b7280;">Score qualité IA</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:${
+                        c.iaScore >= 75 ? '#16a34a' : c.iaScore >= 50 ? '#d97706' : '#dc2626'
+                    };">${c.iaScore}%</div>
+                </div>` : ''}
+            </div>
+        </div>` : '';
 
     panel.innerHTML = `
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-            <h2 style="margin:0; font-size:1.6rem; color:var(--text-dark);">${c.nom}</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h2 style="margin:0;font-size:1.6rem;color:#1e3c2c;">${c.nom}</h2>
             <span class="etat-badge ${etatClass}">${c.etat}</span>
         </div>
-        <div style="display:flex; gap:24px; flex-wrap:wrap;">
-            <div style="width:180px; height:180px; border-radius:12px; overflow:hidden; background:var(--green-50); flex-shrink:0; display:flex; align-items:center; justify-content:center;">
-                <img src="/images/cultures/${c.img || 'default.png'}" alt="${c.nom}" style="width:100%;height:100%;object-fit:contain;"
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div style="width:180px;height:180px;border-radius:12px;overflow:hidden;background:var(--green-50);
+                        flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                <img src="/images/cultures/${c.img||'default.png'}" alt="${c.nom}"
+                     style="width:100%;height:100%;object-fit:contain;"
                      onerror="this.parentElement.innerHTML='<span style=\\'font-size:3rem;\\'>🌱</span>'">
             </div>
-            <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:200px;">
+            <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:200px;">
                 ${[
-                    ['Type', c.typeCulture],
-                    ['Surface', (c.surface || 0) + ' m²'],
-                    ['Plantation', fmtDate(c.datePlantation)],
-                    ['Récolte prévue', fmtDate(c.dateRecolte)],
-                    ['Parcelle', c.parcelleName],
-                ].map(([label, value]) => `
-                    <div style="padding:12px; background:var(--green-50); border-radius:10px; border:1px solid var(--green-200);">
-                        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--text-light); margin-bottom:4px;">${label}</div>
-                        <div style="font-size:1rem; font-weight:600; color:var(--text-dark);">${value}</div>
-                    </div>
-                `).join('')}
+                    ['Type',c.typeCulture],
+                    ['Surface',(c.surface||0)+' m²'],
+                    ['Plantation',fmtDate(c.datePlantation)],
+                    ['Récolte prévue',fmtDate(c.dateRecolte)],
+                    ['Parcelle',c.parcelleName],
+                ].map(([label,value]) => `
+                    <div style="padding:12px;background:var(--green-50);border-radius:10px;border:1px solid var(--green-200);">
+                        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;">${label}</div>
+                        <div style="font-size:1rem;font-weight:600;color:var(--text-dark);">${value}</div>
+                    </div>`).join('')}
             </div>
         </div>
-        <div style="margin-top:20px; text-align:right;">
+        ${iaBlock}
+        <div style="margin-top:20px;text-align:right;">
             <button class="btn btn-secondary btn-sm" id="close-details-btn">✕ Fermer</button>
-        </div>
-    `;
+        </div>`;
 
     const backdrop = document.createElement('div');
     backdrop.id = 'culture-details-backdrop';
@@ -700,26 +891,16 @@ function openCultureDetail(id) {
 
     document.body.appendChild(backdrop);
     document.body.appendChild(panel);
-
-    panel.querySelector('#close-details-btn').onclick = () => {
-        panel.remove();
-        backdrop.remove();
-    };
+    panel.querySelector('#close-details-btn').onclick = () => { panel.remove(); backdrop.remove(); };
 }
 
 function etatToCssClass(etat) {
-    const classMap = {
-        'Semis':              'etat-semis',
-        'Croissance':         'etat-croissance',
-        'Maturité':           'etat-maturite',
-        'Récolte Prévue':     'etat-recolte-prevue',
-        'Récolte en Retard':  'etat-recolte-en-retard',
-    };
-    return classMap[etat] || 'etat-semis';
+    return {'Semis':'etat-semis','Croissance':'etat-croissance','Maturité':'etat-maturite',
+            'Récolte Prévue':'etat-recolte-prevue','Récolte en Retard':'etat-recolte-en-retard'}[etat] || 'etat-semis';
 }
 
 function openAgendaModal() {
-    const modal  = document.getElementById('modal-agenda');
+    const modal = document.getElementById('modal-agenda');
     const iframe = document.getElementById('agenda-iframe');
     if (!iframe.getAttribute('data-loaded')) {
         iframe.src = '{{ path('agenda_view') }}';
@@ -733,5 +914,4 @@ function closeAgendaModal() {
     document.body.style.overflow = '';
 }
 </script>
-
 {% endblock %}

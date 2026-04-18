@@ -19,4 +19,8 @@ services:
 
     App\Service\WeatherService:
         arguments:
-            $apiKey: '%env(OPENWEATHER_API_KEY)%'        
+            $apiKey: '%env(OPENWEATHER_API_KEY)%'  
+
+    App\Service\HarvestIaService:
+        arguments:
+            $flaskUrl: '%env(FLASK_IA_URL)%'      

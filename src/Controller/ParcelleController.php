@@ -2,8 +2,9 @@
 namespace App\Controller;
 
 use App\Entity\Parcelle;
-use App\Service\ParcelleService;
 use App\Service\CultureService;
+use App\Service\CultureWeatherLogService;
+use App\Service\ParcelleService;
 use App\Service\WeatherService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,10 +22,14 @@ class ParcelleController extends AbstractController
     ];
     private const TYPES_SOL = ['Sol Limoneux','Sol Argileux','Sol Sablonneux'];
 
+    // États that mean the culture is still actively growing (log weather for these)
+    private const GROWING_ETATS = ['Semis', 'Croissance', 'Maturité', 'Récolte Prévue', 'Récolte en Retard'];
+
     public function __construct(
-        private ParcelleService $parcelleService,
-        private CultureService  $cultureService,
-        private WeatherService  $weatherService,
+        private ParcelleService          $parcelleService,
+        private CultureService           $cultureService,
+        private WeatherService           $weatherService,
+        private CultureWeatherLogService $weatherLogService,  // NEW
     ) {}
 
     #[Route('', name: 'parcelle_index', methods: ['GET'])]
@@ -52,6 +57,10 @@ class ParcelleController extends AbstractController
         ]);
     }
 
+    /**
+     * MODIFIED: now also logs today's weather for every active culture on this parcelle.
+     * This is the passive logging path — fires silently on every page visit.
+     */
     #[Route('/{id}', name: 'parcelle_show', methods: ['GET'], requirements: ['id'=>'\d+'])]
     public function show(int $id): Response
     {
@@ -60,10 +69,26 @@ class ParcelleController extends AbstractController
 
         $cultures = $this->cultureService->getCulturesByParcelle($id);
 
-        // Fetch weather for this parcelle's gouvernorat (null-safe)
+        // Fetch weather for this parcelle's gouvernorat
         $weather = $parcelle->getLocalisation()
             ? $this->weatherService->getWeatherForLocation($parcelle->getLocalisation())
             : null;
+
+        // ── NEW: passive weather logging ──────────────────────────────────────
+        // For every GROWING culture on this parcelle, save today's weather snapshot.
+        // Idempotent — safe to call on every page visit.
+        if ($weather !== null) {
+            foreach ($cultures as $culture) {
+                if (in_array($culture->getEtat(), self::GROWING_ETATS, true)) {
+                    try {
+                        $this->weatherLogService->logTodayIfMissing($culture, $weather);
+                    } catch (\Throwable) {
+                        // Silent — never crash the page due to a logging failure
+                    }
+                }
+            }
+        }
+        // ── END NEW ───────────────────────────────────────────────────────────
 
         return $this->render('parcelle/show.html.twig', [
             'parcelle' => $parcelle,
