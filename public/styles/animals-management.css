@@ -1,14 +1,17 @@
 .mgmt-page {
     padding: 24px 32px;
-    background: #f5f6f3;
+    background: #ffffff;
     color: #1e2d17;
     font-family: Arial, sans-serif;
+    min-height: 100vh;
 }
 
 .mgmt-tabs {
+    background: #ffffff;
     display: flex;
     gap: 8px;
     margin-bottom: 20px;
+    padding-bottom: 4px;
 }
 
 .mgmt-tab {
@@ -158,12 +161,19 @@
     gap: 24px;
 }
 
+.options-grid > div {
+    display: flex;
+    flex-direction: column;
+}
+
 .mgmt-list {
     list-style: none;
     margin: 0 0 10px 0;
     padding: 0;
     border: 1px solid rgba(43, 59, 31, 0.14);
     border-radius: 9px;
+    height: 320px;
+    overflow-y: auto;
 }
 
 .mgmt-list li {
