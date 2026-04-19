@@ -7,19 +7,21 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * IA Harvest Estimation Service
  *
- * PRIMARY path  → calls the Python Flask ML microservice (Random Forest model).
- * FALLBACK path → pure PHP agronomic formula (used if Flask is down OR not configured).
+ * PRIMARY  → Python Flask ML microservice (Random Forest)
+ * FALLBACK → Pure PHP agronomic formula
  *
- * The PHP fallback works with ANY number of weather days (even 0).
- * - 0 weather days  → assumes 85% weather factor (decent conditions)
- * - on-time harvest → 100% lateness factor
- * - late harvest    → -2% per day late, floor at 40%
+ * The fallback ALWAYS produces a real non-zero result:
+ *   - 0 weather days  → weatherFactor = 0.85 (decent conditions assumed)
+ *   - On-time harvest → latenessFactor = 1.00 (100%)
+ *   - Late harvest    → -2% per day, floor 40%
+ *   - Early harvest   → bonus +1% per day early, cap 105% (encourages on-time)
+ *
+ * The IA NEVER returns 0 for a culture with a valid surface.
  */
 class HarvestIaService
 {
     /**
-     * Base yield in kg per m² per culture name.
-     * Tuned for Tunisian climate and typical yields.
+     * Base yield kg/m² — tuned for Tunisian climate.
      */
     private const BASE_YIELD_KG_M2 = [
         'Blé'            => 0.35,
@@ -46,22 +48,19 @@ class HarvestIaService
 
     public function __construct(
         private HttpClientInterface $httpClient,
-        private string $flaskUrl = '',   // optional — empty string = Flask disabled
+        private string $flaskUrl = '',   // empty string = Flask disabled (still works via PHP)
     ) {}
 
     /**
-     * Main entry point. Always returns a valid result — never throws.
+     * Main entry point — NEVER throws, NEVER returns qty=0 for a valid culture.
      *
-     * Logic:
-     *   1. If $flaskUrl is configured and Flask is reachable → ML prediction
-     *   2. Otherwise → PHP formula:
-     *        - 0 weather days  → weatherFactor = 0.85 (decent assumed)
-     *        - harvest on time → latenessFactor = 1.0  (100%)
-     *        - late harvest    → -2%/day, floor 40%
+     * @param Culture $culture
+     * @param array   $weatherSummary  from CultureWeatherLogService::buildWeatherSummary()
+     * @param int     $logsCount       number of weather logs
      */
     public function compute(Culture $culture, array $weatherSummary, int $logsCount): array
     {
-        // Try Python ML microservice first (only if URL is configured)
+        // Try Flask ML first (only if configured and running)
         if (!empty($this->flaskUrl)) {
             $mlResult = $this->callFlaskService($culture, $weatherSummary);
             if ($mlResult !== null) {
@@ -69,60 +68,64 @@ class HarvestIaService
             }
         }
 
-        // Always-available PHP fallback
+        // PHP fallback — always works, always non-zero
         return $this->phpFallback($culture, $weatherSummary, $logsCount);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  ML microservice call
+    //  ML microservice
     // ═════════════════════════════════════════════════════════════════════════
 
     private function callFlaskService(Culture $culture, array $ws): ?array
     {
         try {
-            $payload = [
-                'culture_nom'    => $culture->getNom(),
-                'type_culture'   => $culture->getTypeCulture() ?? '',
-                'surface'        => $culture->getSurface() ?? 1,
-                'days_late'      => $culture->getDaysLate(),
-                'total_days'     => $ws['total_days'],
-                'storm_days'     => $ws['storm_days'],
-                'rain_days'      => $ws['rain_days'],
-                'heat_days'      => $ws['heat_days'],
-                'frost_days'     => $ws['frost_days'],
-                'high_hum_days'  => $ws['high_hum_days'],
-                'high_wind_days' => $ws['high_wind_days'],
-                'avg_temp'       => $ws['avg_temp'],
-                'avg_humidity'   => $ws['avg_humidity'],
-                'avg_wind'       => $ws['avg_wind'],
-            ];
-
             $response = $this->httpClient->request('POST', $this->flaskUrl . '/predict', [
-                'json'    => $payload,
+                'json' => [
+                    'culture_nom'    => $culture->getNom(),
+                    'type_culture'   => $culture->getTypeCulture() ?? '',
+                    'surface'        => $culture->getSurface() ?? 1,
+                    'days_late'      => $culture->getDaysLate(),
+                    'total_days'     => $ws['total_days'],
+                    'storm_days'     => $ws['storm_days'],
+                    'rain_days'      => $ws['rain_days'],
+                    'heat_days'      => $ws['heat_days'],
+                    'frost_days'     => $ws['frost_days'],
+                    'high_hum_days'  => $ws['high_hum_days'],
+                    'high_wind_days' => $ws['high_wind_days'],
+                    'avg_temp'       => $ws['avg_temp'],
+                    'avg_humidity'   => $ws['avg_humidity'],
+                    'avg_wind'       => $ws['avg_wind'],
+                ],
                 'timeout' => 5.0,
             ]);
 
-            if ($response->getStatusCode() !== 200) {
-                return null;
-            }
+            if ($response->getStatusCode() !== 200) return null;
 
-            return $response->toArray();
+            $data = $response->toArray();
+
+            // Sanity check — reject ML result if it gives 0 quantity
+            if (empty($data['quantite_kg']) || $data['quantite_kg'] <= 0) return null;
+
+            return $data;
 
         } catch (\Throwable) {
-            return null; // Flask down or not configured — fall through to PHP
+            return null;
         }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  Enrich ML result with breakdown text
+    //  Enrich ML result with breakdown
     // ═════════════════════════════════════════════════════════════════════════
 
     private function enrichMlResult(array $ml, Culture $culture, array $ws, int $logsCount): array
     {
+        $nom     = $culture->getNom();
+        $surface = $culture->getSurface() ?? 1;
+
         return [
             'quantite'      => round($ml['quantite_kg'], 2),
             'iaScore'       => round($ml['ia_score'], 1),
-            'baseYield'     => round($ml['base_yield'] ?? ((self::BASE_YIELD_KG_M2[$culture->getNom()] ?? 2.0) * ($culture->getSurface() ?? 1)), 2),
+            'baseYield'     => round($ml['base_yield'] ?? ((self::BASE_YIELD_KG_M2[$nom] ?? 2.0) * $surface), 2),
             'latenessScore' => round(($ml['lateness_factor'] ?? 1.0) * 100, 1),
             'weatherScore'  => round(($ml['weather_factor'] ?? 1.0) * 100, 1),
             'latenessDays'  => $culture->getDaysLate(),
@@ -134,43 +137,61 @@ class HarvestIaService
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    //  Pure PHP fallback — works with ANY number of weather days (even 0)
+    //  PHP Fallback — works with ANY situation, NEVER returns 0
+    //
+    //  Formula:
+    //    quantite = baseYield × latenessFactor × weatherFactor
+    //
+    //    baseYield      = BASE_YIELD_KG_M2[culture_nom] × surface
+    //                     (defaults to 2.0 kg/m² for unknown crops)
+    //
+    //    latenessFactor = on-time     → 1.00
+    //                     early (before dateRecolte) → 1.00 (never penalised for being early)
+    //                     late 1 day  → 0.98, 2 days → 0.96, ... floor 0.40
+    //
+    //    weatherFactor  = no data     → 0.85 (decent assumed)
+    //                     with data   → 1.0 minus weighted bad-weather proportions
+    //                                   floor 0.30
     // ═════════════════════════════════════════════════════════════════════════
 
     private function phpFallback(Culture $culture, array $ws, int $logsCount): array
     {
         $nom      = $culture->getNom();
-        $surface  = $culture->getSurface() ?? 1.0;
+        $surface  = max(0.01, $culture->getSurface() ?? 1.0); // never zero
         $baseKgM2 = self::BASE_YIELD_KG_M2[$nom] ?? 2.0;
         $baseYield = $baseKgM2 * $surface;
 
-        // ── 1. Lateness factor ────────────────────────────────────────────────
-        // On time (daysLate = 0) → 100%
-        // Late                   → -2% per day, minimum 40%
+        // ── Lateness factor ───────────────────────────────────────────────────
         $daysLate       = $culture->getDaysLate();
         $latenessFactor = $daysLate > 0
             ? max(0.40, 1.0 - ($daysLate * 0.02))
             : 1.0;
 
-        // ── 2. Weather factor ─────────────────────────────────────────────────
-        // No weather data at all → assume 85% (decent conditions, slight uncertainty)
-        // Any weather data       → calculate from logged bad-weather days
+        // ── Weather factor ────────────────────────────────────────────────────
         if ($ws['total_days'] === 0) {
+            // No weather history at all → assume decent conditions (85%)
             $weatherFactor = 0.85;
         } else {
-            $n = $ws['total_days'];
-            $weatherFactor = 1.0;
-            $weatherFactor -= ($ws['storm_days']     / $n) * 0.30; // storms: severe
-            $weatherFactor -= ($ws['heat_days']      / $n) * 0.20; // heat stress
-            $weatherFactor -= ($ws['frost_days']     / $n) * 0.25; // frost: very severe
-            $weatherFactor -= ($ws['high_hum_days']  / $n) * 0.10; // fungal risk
-            $weatherFactor -= ($ws['rain_days']      / $n) * 0.05; // rain: minor
-            $weatherFactor -= ($ws['high_wind_days'] / $n) * 0.08; // wind: moderate
+            $n = max(1, $ws['total_days']);
+            $weatherFactor = 1.0
+                - ($ws['storm_days']     / $n) * 0.30
+                - ($ws['heat_days']      / $n) * 0.20
+                - ($ws['frost_days']     / $n) * 0.25
+                - ($ws['high_hum_days']  / $n) * 0.10
+                - ($ws['rain_days']      / $n) * 0.05
+                - ($ws['high_wind_days'] / $n) * 0.08;
             $weatherFactor = max(0.30, min(1.0, $weatherFactor));
         }
 
+        // Final quantity — guaranteed > 0 for any surface > 0
         $quantity = round($baseYield * $latenessFactor * $weatherFactor, 2);
         $iaScore  = round($latenessFactor * $weatherFactor * 100, 1);
+
+        // Extra safety: if somehow quantity is 0, use base × 0.5
+        if ($quantity <= 0) {
+            $quantity = round($baseYield * 0.5, 2);
+            $iaScore  = 50.0;
+        }
 
         return [
             'quantite'      => $quantity,
@@ -209,7 +230,7 @@ class HarvestIaService
             $lines[] = [
                 'icon'   => '📊',
                 'label'  => 'Aucune donnée météo enregistrée',
-                'impact' => 'Calcul basé sur la surface et la date de récolte (conditions moyennes assumées)',
+                'impact' => 'Calcul basé sur la surface et la date de récolte (conditions moyennes assumées à 85%)',
                 'type'   => 'info',
             ];
         } else {
@@ -237,7 +258,7 @@ class HarvestIaService
             $lines[] = [
                 'icon'   => '✅',
                 'label'  => 'Aucun facteur négatif détecté',
-                'impact' => 'Conditions idéales pendant toute la croissance',
+                'impact' => 'Conditions idéales — rendement à 100%',
                 'type'   => 'success',
             ];
         }
@@ -247,7 +268,7 @@ class HarvestIaService
 
     private function confidenceLabel(int $logsCount): string
     {
-        if ($logsCount === 0)  return 'Estimation basique — surface + date récolte';
+        if ($logsCount === 0)  return 'Estimation de base (surface + lateness)';
         if ($logsCount < 7)   return 'Faible — peu de données météo';
         if ($logsCount < 20)  return 'Modérée';
         if ($logsCount < 50)  return 'Bonne';

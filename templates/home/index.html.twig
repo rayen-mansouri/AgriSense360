@@ -38,17 +38,20 @@
 .kpi-card.c-amber::before  { background: #ff9800; }
 .kpi-card.c-red::before    { background: #f44336; }
 .kpi-card.c-teal::before   { background: #009688; }
+.kpi-card.c-purple::before { background: #9c27b0; }
 .kpi-card:hover { transform: translateY(-4px) !important; box-shadow: var(--shadow-md); }
 .kpi-icon  { font-size: 2rem; margin-bottom: 10px; display: block; }
 .kpi-value { font-size: 2rem; font-weight: 800; color: var(--text-dark); line-height: 1; margin-bottom: 6px; font-family: var(--font-display); }
 .kpi-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
 .kpi-bar   { margin-top: 12px; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
 .kpi-bar-fill { height: 100%; border-radius: 4px; transition: width 1.2s ease; width: 0; }
-.kpi-card.c-green .kpi-bar-fill  { background: #4caf50; }
-.kpi-card.c-blue .kpi-bar-fill   { background: #2196f3; }
-.kpi-card.c-amber .kpi-bar-fill  { background: #ff9800; }
-.kpi-card.c-red .kpi-bar-fill    { background: #f44336; }
-.kpi-card.c-teal .kpi-bar-fill   { background: #009688; }
+.kpi-card.c-green .kpi-bar-fill   { background: #4caf50; }
+.kpi-card.c-blue .kpi-bar-fill    { background: #2196f3; }
+.kpi-card.c-amber .kpi-bar-fill   { background: #ff9800; }
+.kpi-card.c-red .kpi-bar-fill     { background: #f44336; }
+.kpi-card.c-teal .kpi-bar-fill    { background: #009688; }
+.kpi-card.c-purple .kpi-bar-fill  { background: #9c27b0; }
+.kpi-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
 
 .charts-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 48px;
@@ -138,6 +141,49 @@
     text-align: center; padding: 50px 20px; color: var(--text-muted);
     background: var(--green-50); border-radius: 14px; border: 2px dashed var(--green-200);
 }
+
+{# ── IA Harvested section styles ── #}
+.ia-harvest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; }
+.ia-h-card {
+    background: var(--bg-card); border-radius: 14px; overflow: hidden;
+    box-shadow: var(--shadow-sm); border: 1.5px solid #86efac;
+    display: flex; flex-direction: column;
+    opacity: 0; transform: translateY(22px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.ia-h-card.visible { opacity: 1; transform: translateY(0); }
+.ia-h-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.ia-h-header {
+    background: linear-gradient(135deg, #1e3c2c, #2a5a3a);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.ia-h-nom { font-size: 1rem; font-weight: 700; color: #fff; }
+.ia-h-type { font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.ia-h-qty {
+    font-size: 1.4rem; font-weight: 800; color: #86efac;
+    text-align: right; white-space: nowrap;
+}
+.ia-h-qty-label { font-size: 0.62rem; color: rgba(255,255,255,0.6); text-align: right; }
+.ia-h-body { padding: 14px; }
+.ia-score-bar-wrap { margin-bottom: 10px; }
+.ia-score-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;
+}
+.ia-score-bar {
+    height: 6px; border-radius: 6px; background: var(--border); overflow: hidden;
+}
+.ia-score-bar-fill {
+    height: 100%; border-radius: 6px;
+    transition: width 1.2s ease; width: 0;
+}
+.ia-h-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.ia-h-chip {
+    font-size: 0.68rem; padding: 2px 8px; border-radius: 20px;
+    background: #f0fdf4; color: #1e3c2c;
+    border: 1px solid #86efac; font-weight: 500;
+}
 </style>
 
 {# ── HEADER ── #}
@@ -197,6 +243,15 @@
             <span class="kpi-icon">⚠️</span>
             <div class="kpi-value" data-count="{{ culturesRetard }}">0</div>
             <div class="kpi-label">En retard de récolte</div>
+            <div class="kpi-bar"><div class="kpi-bar-fill"></div></div>
+        </div>
+
+        {# ── NEW: IA Récoltes KPI ── #}
+        <div class="kpi-card c-purple" data-bar="100">
+            <span class="kpi-icon">🤖</span>
+            <div class="kpi-value" data-count="{{ totalRecoltes }}">0</div>
+            <div class="kpi-label">Récoltes IA effectuées</div>
+            <div class="kpi-sub">{{ totalKgRecolte|number_format(1) }} kg au total</div>
             <div class="kpi-bar"><div class="kpi-bar-fill"></div></div>
         </div>
 
@@ -313,6 +368,100 @@
                     {% endif %}
                     {% if culture.datePlantation %}
                         <span class="h-chip">🌱 {{ culture.datePlantation|date('d/m/Y') }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{# ══════════════════════════════════════════════════════
+   NEW — RÉCOLTES IA SECTION
+   Shows the last 12 harvests from parcelle_historique
+   ══════════════════════════════════════════════════════ #}
+<div class="dash-section">
+    <div class="dash-section-title anim-in">
+        🤖 Récoltes IA — Historique
+        <span class="badge">{{ recentRecoltes|length }} récente(s)</span>
+        <a href="{{ path('culture_analytics') }}"
+           style="margin-left:auto;font-size:0.78rem;font-weight:600;color:var(--green-600);text-decoration:none;">
+            Voir tout →
+        </a>
+    </div>
+
+    {% if recentRecoltes is empty %}
+        <div class="empty-box">
+            <div style="font-size:3rem;margin-bottom:10px;">🤖</div>
+            <p style="font-weight:600;">Aucune récolte IA enregistrée</p>
+            <p style="font-size:0.82rem;margin-top:4px;">
+                Utilisez le bouton 🌾 Récolter sur les cartes culture pour commencer
+            </p>
+            <a href="{{ path('culture_index') }}" class="btn btn-primary" style="margin-top:16px;">
+                → Aller aux cultures
+            </a>
+        </div>
+    {% else %}
+    <div class="ia-harvest-grid">
+        {% for h in recentRecoltes %}
+        {% set iaScoreNum = h.description|split('Score qualité : ')|last|split('%')|first|trim|default('0') %}
+        <div class="ia-h-card" style="transition-delay:{{ loop.index0 * 0.06 }}s;">
+
+            {# Dark green header with name + quantity #}
+            <div class="ia-h-header">
+                <div>
+                    <div class="ia-h-nom">{{ h.cultureNom ?? 'Culture' }}</div>
+                    <div class="ia-h-type">{{ h.typeCulture ?? '' }}</div>
+                </div>
+                <div>
+                    <div class="ia-h-qty">
+                        {{ h.quantiteRecolte is not null ? h.quantiteRecolte|number_format(1) ~ ' kg' : '— kg' }}
+                    </div>
+                    <div class="ia-h-qty-label">quantité IA</div>
+                </div>
+            </div>
+
+            {# Body: score bar + chips #}
+            <div class="ia-h-body">
+
+                {# IA Score bar (extracted from description string) #}
+                {% set scoreVal = 0 %}
+                {% if h.description %}
+                    {% set parts = h.description|split('Score qualité : ') %}
+                    {% if parts|length > 1 %}
+                        {% set scoreVal = parts[1]|split('%')|first|trim|number_format(0) %}
+                    {% endif %}
+                {% endif %}
+
+                <div class="ia-score-bar-wrap">
+                    <div class="ia-score-bar-label">
+                        <span>Score qualité IA</span>
+                        <span style="font-weight:700;color:{% if scoreVal >= 75 %}#16a34a{% elseif scoreVal >= 50 %}#d97706{% else %}#dc2626{% endif %};">
+                            {{ scoreVal }}%
+                        </span>
+                    </div>
+                    <div class="ia-score-bar">
+                        <div class="ia-score-bar-fill"
+                             data-width="{{ scoreVal }}"
+                             style="background:{% if scoreVal >= 75 %}#16a34a{% elseif scoreVal >= 50 %}#d97706{% else %}#dc2626{% endif %};">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ia-h-chips">
+                    {% if h.surface %}
+                        <span class="ia-h-chip">📐 {{ h.surface|number_format(1) }} m²</span>
+                    {% endif %}
+                    {% if h.surface and h.quantiteRecolte %}
+                        <span class="ia-h-chip">⚡ {{ (h.quantiteRecolte / h.surface)|number_format(2) }} kg/m²</span>
+                    {% endif %}
+                    <span class="ia-h-chip">📅 {{ h.dateAction|date('d/m/Y') }}</span>
+                    {# Show ML vs PHP source #}
+                    {% if h.description and 'ML Python' in h.description %}
+                        <span class="ia-h-chip" style="background:#f5f3ff;color:#7c3aed;border-color:#c4b5fd;">🤖 ML</span>
+                    {% else %}
+                        <span class="ia-h-chip" style="background:#f0fdf4;color:#1e3c2c;border-color:#86efac;">🧮 PHP</span>
                     {% endif %}
                 </div>
             </div>
@@ -458,10 +607,16 @@ const io = new IntersectionObserver(entries => {
             const f = el.querySelector('.p-prog-fill');
             if (f) setTimeout(() => f.style.width = (f.dataset.width||0) + '%', 100);
         }
+        // Animate IA score bars
+        if (el.classList.contains('ia-h-card')) {
+            el.querySelectorAll('.ia-score-bar-fill[data-width]').forEach(b => {
+                setTimeout(() => b.style.width = (b.dataset.width||0) + '%', 200);
+            });
+        }
         io.unobserve(el);
     });
 }, { threshold: 0.1 });
 
-document.querySelectorAll('.kpi-card,.chart-card,.top-p-card,.h-card,.anim-in').forEach(el => io.observe(el));
+document.querySelectorAll('.kpi-card,.chart-card,.top-p-card,.h-card,.ia-h-card,.anim-in').forEach(el => io.observe(el));
 </script>
 {% endblock %}

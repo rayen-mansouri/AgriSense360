@@ -24,12 +24,12 @@ class CultureController extends AbstractController
     ];
 
     public function __construct(
-        private CultureService           $cultureService,
-        private ParcelleService          $parcelleService,
-        private CultureWeatherLogService $weatherLogService,
-        private HarvestIaService         $harvestIaService,
+        private CultureService            $cultureService,
+        private ParcelleService           $parcelleService,
+        private CultureWeatherLogService  $weatherLogService,
+        private HarvestIaService          $harvestIaService,
         private ParcelleHistoriqueService $historiqueService,
-        private EntityManagerInterface   $em,
+        private EntityManagerInterface    $em,
     ) {}
 
     // ── INDEX ─────────────────────────────────────────────────────────────────
@@ -67,14 +67,8 @@ class CultureController extends AbstractController
         ]);
     }
 
-    // ── ANALYTICS ────────────────────────────────────────────────────────────
+    // ── ANALYTICS ─────────────────────────────────────────────────────────────
 
-    /**
-     * GET /culture/analytics
-     *
-     * Reads all RECOLTE historique entries from every parcelle and renders
-     * the IA yield analytics dashboard.
-     */
     #[Route('/analytics', name: 'culture_analytics', methods: ['GET'])]
     public function analytics(): Response
     {
@@ -92,13 +86,11 @@ class CultureController extends AbstractController
     }
 
     // ── IA PREVIEW (AJAX) ─────────────────────────────────────────────────────
+    //
+    // Called by JS openHarvestModal() via fetch('/culture/{id}/ia-preview').
+    // NEVER returns qty=0 — the PHP fallback always computes from surface + lateness.
+    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * GET /culture/{id}/ia-preview
-     *
-     * Called via fetch() when the farmer clicks the "🌾 Récolter" button.
-     * Returns JSON with IA-computed yield, score, and breakdown.
-     */
     #[Route('/{id}/ia-preview', name: 'culture_ia_preview', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function iaPreview(int $id): Response
     {
@@ -113,17 +105,26 @@ class CultureController extends AbstractController
             $weatherSummary = $this->weatherLogService->buildWeatherSummary($logs);
             $result         = $this->harvestIaService->compute($culture, $weatherSummary, $logsCount);
         } catch (\Throwable $e) {
-            $result = [
-                'quantite'      => 0,
-                'iaScore'       => 0,
-                'baseYield'     => 0,
-                'latenessScore' => 0,
-                'weatherScore'  => 0,
-                'latenessDays'  => 0,
+            // Absolute safety net — if IA completely crashes, use the surface-only estimate
+            // so the quantity is NEVER 0 from a crash
+            $surface   = $culture->getSurface() ?? 1.0;
+            $daysLate  = $culture->getDaysLate();
+            $baseYield = 2.0 * $surface; // conservative default
+            $lateness  = $daysLate > 0 ? max(0.40, 1.0 - $daysLate * 0.02) : 1.0;
+            $qty       = round($baseYield * $lateness * 0.85, 2);
+            $result    = [
+                'quantite'      => $qty,
+                'iaScore'       => round($lateness * 85, 1),
+                'baseYield'     => round($baseYield, 2),
+                'latenessScore' => round($lateness * 100, 1),
+                'weatherScore'  => 85.0,
+                'latenessDays'  => $daysLate,
                 'logsCount'     => 0,
-                'confidence'    => 'Erreur interne',
-                'source'        => 'error',
-                'breakdown'     => [['icon'=>'⚠️','label'=>'Erreur de calcul IA','impact'=>$e->getMessage(),'type'=>'danger']],
+                'confidence'    => 'Estimation basique (erreur interne)',
+                'source'        => 'emergency_fallback',
+                'breakdown'     => [
+                    ['icon'=>'⚠️','label'=>'Erreur IA : '.$e->getMessage(),'impact'=>'Estimation basée sur la surface uniquement','type'=>'warning'],
+                ],
             ];
         }
 
@@ -131,10 +132,15 @@ class CultureController extends AbstractController
     }
 
     // ── IA HARVEST CONFIRM ────────────────────────────────────────────────────
+    //
+    // CRITICAL: We do NOT call cultureService.updateCulture() here.
+    // That method recalculates etat (overwriting Récolte) and validates dates.
+    // Instead we:
+    //   1. Log RECOLTE to parcelle_historique BEFORE deleting
+    //   2. Delete the culture from DB (it lives on in historique)
+    //   3. Recalculate surfaceRestant on the parcelle
+    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * POST /culture/{id}/harvest
-     */
     #[Route('/{id}/harvest', name: 'culture_harvest', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function harvest(int $id, Request $request): Response
     {
@@ -142,7 +148,7 @@ class CultureController extends AbstractController
         if (!$culture) throw $this->createNotFoundException();
 
         if (!$this->isCsrfTokenValid('harvest-culture-'.$id, $request->request->get('_token'))) {
-            $this->addFlash('error', '❌ Token CSRF invalide.');
+            $this->addFlash('error', '❌ Token CSRF invalide. Veuillez réessayer.');
             return $this->redirectToRoute('culture_index');
         }
 
@@ -150,42 +156,74 @@ class CultureController extends AbstractController
         $iaScore = (float) $request->request->get('ia_score', 0);
         $source  = $request->request->get('ia_source', 'php_fallback');
 
-        $culture->setEtat('Récolte')
-                ->setQuantiteRecolte($qty)
-                ->setIaScore($iaScore);
+        // Safety: if qty or score are 0 (modal wasn't filled properly), recompute now
+        if ($qty <= 0 || $iaScore <= 0) {
+            try {
+                $logs           = $this->weatherLogService->getLogsForCulture($id);
+                $logsCount      = count($logs);
+                $weatherSummary = $this->weatherLogService->buildWeatherSummary($logs);
+                $computed       = $this->harvestIaService->compute($culture, $weatherSummary, $logsCount);
+                $qty     = $computed['quantite'];
+                $iaScore = $computed['iaScore'];
+                $source  = $computed['source'];
+            } catch (\Throwable) {
+                // Absolute fallback: surface × 2 kg/m² × lateness
+                $surface  = $culture->getSurface() ?? 1.0;
+                $daysLate = $culture->getDaysLate();
+                $lateness = $daysLate > 0 ? max(0.40, 1.0 - $daysLate * 0.02) : 1.0;
+                $qty      = round(2.0 * $surface * $lateness * 0.85, 2);
+                $iaScore  = round($lateness * 85, 1);
+                $source   = 'emergency_fallback';
+            }
+        }
 
-        $this->cultureService->updateCulture(
-            $culture,
-            $culture->getParcelle(),
-            $culture->getParcelle(),
-            $culture->getSurface() ?? 0
-        );
+        $sourceLabel = match($source) {
+            'ml'               => 'ML Python',
+            'php_fallback'     => 'Formule PHP',
+            'formula'          => 'Formule PHP',
+            'formula_fallback' => 'Formule PHP (ML en panne)',
+            default            => 'Formule PHP',
+        };
 
-        $sourceLabel = $source === 'ml' ? 'ML Python' : 'Formule PHP';
+        // Snapshot everything BEFORE the delete
+        $parcelleId  = $culture->getParcelle()->getId();
+        $cultureNom  = $culture->getNom();
+        $typeCulture = $culture->getTypeCulture();
+        $surface     = $culture->getSurface() ?? 0;
+        $etatAvant   = $culture->getEtat();
+
+        // 1. Log RECOLTE in historique FIRST (before delete so IDs are still valid)
         $this->historiqueService->logAction(
             ParcelleHistoriqueService::makeLog(
-                $culture->getParcelle()->getId(),
+                $parcelleId,
                 'RECOLTE',
                 $culture->getId(),
-                $culture->getNom(),
-                $culture->getTypeCulture(),
-                $culture->getSurface(),
-                null,
-                'Récolte',
+                $cultureNom,
+                $typeCulture,
+                $surface,
+                $etatAvant,
+                'Récolté',
                 "Récolte IA ({$sourceLabel}) · Quantité : {$qty} kg · Score qualité : {$iaScore}%",
                 $qty
             )
         );
 
+        // 2. Delete culture from DB (only lives in historique now)
+        $this->em->remove($culture);
+        $this->em->flush();
+
+        // 3. Recalculate surfaceRestant
+        $this->parcelleService->recalculateSurfaceRestant($parcelleId);
+
         $this->addFlash(
             'success',
-            "🌾 Récolte confirmée pour \"{$culture->getNom()}\" ! Quantité estimée : {$qty} kg (score qualité : {$iaScore}%)"
+            "🌾 \"{$cultureNom}\" récoltée ! Quantité IA : {$qty} kg · Score : {$iaScore}%"
         );
 
         return $this->redirectToRoute('culture_index');
     }
 
-    // ── Existing routes (unchanged) ───────────────────────────────────────────
+    // ── Standard CRUD routes (unchanged) ─────────────────────────────────────
 
     #[Route('/new', name: 'culture_new', methods: ['POST'])]
     public function new(Request $request): Response
