@@ -61,7 +61,7 @@
                 <span class="mgmt-form-title" style="margin:0;">Animal {{ visitIndex + 1 }} / {{ visitTotal }}</span>
                 <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {tab: 'dossiers'}) }}">Terminer</a>
             </div>
-            <div class="mgmt-form-subtitle" style="margin-bottom:12px;">Boucle #{{ visitAnimal.earTag }} â€” {{ visitAnimal.type }}{% if visitAnimal.location %} [{{ visitAnimal.location }}]{% endif %}</div>
+            <div class="mgmt-form-subtitle" style="margin-bottom:12px;">Boucle #{{ visitAnimal.earTag }} - {{ visitAnimal.type }}{% if visitAnimal.location %} [{{ visitAnimal.location }}]{% endif %}</div>
             <form method="post" action="{{ path('record_visit_save') }}" class="mgmt-grid">
                 <input type="hidden" name="animalId" value="{{ visitAnimal.id }}">
                 <input type="hidden" name="visitLocation" value="{{ visitLocationQuery }}">
@@ -96,7 +96,7 @@
             </form>
         {% else %}
             {% if visitEmptyLocation %}
-                <div class="flash flash-error">Aucun animal trouvÃ© Ã  cet emplacement.</div>
+                <div class="flash flash-error">Aucun animal trouve a cet emplacement.</div>
             {% endif %}
             <form method="get" action="{{ path('animal_management_index') }}" class="inline-form">
                 <input type="hidden" name="tab" value="dossiers">
@@ -109,7 +109,7 @@
                         <option value="{{ location }}" {% if visitLocationQuery == location %}selected{% endif %}>{{ location }}</option>
                     {% endfor %}
                 </select>
-                <button class="mgmt-btn-primary" type="submit">DÃ©marrer la Visite</button>
+                <button class="mgmt-btn-primary" type="submit">Demarrer la Visite</button>
             </form>
         {% endif %}
     </div>
@@ -141,13 +141,13 @@
     <table class="mgmt-table">
         <thead>
         <tr>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'id', recordDir: (recordSort == 'id' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">ID</a></th>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'recordDate', recordDir: (recordSort == 'recordDate' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Date</a></th>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'weight', recordDir: (recordSort == 'weight' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Weight</a></th>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'appetite', recordDir: (recordSort == 'appetite' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Appetite</a></th>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'conditionStatus', recordDir: (recordSort == 'conditionStatus' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Condition</a></th>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'production', recordDir: (recordSort == 'production' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Production</a></th>
-            <th><a class="sort-link" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'notes', recordDir: (recordSort == 'notes' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Notes</a></th>
+            <th><a class="sort-link {{ recordSort == 'id' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'id', recordDir: (recordSort == 'id' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">ID</a></th>
+            <th><a class="sort-link {{ recordSort == 'recordDate' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'recordDate', recordDir: (recordSort == 'recordDate' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Date</a></th>
+            <th><a class="sort-link {{ recordSort == 'weight' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'weight', recordDir: (recordSort == 'weight' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Weight</a></th>
+            <th><a class="sort-link {{ recordSort == 'appetite' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'appetite', recordDir: (recordSort == 'appetite' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Appetite</a></th>
+            <th><a class="sort-link {{ recordSort == 'conditionStatus' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'conditionStatus', recordDir: (recordSort == 'conditionStatus' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Condition</a></th>
+            <th><a class="sort-link {{ recordSort == 'production' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'production', recordDir: (recordSort == 'production' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Production</a></th>
+            <th><a class="sort-link {{ recordSort == 'notes' ? 'is-active ' ~ (recordDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0, recordSort:'notes', recordDir: (recordSort == 'notes' and recordDir == 'ASC') ? 'DESC' : 'ASC', recordSearchField: recordSearchField, recordSearch: recordSearch, recordPage: recordPage}|merge(visitLinkParams)) }}">Notes</a></th>
             <th>Actions</th>
         </tr>
         </thead>
