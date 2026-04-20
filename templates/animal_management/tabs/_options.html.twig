@@ -98,7 +98,7 @@
         </div>
     </div>
     <div class="mgmt-form-body">
-        <form method="post" action="{{ path('farm_report_pdf_export') }}">
+        <form method="post" action="{{ path('farm_report_pdf_export') }}" data-turbo="false">
             <div style="display:flex;flex-direction:column;gap:10px;">
                 <label class="mgmt-list-row" style="justify-content:flex-start;">
                     <input type="checkbox" name="includeSummary" value="1">
