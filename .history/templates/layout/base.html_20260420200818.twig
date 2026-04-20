@@ -29,6 +29,40 @@
             <i class="fa-solid fa-chart-pie"></i><span class="nav-label">Gestion des Stocks</span>
         </a>
 
+        <div class="nav-section-title" style="margin-top:14px">PRODUITS</div>
+
+        <div class="nav-section-title" style="margin-top:14px">STOCKS</div>
+
+        <div class="nav-section-title" style="margin-top:14px">ALERTES</div>
+    
+        <a href="{{ path('export_alertes_pdf') }}" class="nav-item" target="_blank">
+            <i class="fa-solid fa-file-pdf" style="color:#ef9a9a"></i><span class="nav-label">Rapport PDF alertes</span>
+        </a>
+        {# templates/layout/base.html.twig - Ajouter dans le sidebar #}
+
+<div class="nav-section-title" style="margin-top:14px">ANALYSES</div>
+<a href="{{ path('api_openfoodfacts_view') }}" class="nav-item">
+    <i class="fa-solid fa-barcode"></i><span class="nav-label">Scan OpenFood</span>
+</a>
+<a href="{{ path('api_exchange_view') }}" class="nav-item">
+    <i class="fa-solid fa-money-bill-wave"></i><span class="nav-label">Taux & Prix</span>
+</a>
+{# templates/layout/base.html.twig #}
+
+<div class="nav-section-title" style="margin-top:14px">EXPORTS</div>
+<a href="{{ path('export_excel_produits') }}" class="nav-item" target="_blank">
+    <i class="fa-solid fa-file-excel" style="color:#4caf50"></i><span class="nav-label">Excel Produits</span>
+</a>
+<a href="{{ path('export_excel_stocks') }}" class="nav-item" target="_blank">
+    <i class="fa-solid fa-file-excel" style="color:#2196f3"></i><span class="nav-label">Excel Stocks</span>
+</a>
+
+<a href="{{ path('api_commodity_view') }}" class="nav-item">
+    <i class="fa-solid fa-chart-line"></i><span class="nav-label">Prix matières</span>
+</a>
+<a href="{{ path('analyse_complete') }}" class="nav-item">
+    <i class="fa-solid fa-chart-line"></i><span class="nav-label">Analyse IA</span>
+</a>
     </nav>
 
     <div class="sidebar-footer">
