@@ -269,8 +269,10 @@ const CULTURES_DATA = [
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Date de récolte</label>
-                    <input type="date" name="date_recolte" id="add-date-recolte" class="form-control">
+                    <label class="form-label">Date de récolte <span style="font-size:0.75rem;color:#6b7280;font-weight:400;">(calculée automatiquement)</span></label>
+                    <input type="date" name="date_recolte" id="add-date-recolte" class="form-control"
+                           readonly tabindex="-1"
+                           style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;pointer-events:none;">
                     <div id="add-harvest-preview" class="harvest-preview">
                         🗓️ Date calculée automatiquement selon la durée de croissance
                     </div>
@@ -355,8 +357,10 @@ const CULTURES_DATA = [
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Date de récolte</label>
-                    <input type="date" name="date_recolte" id="edit-date-recolte" class="form-control">
+                    <label class="form-label">Date de récolte <span style="font-size:0.75rem;color:#6b7280;font-weight:400;">(calculée automatiquement)</span></label>
+                    <input type="date" name="date_recolte" id="edit-date-recolte" class="form-control"
+                           readonly tabindex="-1"
+                           style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;pointer-events:none;">
                     <div id="edit-harvest-preview" class="harvest-preview">
                         🗓️ Date recalculée automatiquement selon la durée de croissance
                     </div>

@@ -104,205 +104,46 @@
    ═══════════════════════════════════════════════════ #}
 {% if weather %}
 <style>
-/* ── Weather card ── */
-.weather-wrap {
-    margin-bottom: 32px;
-}
-.weather-header-label {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.weather-main-card {
-    border-radius: 20px;
-    padding: 0;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,.13);
-    margin-bottom: 16px;
-}
-.weather-hero {
-    background: linear-gradient(135deg, #1a6b3c 0%, #2d9d5e 45%, #1e7a4a 100%);
-    padding: 28px 28px 22px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
-.weather-hero::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 200px; height: 200px;
-    background: rgba(255,255,255,.06);
-    border-radius: 50%;
-}
-.weather-hero::after {
-    content: '';
-    position: absolute;
-    bottom: -60px; left: -20px;
-    width: 250px; height: 250px;
-    background: rgba(255,255,255,.04);
-    border-radius: 50%;
-}
-.weather-location-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.85rem;
-    opacity: .85;
-    margin-bottom: 16px;
-    position: relative; z-index: 1;
-}
-.weather-temp-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-    position: relative; z-index: 1;
-    flex-wrap: wrap;
-}
-.weather-temp-big {
-    font-size: 5rem;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -3px;
-}
-.weather-temp-details {
-    padding-bottom: 8px;
-}
-.weather-desc {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-.weather-feels {
-    font-size: 0.82rem;
-    opacity: .8;
-}
-.weather-emoji-big {
-    font-size: 4rem;
-    line-height: 1;
-    margin-left: auto;
-    position: relative; z-index: 1;
-}
-.weather-updated {
-    font-size: 0.72rem;
-    opacity: .65;
-    margin-top: 14px;
-    position: relative; z-index: 1;
-}
-
-/* Stats strip */
-.weather-stats {
-    background: white;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 0;
-    border-top: 1px solid #f0f0f0;
-}
-.weather-stat-item {
-    padding: 14px 16px;
-    border-right: 1px solid #f0f0f0;
-    text-align: center;
-}
+.weather-wrap { margin-bottom: 32px; }
+.weather-header-label { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.weather-main-card { border-radius: 20px; padding: 0; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.13); margin-bottom: 16px; }
+.weather-hero { background: linear-gradient(135deg, #1a6b3c 0%, #2d9d5e 45%, #1e7a4a 100%); padding: 28px 28px 22px; color: white; position: relative; overflow: hidden; }
+.weather-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: rgba(255,255,255,.06); border-radius: 50%; }
+.weather-hero::after  { content: ''; position: absolute; bottom: -60px; left: -20px; width: 250px; height: 250px; background: rgba(255,255,255,.04); border-radius: 50%; }
+.weather-location-row { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; opacity: .85; margin-bottom: 16px; position: relative; z-index: 1; }
+.weather-temp-row { display: flex; align-items: flex-end; gap: 20px; position: relative; z-index: 1; flex-wrap: wrap; }
+.weather-temp-big { font-size: 5rem; font-weight: 800; line-height: 1; letter-spacing: -3px; }
+.weather-temp-details { padding-bottom: 8px; }
+.weather-desc { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+.weather-feels { font-size: 0.82rem; opacity: .8; }
+.weather-emoji-big { font-size: 4rem; line-height: 1; margin-left: auto; position: relative; z-index: 1; }
+.weather-updated { font-size: 0.72rem; opacity: .65; margin-top: 14px; position: relative; z-index: 1; }
+.weather-stats { background: white; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0; border-top: 1px solid #f0f0f0; }
+.weather-stat-item { padding: 14px 16px; border-right: 1px solid #f0f0f0; text-align: center; }
 .weather-stat-item:last-child { border-right: none; }
 .weather-stat-icon { font-size: 1.3rem; margin-bottom: 4px; }
-.weather-stat-value {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1a3d2b;
-}
-.weather-stat-label {
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    color: #888;
-    font-weight: 600;
-    letter-spacing: .3px;
-}
-
-/* Forecast strip */
-.forecast-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 12px;
-    margin-bottom: 16px;
-}
-.forecast-day-card {
-    background: white;
-    border-radius: 14px;
-    padding: 14px 10px;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,.07);
-    transition: transform .15s, box-shadow .15s;
-}
-.forecast-day-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,.11);
-}
-.forecast-day-card.today {
-    background: linear-gradient(135deg, #e8f5ee, #d0ede0);
-    border: 2px solid #2d9d5e;
-}
-.forecast-label {
-    font-size: 0.73rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #666;
-    margin-bottom: 6px;
-}
+.weather-stat-value { font-size: 1rem; font-weight: 700; color: #1a3d2b; }
+.weather-stat-label { font-size: 0.68rem; text-transform: uppercase; color: #888; font-weight: 600; letter-spacing: .3px; }
+.forecast-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.forecast-day-card { background: white; border-radius: 14px; padding: 14px 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,.07); transition: transform .15s, box-shadow .15s; }
+.forecast-day-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.11); }
+.forecast-day-card.today { background: linear-gradient(135deg, #e8f5ee, #d0ede0); border: 2px solid #2d9d5e; }
+.forecast-label { font-size: 0.73rem; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 6px; }
 .forecast-label.today { color: #1a6b3c; }
 .forecast-icon-img { width: 44px; height: 44px; margin: 0 auto 4px; }
-.forecast-temps {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    font-size: 0.85rem;
-}
+.forecast-temps { display: flex; justify-content: center; gap: 6px; font-size: 0.85rem; }
 .forecast-max { font-weight: 700; color: #d35400; }
 .forecast-min { color: #5d9cec; font-weight: 600; }
-.forecast-desc {
-    font-size: 0.68rem;
-    color: #888;
-    margin-top: 4px;
-    line-height: 1.3;
-}
-
-/* Agri advice */
-.agri-advice-card {
-    background: white;
-    border-radius: 14px;
-    padding: 16px 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,.07);
-    margin-bottom: 16px;
-}
-.agri-advice-title {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #1a3d2b;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.agri-advice-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 6px;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
+.forecast-desc { font-size: 0.68rem; color: #888; margin-top: 4px; line-height: 1.3; }
+.agri-advice-card { background: white; border-radius: 14px; padding: 16px 20px; box-shadow: 0 2px 10px rgba(0,0,0,.07); margin-bottom: 16px; }
+.agri-advice-title { font-size: 0.9rem; font-weight: 700; color: #1a3d2b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.agri-advice-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; font-weight: 500; }
 .agri-advice-item:last-child { margin-bottom: 0; }
 .agri-advice-item.success { background: #e8f5e9; color: #2e7d32; }
 .agri-advice-item.warning { background: #fff8e1; color: #f57f17; }
 .agri-advice-item.danger  { background: #ffebee; color: #c62828; }
 .agri-advice-item.info    { background: #e3f2fd; color: #1565c0; }
 .agri-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
-
 @media (max-width: 600px) {
     .weather-temp-big { font-size: 3.5rem; }
     .weather-emoji-big { font-size: 2.8rem; }
@@ -312,16 +153,10 @@
 </style>
 
 <div class="weather-wrap">
-    <div class="weather-header-label">
-        🌤️ Météo actuelle — {{ weather.location }}
-    </div>
-
-    {# ── Main weather card ── #}
+    <div class="weather-header-label">🌤️ Météo actuelle — {{ weather.location }}</div>
     <div class="weather-main-card">
         <div class="weather-hero">
-            <div class="weather-location-row">
-                📍 {{ weather.location }}, Tunisie
-            </div>
+            <div class="weather-location-row">📍 {{ weather.location }}, Tunisie</div>
             <div class="weather-temp-row">
                 <div class="weather-temp-big">{{ weather.temp }}°</div>
                 <div class="weather-temp-details">
@@ -332,82 +167,37 @@
             </div>
             <div class="weather-updated">Mis à jour à {{ weather.updated_at }}</div>
         </div>
-
-        {# Stats strip #}
         <div class="weather-stats">
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">💧</div>
-                <div class="weather-stat-value">{{ weather.humidity }}%</div>
-                <div class="weather-stat-label">Humidité</div>
-            </div>
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">💨</div>
-                <div class="weather-stat-value">{{ weather.wind_speed }} km/h</div>
-                <div class="weather-stat-label">Vent</div>
-            </div>
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">🌡️</div>
-                <div class="weather-stat-value">{{ weather.pressure }} hPa</div>
-                <div class="weather-stat-label">Pression</div>
-            </div>
-            {% if weather.visibility %}
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">👁️</div>
-                <div class="weather-stat-value">{{ weather.visibility }} km</div>
-                <div class="weather-stat-label">Visibilité</div>
-            </div>
-            {% endif %}
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">☁️</div>
-                <div class="weather-stat-value">{{ weather.clouds }}%</div>
-                <div class="weather-stat-label">Nuages</div>
-            </div>
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">🌅</div>
-                <div class="weather-stat-value">{{ weather.sunrise }}</div>
-                <div class="weather-stat-label">Lever</div>
-            </div>
-            <div class="weather-stat-item">
-                <div class="weather-stat-icon">🌇</div>
-                <div class="weather-stat-value">{{ weather.sunset }}</div>
-                <div class="weather-stat-label">Coucher</div>
-            </div>
+            <div class="weather-stat-item"><div class="weather-stat-icon">💧</div><div class="weather-stat-value">{{ weather.humidity }}%</div><div class="weather-stat-label">Humidité</div></div>
+            <div class="weather-stat-item"><div class="weather-stat-icon">💨</div><div class="weather-stat-value">{{ weather.wind_speed }} km/h</div><div class="weather-stat-label">Vent</div></div>
+            <div class="weather-stat-item"><div class="weather-stat-icon">🌡️</div><div class="weather-stat-value">{{ weather.pressure }} hPa</div><div class="weather-stat-label">Pression</div></div>
+            {% if weather.visibility %}<div class="weather-stat-item"><div class="weather-stat-icon">👁️</div><div class="weather-stat-value">{{ weather.visibility }} km</div><div class="weather-stat-label">Visibilité</div></div>{% endif %}
+            <div class="weather-stat-item"><div class="weather-stat-icon">☁️</div><div class="weather-stat-value">{{ weather.clouds }}%</div><div class="weather-stat-label">Nuages</div></div>
+            <div class="weather-stat-item"><div class="weather-stat-icon">🌅</div><div class="weather-stat-value">{{ weather.sunrise }}</div><div class="weather-stat-label">Lever</div></div>
+            <div class="weather-stat-item"><div class="weather-stat-icon">🌇</div><div class="weather-stat-value">{{ weather.sunset }}</div><div class="weather-stat-label">Coucher</div></div>
         </div>
     </div>
-
-    {# ── 5-Day Forecast ── #}
     {% if weather.daily %}
     <div class="forecast-strip">
         {% for day in weather.daily %}
         <div class="forecast-day-card {{ loop.first ? 'today' : '' }}">
             <div class="forecast-label {{ loop.first ? 'today' : '' }}">{{ day.label }}</div>
-            <img class="forecast-icon-img"
-                 src="https://openweathermap.org/img/wn/{{ day.icon }}@2x.png"
-                 alt="{{ day.description }}" loading="lazy">
-            <div class="forecast-temps">
-                <span class="forecast-max">{{ day.temp_max }}°</span>
-                <span class="forecast-min">{{ day.temp_min }}°</span>
-            </div>
+            <img class="forecast-icon-img" src="https://openweathermap.org/img/wn/{{ day.icon }}@2x.png" alt="{{ day.description }}" loading="lazy">
+            <div class="forecast-temps"><span class="forecast-max">{{ day.temp_max }}°</span><span class="forecast-min">{{ day.temp_min }}°</span></div>
             <div class="forecast-desc">{{ day.description }}</div>
         </div>
         {% endfor %}
     </div>
     {% endif %}
-
-    {# ── Agricultural advice ── #}
     <div class="agri-advice-card">
         <div class="agri-advice-title">🌾 Conseils agricoles du jour</div>
         {% for tip in weather.agri_advice %}
-        <div class="agri-advice-item {{ tip.type }}">
-            <span class="agri-icon">{{ tip.icon }}</span>
-            <span>{{ tip.text }}</span>
-        </div>
+        <div class="agri-advice-item {{ tip.type }}"><span class="agri-icon">{{ tip.icon }}</span><span>{{ tip.text }}</span></div>
         {% endfor %}
     </div>
 </div>
 
 {% else %}
-{# Weather unavailable fallback #}
 <div style="background:#f9f9f9;border:1.5px dashed #ddd;border-radius:14px;
             padding:20px 24px;margin-bottom:28px;color:#888;font-size:0.9rem;
             display:flex;align-items:center;gap:12px;">
@@ -446,13 +236,9 @@
                     <img src="{{ asset('images/cultures/' ~ culture.img) }}"
                          alt="{{ culture.nom }}"
                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                    <div class="img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:var(--green-100);font-size:2.5rem;">
-                        🌱
-                    </div>
+                    <div class="img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:var(--green-100);font-size:2.5rem;">🌱</div>
                 {% else %}
-                    <div class="img-fallback" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--green-100);font-size:2.5rem;">
-                        🌱
-                    </div>
+                    <div class="img-fallback" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--green-100);font-size:2.5rem;">🌱</div>
                 {% endif %}
             </div>
 
@@ -479,11 +265,20 @@
             </div>
 
             <div class="culture-card-footer">
+                {# ── Harvest button — intercepts click, shows IA rapport first ── #}
                 {% if culture.etat in ['Maturité', 'Récolte Prévue', 'Récolte en Retard'] %}
-                <form method="post" action="{{ path('culture_harvest', {id: culture.id}) }}"
-                      onsubmit="return confirm('Marquer « {{ culture.nom|e('js') }} » comme récoltée ?')">
+                <form method="post"
+                      action="{{ path('culture_harvest', {id: culture.id}) }}"
+                      class="harvest-form"
+                      data-culture-id="{{ culture.id }}"
+                      data-culture-nom="{{ culture.nom|e('html_attr') }}"
+                      data-rapport-url="{{ path('culture_harvest_rapport', {id: culture.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('harvest-culture-' ~ culture.id) }}">
-                    <button type="submit" class="btn btn-primary btn-sm">🌾 Récolter</button>
+                    <button type="button"
+                            class="btn btn-primary btn-sm btn-recolter"
+                            onclick="handleRecolte(this)">
+                        🌾 Récolter
+                    </button>
                 </form>
                 {% endif %}
 
@@ -497,5 +292,369 @@
         {% endfor %}
     </div>
 {% endif %}
+
+
+{# ═══════════════════════════════════════════════════
+   IA RAPPORT MODAL
+   ═══════════════════════════════════════════════════ #}
+<div id="rapportModal" class="rapport-overlay" style="display:none;">
+    <div class="rapport-box">
+
+        {# Header #}
+        <div class="rapport-header">
+            <div class="rapport-header-left">
+                <span class="rapport-big-icon">🌾</span>
+                <div>
+                    <div class="rapport-title">Rapport de récolte — IA</div>
+                    <div class="rapport-culture-name" id="rapportCultureName"></div>
+                </div>
+            </div>
+            <div class="rapport-score-badge" id="rapportScoreBadge">
+                <div class="rapport-score-value" id="rapportScore">—</div>
+                <div class="rapport-score-label">Score IA</div>
+            </div>
+        </div>
+
+        {# Quantity hero #}
+        <div class="rapport-qty-row">
+            <div class="rapport-qty-block">
+                <div class="rapport-qty-label">Quantité estimée</div>
+                <div class="rapport-qty-value" id="rapportQty">—</div>
+            </div>
+            <div class="rapport-factors">
+                <div class="rapport-factor" id="rapportLatenessBlock">
+                    <div class="rapport-factor-icon">⏰</div>
+                    <div>
+                        <div class="rapport-factor-label">Ponctualité</div>
+                        <div class="rapport-factor-value" id="rapportLateness">—</div>
+                    </div>
+                </div>
+                <div class="rapport-factor" id="rapportWeatherBlock">
+                    <div class="rapport-factor-icon">🌤️</div>
+                    <div>
+                        <div class="rapport-factor-label">Météo</div>
+                        <div class="rapport-factor-value" id="rapportWeather">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Rapport text #}
+        <div class="rapport-section-label">📋 Explication</div>
+        <div class="rapport-text" id="rapportText">Chargement en cours…</div>
+
+        {# Footer buttons #}
+        <div class="rapport-footer">
+            <span class="rapport-footer-note">
+                💡 Ce rapport est généré automatiquement par l'IA.
+            </span>
+            <div style="display:flex;gap:10px;">
+                <button class="btn-rapport-cancel" onclick="cancelRecolte()">Annuler</button>
+                <button class="btn-rapport-ok" id="btnConfirmRecolte" onclick="confirmRecolte()">
+                    ✅ Confirmer la récolte
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+{# ═══════════════════════════════════════════════════
+   CSS
+   ═══════════════════════════════════════════════════ #}
+<style>
+/* ── Rapport Modal Overlay ──────────────────────────── */
+.rapport-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.50);
+    z-index: 9999;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+}
+.rapport-overlay[style*="display:none"] { display: none !important; }
+
+.rapport-box {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+    animation: rapportPop 0.28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes rapportPop {
+    from { transform: scale(0.88) translateY(20px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+/* Header */
+.rapport-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 22px 16px;
+    background: linear-gradient(135deg, #1a6b3c 0%, #2d9d5e 100%);
+    color: white;
+}
+.rapport-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.rapport-big-icon { font-size: 2.4rem; line-height: 1; }
+.rapport-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
+    margin-bottom: 3px;
+}
+.rapport-culture-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Score badge */
+.rapport-score-badge {
+    text-align: center;
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.35);
+    border-radius: 14px;
+    padding: 10px 16px;
+    min-width: 70px;
+}
+.rapport-score-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.rapport-score-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+/* Quantity row */
+.rapport-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    background: #f0fdf4;
+    border-bottom: 1px solid #d1fae5;
+    flex-wrap: wrap;
+}
+.rapport-qty-block { flex: 1; min-width: 130px; }
+.rapport-qty-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1D9E75;
+    margin-bottom: 4px;
+}
+.rapport-qty-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #14532d;
+    line-height: 1;
+}
+
+/* Factor pills */
+.rapport-factors {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.rapport-factor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1px solid #d1fae5;
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-width: 100px;
+}
+.rapport-factor-icon { font-size: 1.3rem; }
+.rapport-factor-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+.rapport-factor-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a3d2b;
+}
+
+/* Rapport text */
+.rapport-section-label {
+    padding: 14px 22px 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1D9E75;
+}
+.rapport-text {
+    margin: 0 22px 18px;
+    padding: 14px 16px;
+    background: #fafaf9;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #1D9E75;
+    border-radius: 0 10px 10px 0;
+    font-size: 0.93rem;
+    color: #374151;
+    line-height: 1.8;
+}
+
+/* Footer */
+.rapport-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 22px 18px;
+    border-top: 1px solid #f0f0f0;
+    background: #f9fafb;
+}
+.rapport-footer-note {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    flex: 1;
+    min-width: 140px;
+}
+.btn-rapport-cancel {
+    padding: 9px 18px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-rapport-cancel:hover { background: #e5e7eb; }
+.btn-rapport-ok {
+    padding: 9px 20px;
+    background: linear-gradient(135deg, #1D9E75, #3B6D11);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+.btn-rapport-ok:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-rapport-ok:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+</style>
+
+
+{# ═══════════════════════════════════════════════════
+   JS — Harvest intercept + rapport modal
+   ═══════════════════════════════════════════════════ #}
+<script>
+var _pendingForm = null;   // the harvest form waiting to be submitted
+
+/**
+ * Called when user clicks "🌾 Récolter".
+ * 1. Fetches the IA rapport from the server (no side effects)
+ * 2. Displays the modal with the rapport
+ * 3. User clicks "Confirmer" → the real form submits
+ */
+function handleRecolte(btn) {
+    var form       = btn.closest('form');
+    var rapportUrl = form.dataset.rapportUrl;
+    var nom        = form.dataset.cultureNom;
+
+    _pendingForm = form;
+
+    // Show modal in loading state
+    document.getElementById('rapportCultureName').textContent = nom;
+    document.getElementById('rapportScore').textContent       = '…';
+    document.getElementById('rapportQty').textContent         = '…';
+    document.getElementById('rapportLateness').textContent    = '…';
+    document.getElementById('rapportWeather').textContent     = '…';
+    document.getElementById('rapportText').textContent        = 'Analyse en cours…';
+    document.getElementById('btnConfirmRecolte').disabled     = true;
+    document.getElementById('rapportModal').style.display     = '';
+
+    // Fetch rapport from server (read-only, no DB write)
+    fetch(rapportUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            // Score
+            var score = d.iaScore || 0;
+            document.getElementById('rapportScore').textContent = score + '%';
+
+            // Colour the score badge
+            var badge = document.getElementById('rapportScoreBadge');
+            badge.style.background = score >= 80
+                ? 'rgba(34,197,94,0.25)'
+                : (score >= 55 ? 'rgba(251,191,36,0.25)' : 'rgba(239,68,68,0.20)');
+
+            // Quantity
+            var qty = d.quantite !== undefined ? d.quantite : '—';
+            document.getElementById('rapportQty').textContent =
+                qty !== '—'
+                ? parseFloat(qty).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' kg'
+                : '—';
+
+            // Factors
+            document.getElementById('rapportLateness').textContent =
+                d.latenessScore !== undefined ? d.latenessScore + '%' : '—';
+            document.getElementById('rapportWeather').textContent =
+                d.weatherScore !== undefined ? d.weatherScore + '%' : '—';
+
+            // Rapport text
+            document.getElementById('rapportText').textContent =
+                d.rapport || 'Aucun rapport disponible.';
+
+            document.getElementById('btnConfirmRecolte').disabled = false;
+        })
+        .catch(function() {
+            // If fetch fails just show a message and let user confirm anyway
+            document.getElementById('rapportText').textContent =
+                'Impossible de charger le rapport IA. Vous pouvez tout de même confirmer la récolte.';
+            document.getElementById('rapportScore').textContent = '—';
+            document.getElementById('rapportQty').textContent   = '—';
+            document.getElementById('btnConfirmRecolte').disabled = false;
+        });
+}
+
+/** User clicks "Confirmer la récolte" → submit the real form */
+function confirmRecolte() {
+    document.getElementById('rapportModal').style.display = 'none';
+    if (_pendingForm) {
+        _pendingForm.submit();
+        _pendingForm = null;
+    }
+}
+
+/** User clicks "Annuler" → close modal, do nothing */
+function cancelRecolte() {
+    document.getElementById('rapportModal').style.display = 'none';
+    _pendingForm = null;
+}
+
+/** Close on Escape key */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') cancelRecolte();
+});
+</script>
 
 {% endblock %}

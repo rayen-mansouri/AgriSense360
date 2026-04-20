@@ -19,6 +19,10 @@
         <p class="page-subtitle">{{ historique|length }} événement(s) enregistré(s)</p>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ path('parcelle_historique_export', {id: parcelle.id, type: typeFilter}) }}"
+           class="btn btn-export">
+            📥 Exporter Excel
+        </a>
         <a href="{{ path('parcelle_show', {id: parcelle.id}) }}" class="btn btn-secondary">
             ← Retour à la parcelle
         </a>
@@ -173,11 +177,24 @@
                     {% endif %}
                 </div>
 
-                {# Description (contains IA score info) #}
+                {# Description #}
                 {% if h.description %}
                 <div class="hist-description hist-description-recolte">
                     {{ h.description }}
                 </div>
+                {% endif %}
+
+                {# ── IA Rapport button ─────────────────────────────────── #}
+                {% if h.rapport is defined and h.rapport %}
+                <button class="btn-rapport"
+                        onclick="openRapportModal(
+                            {{ h.cultureNom|json_encode }},
+                            {{ h.quantiteRecolte|json_encode }},
+                            {{ h.dateAction|date('d/m/Y')|json_encode }},
+                            {{ h.rapport|json_encode }}
+                        )">
+                    🤖 Voir le rapport IA
+                </button>
                 {% endif %}
 
             </div>
@@ -223,7 +240,52 @@
 
 
 {# ══════════════════════════════════════════════════════
-   CSS — add to your main stylesheet or inside <style>
+   IA RAPPORT MODAL
+   ══════════════════════════════════════════════════════ #}
+<div id="rapportModal" class="rapport-modal-overlay" onclick="closeRapportModal(event)">
+    <div class="rapport-modal-box">
+
+        {# Header #}
+        <div class="rapport-modal-header">
+            <div class="rapport-modal-header-left">
+                <span class="rapport-modal-icon">🤖</span>
+                <div>
+                    <div class="rapport-modal-title">Rapport IA — Récolte</div>
+                    <div class="rapport-modal-subtitle" id="rapportSubtitle"></div>
+                </div>
+            </div>
+            <button class="rapport-modal-close" onclick="closeRapportModal()">✕</button>
+        </div>
+
+        {# Quantity badge #}
+        <div class="rapport-qty-badge">
+            <span class="rapport-qty-icon">🌾</span>
+            <div>
+                <div class="rapport-qty-label">Quantité estimée par l'IA</div>
+                <div class="rapport-qty-value" id="rapportQty">—</div>
+            </div>
+        </div>
+
+        {# Rapport text #}
+        <div class="rapport-body">
+            <div class="rapport-section-title">📋 Explication du résultat</div>
+            <div class="rapport-text" id="rapportText"></div>
+        </div>
+
+        {# Footer #}
+        <div class="rapport-modal-footer">
+            <span class="rapport-footer-note">
+                💡 Ce rapport est généré automatiquement par l'IA en fonction des données enregistrées pour cette culture.
+            </span>
+            <button class="btn-rapport-close" onclick="closeRapportModal()">Fermer</button>
+        </div>
+
+    </div>
+</div>
+
+
+{# ══════════════════════════════════════════════════════
+   CSS
    ══════════════════════════════════════════════════════ #}
 <style>
 /* ── Stats bar ──────────────────────────────────────── */
@@ -261,6 +323,27 @@
     padding: 1px 7px;
     font-size: 0.75rem;
     font-weight: 700;
+}
+
+/* ── Export button ──────────────────────────────────── */
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--green-600, #3B6D11);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.btn-export:hover {
+    background: var(--green-700, #27500A);
+    transform: translateY(-1px);
 }
 
 /* ── IA Summary banner ──────────────────────────────── */
@@ -456,6 +539,220 @@
     background: rgba(29,158,117,0.04);
     color: var(--text-dark);
 }
+
+/* ── Rapport button (on harvest card) ───────────────── */
+.btn-rapport {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #1D9E75, #3B6D11);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+}
+.btn-rapport:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════════════
+   IA RAPPORT MODAL
+   ══════════════════════════════════════════════════════ */
+.rapport-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+}
+.rapport-modal-overlay.open {
+    display: flex;
+}
+
+.rapport-modal-box {
+    background: #fff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.20);
+    overflow: hidden;
+    animation: rapportSlideIn 0.25s ease;
+}
+@keyframes rapportSlideIn {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Modal header */
+.rapport-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    background: linear-gradient(135deg, #E1F5EE 0%, #f0fdf4 100%);
+    border-bottom: 1px solid #b6f0d8;
+}
+.rapport-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.rapport-modal-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+.rapport-modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #134e4a;
+}
+.rapport-modal-subtitle {
+    font-size: 0.78rem;
+    color: #1D9E75;
+    margin-top: 2px;
+}
+.rapport-modal-close {
+    background: rgba(0,0,0,0.06);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.rapport-modal-close:hover { background: rgba(0,0,0,0.14); }
+
+/* Quantity badge */
+.rapport-qty-badge {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 20px 22px 0;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1px solid #86efac;
+    border-radius: 12px;
+}
+.rapport-qty-icon { font-size: 2rem; flex-shrink: 0; }
+.rapport-qty-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1D9E75;
+    margin-bottom: 3px;
+}
+.rapport-qty-value {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #3B6D11;
+    line-height: 1;
+}
+
+/* Rapport body */
+.rapport-body {
+    padding: 18px 22px;
+}
+.rapport-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1D9E75;
+    margin-bottom: 10px;
+}
+.rapport-text {
+    font-size: 0.93rem;
+    color: #2d3748;
+    line-height: 1.75;
+    background: #fafafa;
+    border: 1px solid #e9f5f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+/* Modal footer */
+.rapport-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 22px 18px;
+    border-top: 1px solid #e9f5f0;
+    background: #f9fefb;
+}
+.rapport-footer-note {
+    font-size: 0.75rem;
+    color: #888;
+    flex: 1;
+    min-width: 160px;
+}
+.btn-rapport-close {
+    padding: 8px 20px;
+    background: #3B6D11;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.btn-rapport-close:hover { background: #27500A; }
 </style>
+
+{# ══════════════════════════════════════════════════════
+   JS — Modal logic
+   ══════════════════════════════════════════════════════ #}
+<script>
+function openRapportModal(cultureNom, quantite, dateRecolte, rapport) {
+    document.getElementById('rapportSubtitle').textContent =
+        cultureNom + ' — ' + dateRecolte;
+
+    var qtyEl = document.getElementById('rapportQty');
+    qtyEl.textContent = quantite !== null && quantite !== undefined
+        ? Number(quantite).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kg'
+        : 'Non renseigné';
+
+    document.getElementById('rapportText').textContent = rapport || 'Aucun rapport disponible.';
+
+    document.getElementById('rapportModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRapportModal(event) {
+    // Close only if clicking the overlay background (not the box itself)
+    if (event && event.target !== document.getElementById('rapportModal')) return;
+    document.getElementById('rapportModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Also allow closing with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('rapportModal').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+});
+</script>
 
 {% endblock %}

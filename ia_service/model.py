@@ -3,6 +3,12 @@ HarvestModel — Random Forest yield predictor
 =============================================
 On first run: trains on 2000 synthetic samples (~10 sec).
 Saves model to model/harvest_model.pkl for reuse.
+
+FIXES:
+  - ia_score is now a realistic weighted score (never auto-100%)
+  - lateness_factor is always applied (even in ML mode)
+  - weather_factor uses 0.75 default when no logs (realistic, not 0.85)
+  - rapport field added: plain-language harvest explanation
 """
 
 import os
@@ -77,13 +83,17 @@ class HarvestModel:
         surface = float(data.get('surface', 1))
         base    = BASE_YIELD.get(nom, 2.0) * surface
 
+        # Always compute both factors — they are ALWAYS applied
         lf = self._lateness_factor(int(data.get('days_late', 0)))
         wf = self._weather_factor(data)
 
         if self.is_trained:
             try:
                 df  = self._to_df(data)
-                qty = float(max(0, self.pipeline.predict(df)[0]))
+                # ML gives raw quantity, but we still enforce lateness penalty on top
+                ml_qty = float(max(0, self.pipeline.predict(df)[0]))
+                # Apply lateness on ML output too (ML was trained with it but enforce for safety)
+                qty = ml_qty * lf
                 src = 'ml'
             except Exception as e:
                 logger.warning(f"ML predict failed: {e}")
@@ -93,13 +103,31 @@ class HarvestModel:
             qty = base * lf * wf
             src = 'formula'
 
+        # ── Realistic IA score ────────────────────────────────────────────────
+        # ia_score = weighted combination, max is 95 (perfect conditions don't exist)
+        # lateness has 40% weight, weather has 60% weight
+        # This means even with 0 days late and perfect weather → ~92-95%, never 100%
+        lateness_score = lf * 100          # 40–100
+        weather_score  = wf * 100          # 30–100
+        raw_score      = (lateness_score * 0.40) + (weather_score * 0.60)
+        # Realistic ceiling: even ideal conditions = 93 max
+        ia_score = round(min(93.0, raw_score), 1)
+
+        rapport = self._generate_rapport(nom, surface, base, qty, lf, wf,
+                                         int(data.get('days_late', 0)),
+                                         int(data.get('total_days', 0)),
+                                         data)
+
         return {
             'quantite_kg':     round(qty, 2),
-            'ia_score':        round(lf * wf * 100, 1),
+            'ia_score':        ia_score,
             'base_yield':      round(base, 2),
             'lateness_factor': round(lf, 4),
             'weather_factor':  round(wf, 4),
+            'lateness_score':  round(lateness_score, 1),
+            'weather_score':   round(weather_score, 1),
             'source':          src,
+            'rapport':         rapport,
         }
 
     def record_harvest(self, data: dict):
@@ -201,17 +229,102 @@ class HarvestModel:
 
     @staticmethod
     def _lateness_factor(days: int) -> float:
-        return max(0.40, 1.0 - days*0.02) if days > 0 else 1.0
+        """
+        -2% per day late, floor 40%.
+        0 days late = 1.0 (no penalty).
+        """
+        return max(0.40, 1.0 - days * 0.02) if days > 0 else 1.0
 
     @staticmethod
     def _weather_factor(d: dict) -> float:
-        n = max(int(d.get('total_days', 1)), 1)
-        f = 1.0 - (int(d.get('storm_days',0))/n)*0.30 \
-                - (int(d.get('heat_days',0))/n)*0.20  \
-                - (int(d.get('frost_days',0))/n)*0.25 \
-                - (int(d.get('high_hum_days',0))/n)*0.10 \
-                - (int(d.get('rain_days',0))/n)*0.05  \
-                - (int(d.get('high_wind_days',0))/n)*0.08
-        if int(d.get('total_days', 0)) == 0:
-            return 0.85
+        """
+        If no weather logs at all (total_days=0) → assign 0.75 (average conditions).
+        With data → compute weighted penalty, floor 0.30, cap 1.0.
+        Note: even with 0 bad days and total_days>0, cap is 1.0 (formula result)
+              but ia_score will still be capped at 93 separately.
+        """
+        total = int(d.get('total_days', 0))
+        if total == 0:
+            # No weather data — assign realistic average (not optimistic 0.85)
+            return 0.75
+
+        n = max(total, 1)
+        f = 1.0 \
+            - (int(d.get('storm_days',    0)) / n) * 0.30 \
+            - (int(d.get('heat_days',     0)) / n) * 0.20 \
+            - (int(d.get('frost_days',    0)) / n) * 0.25 \
+            - (int(d.get('high_hum_days', 0)) / n) * 0.10 \
+            - (int(d.get('rain_days',     0)) / n) * 0.05 \
+            - (int(d.get('high_wind_days',0)) / n) * 0.08
         return float(np.clip(f, 0.30, 1.0))
+
+    @staticmethod
+    def _generate_rapport(nom, surface, base_yield, qty, lf, wf,
+                          days_late, total_days, data) -> str:
+        """
+        Generate a short plain-French harvest report for the farm manager.
+        No technical jargon — just what happened and why this quantity.
+        """
+        lines = []
+
+        # Opening
+        qty_fmt  = f"{qty:,.0f}".replace(',', ' ')
+        surf_fmt = f"{surface:,.0f}".replace(',', ' ')
+        lines.append(f"Votre récolte de {nom} sur {surf_fmt} m² a produit {qty_fmt} kg.")
+
+        # Lateness
+        if days_late == 0:
+            lines.append("La récolte a été effectuée à temps, ce qui a permis de conserver le rendement maximal.")
+        elif days_late <= 5:
+            pct = days_late * 2
+            lines.append(f"La récolte a été réalisée avec {days_late} jour(s) de retard, ce qui a réduit le rendement d'environ {pct}%.")
+        elif days_late <= 14:
+            pct = min(60, days_late * 2)
+            lines.append(f"Un retard de {days_late} jours a été enregistré. Ce délai a eu un impact notable sur le rendement (-{pct}%).")
+        else:
+            lines.append(f"La récolte a accusé un retard important de {days_late} jours, ce qui a fortement réduit le rendement (-{min(60, days_late*2)}%).")
+
+        # Weather
+        if total_days == 0:
+            lines.append("Aucune donnée météo n'a été enregistrée pour cette culture. Le calcul a été effectué avec des conditions climatiques moyennes.")
+        else:
+            storm = int(data.get('storm_days',    0))
+            frost = int(data.get('frost_days',    0))
+            heat  = int(data.get('heat_days',     0))
+            hum   = int(data.get('high_hum_days', 0))
+            wind  = int(data.get('high_wind_days',0))
+            rain  = int(data.get('rain_days',     0))
+
+            bad_days = storm + frost + heat
+            if wf >= 0.90:
+                lines.append(f"Les conditions météo durant les {total_days} jours de culture ont été excellentes, sans événements climatiques importants.")
+            elif wf >= 0.75:
+                problems = []
+                if storm > 0: problems.append(f"{storm} jour(s) d'orage")
+                if heat  > 0: problems.append(f"{heat} jour(s) de forte chaleur")
+                if frost > 0: problems.append(f"{frost} jour(s) de gel")
+                if hum   > 0: problems.append(f"{hum} jour(s) d'humidité élevée")
+                txt = ", ".join(problems) if problems else "quelques perturbations mineures"
+                lines.append(f"La météo a été globalement bonne sur {total_days} jours, avec quelques épisodes défavorables : {txt}.")
+            elif wf >= 0.55:
+                problems = []
+                if storm > 0: problems.append(f"{storm} orage(s)")
+                if heat  > 0: problems.append(f"{heat} jour(s) de canicule")
+                if frost > 0: problems.append(f"{frost} jour(s) de gel")
+                if wind  > 0: problems.append(f"{wind} jour(s) de vents forts")
+                txt = ", ".join(problems) if problems else "des conditions difficiles"
+                lines.append(f"Les conditions météo ont été moyennes sur {total_days} jours ({txt}), ce qui a réduit le rendement.")
+            else:
+                lines.append(f"Les conditions météo ont été mauvaises sur {total_days} jours (orages, gel ou canicule répétés), ce qui explique en grande partie la baisse de rendement.")
+
+        # Overall verdict
+        ia_score = round(min(93.0, (lf * 0.40 + wf * 0.60) * 100), 1)
+        if ia_score >= 80:
+            verdict = "Dans l'ensemble, cette récolte s'est bien déroulée."
+        elif ia_score >= 60:
+            verdict = "Dans l'ensemble, cette récolte est dans la moyenne malgré quelques contraintes."
+        else:
+            verdict = "Cette récolte a été affectée par plusieurs facteurs défavorables (retard et/ou météo difficile)."
+        lines.append(verdict)
+
+        return " ".join(lines)

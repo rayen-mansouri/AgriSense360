@@ -4,9 +4,11 @@ namespace App\Controller;
 use App\Entity\Parcelle;
 use App\Service\CultureService;
 use App\Service\CultureWeatherLogService;
+use App\Service\HarvestIaService;
 use App\Service\ParcelleService;
 use App\Service\WeatherService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -29,7 +31,8 @@ class ParcelleController extends AbstractController
         private ParcelleService          $parcelleService,
         private CultureService           $cultureService,
         private WeatherService           $weatherService,
-        private CultureWeatherLogService $weatherLogService,  // NEW
+        private CultureWeatherLogService $weatherLogService,
+        private HarvestIaService         $harvestIaService,   // ADDED
     ) {}
 
     #[Route('', name: 'parcelle_index', methods: ['GET'])]
@@ -94,6 +97,41 @@ class ParcelleController extends AbstractController
             'parcelle' => $parcelle,
             'cultures' => $cultures,
             'weather'  => $weather,
+        ]);
+    }
+
+    /**
+     * GET /parcelle/culture/{id}/harvest-rapport
+     *
+     * READ-ONLY — computes and returns the IA harvest rapport as JSON.
+     * Does NOT save anything. Called by the JS popup before the user confirms.
+     *
+     * Returns: { quantite, iaScore, latenessScore, weatherScore, rapport, confidence }
+     */
+    #[Route('/culture/{id}/harvest-rapport', name: 'culture_harvest_rapport', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function harvestRapport(int $id): JsonResponse
+    {
+        $culture = $this->cultureService->getCultureById($id);
+        if (!$culture) {
+            return $this->json(['error' => 'Culture introuvable'], 404);
+        }
+
+        // Load weather logs accumulated for this culture
+        $logs         = $this->weatherLogService->getLogsForCulture($id);
+        $logsCount    = count($logs);
+        $weatherSummary = $this->weatherLogService->buildWeatherSummary($logs);
+
+        // Compute IA estimation (read-only, no DB write)
+        $result = $this->harvestIaService->compute($culture, $weatherSummary, $logsCount);
+
+        return $this->json([
+            'quantite'      => $result['quantite'],
+            'iaScore'       => $result['iaScore'],
+            'latenessScore' => $result['latenessScore'],
+            'weatherScore'  => $result['weatherScore'],
+            'rapport'       => $result['rapport'],
+            'confidence'    => $result['confidence'],
+            'source'        => $result['source'],
         ]);
     }
 

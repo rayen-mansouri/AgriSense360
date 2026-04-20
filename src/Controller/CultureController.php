@@ -245,9 +245,7 @@ class CultureController extends AbstractController
         $c->setNom($nom)->setTypeCulture($type);
         if ($dpStr) $c->setDatePlantation(new \DateTime($dpStr));
 
-        if ($drStr) {
-            $c->setDateRecolte(new \DateTime($drStr));
-        } elseif ($dpStr && $nom) {
+        if ($dpStr && $nom) {
             $c->setDateRecolte(CultureService::calculateHarvestDate(new \DateTime($dpStr), $nom));
         }
 
@@ -289,9 +287,7 @@ class CultureController extends AbstractController
         $culture->setNom($nom)->setTypeCulture($request->request->get('type_culture', ''));
         if ($dpStr) $culture->setDatePlantation(new \DateTime($dpStr));
 
-        if ($drStr) {
-            $culture->setDateRecolte(new \DateTime($drStr));
-        } elseif ($dpStr && $nom) {
+        if ($dpStr && $nom) {
             $culture->setDateRecolte(CultureService::calculateHarvestDate(new \DateTime($dpStr), $nom));
         }
 
