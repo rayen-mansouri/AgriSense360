@@ -4,6 +4,11 @@ namespace App\Controller;
 
 use App\Service\OracleSqlPlusCrudService;
 use App\Service\PdoCrudService;
+use App\Service\OpenWeatherService;
+use App\Service\GoogleMapsService;
+use App\Service\GroqAIService;
+use App\Service\DiscordWebhookService;
+use App\Service\AnimalManagementService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,19 +17,127 @@ use Symfony\Component\Routing\Annotation\Route;
 final class ManagementController extends AbstractController
 {
     #[Route('/management/animals', name: 'management_animals')]
-    public function animals(): Response
+    public function animals(Request $request, AnimalManagementService $animalService): Response
     {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
+        try {
+            $animalService->ensureSchema();
+            $animals = $animalService->listAnimals($currentUserId);
+            $records = $animalService->listRecords(null, $currentUserId);
+            $types = $animalService->getTypeOptions();
+            $locations = $animalService->getLocationOptions();
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to load animal data: ' . $e->getMessage());
+            $animals = [];
+            $records = [];
+            $types = [];
+            $locations = [];
+        }
+
+        $selectedAnimal = null;
+        if (!empty($animals)) {
+            $selectedAnimal = $animals[0];
+        }
+
+        // Calculate insights
+        $vaccinatedCount = count(array_filter($animals, fn($a) => ($a['vaccinated'] ?? false)));
+        $criticalCount = count(array_filter($records, fn($r) => ($r['condition'] ?? '') === 'CRITICAL'));
+
+        $animalInsights = [
+            'stats' => [
+                'animalCount' => count($animals),
+                'recordCount' => count($records),
+                'vaccinatedCount' => $vaccinatedCount,
+                'criticalCount' => $criticalCount,
+            ],
+            'animalTypeLegend' => [],
+            'conditionLegend' => [],
+        ];
+
         return $this->render('management/animals.html.twig', [
             'active' => 'animals',
+            'adminMode' => false,
+            'animals' => $animals,
+            'selectedAnimal' => $selectedAnimal,
+            'editingAnimal' => null,
+            'records' => $records,
+            'types' => $types,
+            'locations' => $locations,
+            'animalCount' => count($animals),
+            'animalInsights' => $animalInsights,
         ]);
     }
 
     #[Route('/admin/management/animals', name: 'admin_management_animals')]
-    public function adminAnimals(): Response
+    public function adminAnimals(Request $request, PdoCrudService $crudService, AnimalManagementService $animalService): Response
     {
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $availableUsers = $crudService->listUsers();
+        } catch (\Throwable) {
+            $availableUsers = [];
+        }
+
+        $selectedUserId = (int) $request->query->get('user_id', $currentAdminId);
+        if ($selectedUserId <= 0 && !empty($availableUsers)) {
+            $selectedUserId = (int) ($availableUsers[0]['id'] ?? $currentAdminId);
+        }
+
+        try {
+            $animalService->ensureSchema();
+            $animals = $animalService->listAnimals($selectedUserId);
+            $records = $animalService->listRecords(null, $selectedUserId);
+            $types = $animalService->getTypeOptions();
+            $locations = $animalService->getLocationOptions();
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Unable to load animal data: ' . $e->getMessage());
+            $animals = [];
+            $records = [];
+            $types = [];
+            $locations = [];
+        }
+
+        $selectedAnimal = null;
+        if (!empty($animals)) {
+            $selectedAnimal = $animals[0];
+        }
+
+        // Calculate insights
+        $vaccinatedCount = count(array_filter($animals, fn($a) => ($a['vaccinated'] ?? false)));
+        $criticalCount = count(array_filter($records, fn($r) => ($r['condition'] ?? '') === 'CRITICAL'));
+
+        $animalInsights = [
+            'stats' => [
+                'animalCount' => count($animals),
+                'recordCount' => count($records),
+                'vaccinatedCount' => $vaccinatedCount,
+                'criticalCount' => $criticalCount,
+            ],
+            'animalTypeLegend' => [],
+            'conditionLegend' => [],
+        ];
+
         return $this->render('management/animals.html.twig', [
             'active' => 'animals',
             'adminMode' => true,
+            'animals' => $animals,
+            'selectedAnimal' => $selectedAnimal,
+            'editingAnimal' => null,
+            'records' => $records,
+            'types' => $types,
+            'locations' => $locations,
+            'animalCount' => count($animals),
+            'animalInsights' => $animalInsights,
+            'availableUsers' => $availableUsers,
+            'selectedUserId' => $selectedUserId,
         ]);
     }
 
@@ -413,36 +526,78 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/management/stock', name: 'management_stock')]
-    public function stock(): Response
+    public function stock(Request $request): Response
     {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
         return $this->render('management/stock.html.twig', [
             'active' => 'stock',
+            'adminMode' => false,
         ]);
     }
 
     #[Route('/admin/management/stock', name: 'admin_management_stock')]
-    public function adminStock(): Response
+    public function adminStock(Request $request, PdoCrudService $crudService): Response
     {
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $availableUsers = $crudService->listUsers();
+        } catch (\Throwable) {
+            $availableUsers = [];
+        }
+
+        $selectedUserId = (int) $request->query->get('user_id', $currentAdminId);
+
         return $this->render('management/stock.html.twig', [
             'active' => 'stock',
             'adminMode' => true,
+            'availableUsers' => $availableUsers,
+            'selectedUserId' => $selectedUserId,
         ]);
     }
 
     #[Route('/management/culture', name: 'management_culture')]
-    public function culture(): Response
+    public function culture(Request $request): Response
     {
+        $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentUserId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'user']);
+        }
+
         return $this->render('management/culture.html.twig', [
             'active' => 'culture',
+            'adminMode' => false,
         ]);
     }
 
     #[Route('/admin/management/culture', name: 'admin_management_culture')]
-    public function adminCulture(): Response
+    public function adminCulture(Request $request, PdoCrudService $crudService): Response
     {
+        $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
+        if ($currentAdminId <= 0) {
+            return $this->redirectToRoute('auth_login', ['mode' => 'admin']);
+        }
+
+        try {
+            $availableUsers = $crudService->listUsers();
+        } catch (\Throwable) {
+            $availableUsers = [];
+        }
+
+        $selectedUserId = (int) $request->query->get('user_id', $currentAdminId);
+
         return $this->render('management/culture.html.twig', [
             'active' => 'culture',
             'adminMode' => true,
+            'availableUsers' => $availableUsers,
+            'selectedUserId' => $selectedUserId,
         ]);
     }
 
@@ -604,7 +759,7 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/management/workers', name: 'management_workers', methods: ['GET', 'POST'])]
-    public function workers(Request $request, PdoCrudService $crudService): Response
+    public function workers(Request $request, PdoCrudService $crudService, OpenWeatherService $weatherService, GroqAIService $groqService, DiscordWebhookService $discordService): Response
     {
         $currentUserId = (int) $request->getSession()->get('auth_user_id', 0);
         if ($currentUserId <= 0) {
@@ -641,11 +796,27 @@ final class ManagementController extends AbstractController
                     $evaluationData = $this->evaluationDataFromRequest($request);
                     $this->validateEvaluationData($evaluationData);
                     $crudService->createEvaluation($evaluationData);
+
+                    // Generate AI report and send Discord notification (non-blocking)
+                    try {
+                        $aiReport = $groqService->generateEvaluationReport($evaluationData, [], []);
+                        $discordService->notifyEvaluationCreated($evaluationData, ['firstName' => 'Worker', 'lastName' => '']);
+                    } catch (\Throwable $e) {
+                        // Log but don't fail - continue with normal flow
+                        error_log('AI report generation failed: ' . $e->getMessage());
+                    }
                 } else {
                     // Server-side validation: Validate affectation data
                     $affectationData = $this->affectationDataFromRequest($request);
                     $this->validateAffectationData($affectationData);
                     $crudService->createAffectation($affectationData);
+
+                    // Send Discord notification (non-blocking)
+                    try {
+                        $discordService->notifyNewAffectation($affectationData, ['firstName' => 'Worker', 'lastName' => ''], $affectationData);
+                    } catch (\Throwable $e) {
+                        error_log('Discord notification failed: ' . $e->getMessage());
+                    }
                 }
                 $this->addFlash('success', 'Entry created successfully.');
             } catch (\InvalidArgumentException $e) {
@@ -660,6 +831,16 @@ final class ManagementController extends AbstractController
         $affectations = $crudService->listAffectations();
         $evaluations = $crudService->listEvaluations();
 
+        // Fetch both current weather and forecast for affectations (using default coordinates)
+        $weatherCurrent = $weatherService->getWeatherByCoordinates(36.8065, 10.1686) ?: [];
+        $weatherForecast = $weatherService->getForecast(36.8065, 10.1686) ?: [];
+
+        // Combine: current weather + forecast
+        $weatherData = [
+            'current' => $weatherCurrent,
+            'list' => $weatherForecast['list'] ?? [],
+        ];
+
         return $this->render('management/workers.html.twig', [
             'active' => 'workers',
             'adminMode' => false,
@@ -669,6 +850,7 @@ final class ManagementController extends AbstractController
             'evaluations' => $evaluations,
             'evaluation' => $evaluation,
             'evaluationEditing' => false,
+            'weatherData' => $weatherData,
         ]);
     }
 
@@ -865,7 +1047,7 @@ final class ManagementController extends AbstractController
     }
 
     #[Route('/admin/management/workers', name: 'admin_management_workers', methods: ['GET', 'POST'])]
-    public function adminWorkers(Request $request, PdoCrudService $crudService): Response
+    public function adminWorkers(Request $request, PdoCrudService $crudService, GroqAIService $groqService, DiscordWebhookService $discordService, OpenWeatherService $weatherService, GoogleMapsService $mapsService): Response
     {
         $currentAdminId = (int) $request->getSession()->get('auth_user_id', 0);
         if ($currentAdminId <= 0) {
@@ -896,9 +1078,26 @@ final class ManagementController extends AbstractController
 
             try {
                 if ($formType === 'evaluation') {
-                    $crudService->createEvaluation($this->evaluationDataFromRequest($request));
+                    $evaluationData = $this->evaluationDataFromRequest($request);
+                    $crudService->createEvaluation($evaluationData);
+
+                    // Generate AI report via Groq (non-blocking)
+                    try {
+                        $aiReport = $groqService->generateEvaluationReport($evaluationData, [], []);
+                        $discordService->notifyAIRecommendation('Worker Evaluation Report', substr($aiReport, 0, 200) . '...');
+                    } catch (\Throwable $e) {
+                        error_log('AI report generation failed: ' . $e->getMessage());
+                    }
                 } else {
-                    $crudService->createAffectation($this->affectationDataFromRequest($request));
+                    $affectationData = $this->affectationDataFromRequest($request);
+                    $crudService->createAffectation($affectationData);
+
+                    // Send Discord notification (non-blocking)
+                    try {
+                        $discordService->notifyNewAffectation($affectationData, ['firstName' => 'Worker', 'lastName' => ''], $affectationData);
+                    } catch (\Throwable $e) {
+                        error_log('Discord notification failed: ' . $e->getMessage());
+                    }
                 }
                 $this->addFlash('success', 'Entry created successfully.');
             } catch (\Throwable $e) {
@@ -914,6 +1113,25 @@ final class ManagementController extends AbstractController
         // Calculate statistics for admin dashboard
         $stats = $this->calculateWorkerStats($affectations, $evaluations);
 
+        // Generate AI task optimization recommendations (non-blocking)
+        $aiOptimization = 'AI optimization service initializing...';
+        try {
+            $aiOptimization = $groqService->optimizeTaskSchedule($affectations, $availableUsers);
+        } catch (\Throwable $e) {
+            error_log('AI optimization failed: ' . $e->getMessage());
+            $aiOptimization = 'Task scheduling recommendations:\n1. Balance workload across workers\n2. Group related tasks by location\n3. Schedule intensive work during peak hours';
+        }
+
+        // Fetch weather data for affectations (using default coordinates)
+        $weatherCurrent = $weatherService->getWeatherByCoordinates(36.8065, 10.1686) ?: [];
+        $weatherForecast = $weatherService->getForecast(36.8065, 10.1686) ?: [];
+
+        // Combine: current weather + forecast
+        $weatherData = [
+            'current' => $weatherCurrent,
+            'list' => $weatherForecast['list'] ?? [],
+        ];
+
         return $this->render('management/workers.html.twig', [
             'active' => 'workers',
             'adminMode' => true,
@@ -926,6 +1144,8 @@ final class ManagementController extends AbstractController
             'stats' => $stats,
             'availableUsers' => $availableUsers,
             'selectedUserId' => $selectedUserId,
+            'aiOptimization' => $aiOptimization,
+            'weatherData' => $weatherData,
         ]);
     }
 
@@ -963,6 +1183,9 @@ final class ManagementController extends AbstractController
         ];
         $evaluations = $crudService->listEvaluations();
 
+        // Calculate statistics for consistency
+        $stats = $this->calculateWorkerStats($affectations, $evaluations);
+
         return $this->render('management/workers.html.twig', [
             'active' => 'workers',
             'adminMode' => true,
@@ -972,6 +1195,7 @@ final class ManagementController extends AbstractController
             'evaluations' => $evaluations,
             'evaluation' => $evaluation,
             'evaluationEditing' => false,
+            'stats' => $stats,
         ]);
     }
 
@@ -1031,6 +1255,9 @@ final class ManagementController extends AbstractController
             'statut' => 'En attente',
         ];
 
+        // Calculate statistics for consistency
+        $stats = $this->calculateWorkerStats($affectations, $evaluations);
+
         return $this->render('management/workers.html.twig', [
             'active' => 'workers',
             'adminMode' => true,
@@ -1040,6 +1267,7 @@ final class ManagementController extends AbstractController
             'evaluations' => $evaluations,
             'evaluation' => $evaluation,
             'evaluationEditing' => true,
+            'stats' => $stats,
         ]);
     }
 

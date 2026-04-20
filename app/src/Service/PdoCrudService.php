@@ -460,7 +460,7 @@ class PdoCrudService
 
     public function deleteAffectation(int $id): void
     {
-        $this->connection->executeStatement('DELETE FROM evaluation_performance WHERE id_affectation = ?', [$id]);
+        $this->connection->executeStatement('DELETE FROM evaluation_performance WHERE affectation_id = ?', [$id]);
         $this->connection->executeStatement('DELETE FROM affectation_travail WHERE id_affectation = ?', [$id]);
     }
 
@@ -471,11 +471,11 @@ class PdoCrudService
      */
     public function listEvaluations(?int $affectationId = null): array
     {
-        $baseSQL = 'SELECT id_evaluation, id_affectation, note, qualite, commentaire, date_evaluation FROM evaluation_performance';
+        $baseSQL = 'SELECT id_evaluation, affectation_id, note, qualite, commentaire, date_evaluation FROM evaluation_performance';
         $params = [];
 
         if ($affectationId !== null) {
-            $baseSQL .= ' WHERE id_affectation = ?';
+            $baseSQL .= ' WHERE affectation_id = ?';
             $params[] = $affectationId;
         }
 
@@ -486,7 +486,7 @@ class PdoCrudService
         return array_map(function (array $row): array {
             return [
                 'id' => (int) $row['id_evaluation'],
-                'affectationId' => (int) $row['id_affectation'],
+                'affectationId' => (int) $row['affectation_id'],
                 'note' => (int) $row['note'],
                 'qualite' => $row['qualite'],
                 'commentaire' => $row['commentaire'],
@@ -500,7 +500,7 @@ class PdoCrudService
      */
     public function findEvaluation(int $id): ?array
     {
-        $sql = 'SELECT id_evaluation, id_affectation, note, qualite, commentaire, date_evaluation FROM evaluation_performance WHERE id_evaluation = ?';
+        $sql = 'SELECT id_evaluation, affectation_id, note, qualite, commentaire, date_evaluation FROM evaluation_performance WHERE id_evaluation = ?';
         $stmt = $this->connection->executeQuery($sql, [$id]);
         $row = $stmt->fetchAssociative();
 
@@ -510,7 +510,7 @@ class PdoCrudService
 
         return [
             'id' => (int) $row['id_evaluation'],
-            'affectationId' => (int) $row['id_affectation'],
+            'affectationId' => (int) $row['affectation_id'],
             'note' => (int) $row['note'],
             'qualite' => $row['qualite'],
             'commentaire' => $row['commentaire'],
@@ -528,7 +528,7 @@ class PdoCrudService
             throw new \RuntimeException('Selected affectation does not exist.');
         }
 
-        $sql = 'INSERT INTO evaluation_performance (id_affectation, note, qualite, commentaire, date_evaluation) VALUES (?, ?, ?, ?, ?)';
+        $sql = 'INSERT INTO evaluation_performance (affectation_id, note, qualite, commentaire, date_evaluation) VALUES (?, ?, ?, ?, ?)';
         $this->connection->executeStatement($sql, [
             $data['affectationId'],
             $data['note'],
@@ -543,7 +543,7 @@ class PdoCrudService
      */
     public function updateEvaluation(int $id, array $data): void
     {
-        $sql = 'UPDATE evaluation_performance SET id_affectation = ?, note = ?, qualite = ?, commentaire = ?, date_evaluation = ? WHERE id_evaluation = ?';
+        $sql = 'UPDATE evaluation_performance SET affectation_id = ?, note = ?, qualite = ?, commentaire = ?, date_evaluation = ? WHERE id_evaluation = ?';
         $this->connection->executeStatement($sql, [
             $data['affectationId'],
             $data['note'],

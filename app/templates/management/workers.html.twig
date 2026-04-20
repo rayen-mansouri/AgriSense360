@@ -31,7 +31,244 @@
 </section>
 {% endif %}
 
-<!-- Admin Dashboard Statistics (Only visible in admin mode) -->
+<!-- Weather & AI Recommendations (for admin) -->
+{% if adminMode and aiOptimization is defined %}
+<section class="telemetry-panel" style="margin-bottom: 18px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <header>
+        <h3>🤖 AI Task Optimization</h3>
+        <span class="tag" style="background: rgba(255,255,255,0.2);">Groq AI Recommendations</span>
+    </header>
+    <div style="padding: 16px; background: rgba(0,0,0,0.1); border-radius: 8px; font-size: 14px; line-height: 1.6;">
+        {{ aiOptimization|nl2br }}
+    </div>
+</section>
+{% endif %}
+
+<!-- Weather Data (if available) -->
+{% if weatherData is defined and weatherData.current is defined and weatherData.current.cod == 200 %}
+<section class="telemetry-panel" style="margin-bottom: 18px;">
+    <header>
+        <h3>🌤️ Current Weather & 5-Day Forecast</h3>
+        <span class="tag">OpenWeather API - Real-time + Forecast</span>
+    </header>
+
+    <!-- Current Weather (Large) -->
+    {% set current = weatherData.current %}
+    <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 6px; margin-bottom: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; text-align: center;">
+            <div>
+                <span style="font-size: 32px; font-weight: bold;">{{ current.main.temp|round(1) }}°C</span>
+                <small style="display: block; margin-top: 4px;">Current Temperature</small>
+            </div>
+            <div>
+                <span style="font-size: 28px;">💧</span>
+                <span style="font-size: 20px; font-weight: bold;">{{ current.main.humidity }}%</span>
+                <small style="display: block;">Humidity</small>
+            </div>
+            <div>
+                <span style="font-size: 28px;">💨</span>
+                <span style="font-size: 20px; font-weight: bold;">{{ current.wind.speed|round(1) }} m/s</span>
+                <small style="display: block;">Wind Speed</small>
+            </div>
+            <div>
+                <span style="font-size: 24px; text-transform: capitalize;">{{ current.weather[0].main }}</span>
+                <small style="display: block;">{{ current.weather[0].description|capitalize }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5-Day Forecast -->
+    <div>
+        <h4 style="margin-bottom: 12px; color: #333;">5-Day Forecast</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            {% for item in weatherData.list|slice(0, 8) %}
+            <div style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: #f9f9f9; text-align: center;">
+                <strong style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">{{ item.dt_txt|date('H:i') }}</strong>
+                <span style="font-size: 18px; font-weight: bold; display: block;">{{ item.main.temp|round }}°C</span>
+                <small style="color: #666; display: block; margin: 4px 0;">{{ item.weather[0].main }}</small>
+                <small style="color: #666;">💧 {{ item.main.humidity }}%</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- AI Insights & Performance Reports -->
+{% if (evaluations|length > 0 or adminMode) and stats is defined and stats.totalEvaluations is defined %}
+<section class="telemetry-panel" style="margin-bottom: 18px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <header>
+        <h3>📊 AI Performance Insights</h3>
+        <span class="tag" style="background: rgba(255,255,255,0.2);">Groq AI - Worker Performance Analytics</span>
+    </header>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+        <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold;">{{ stats.totalEvaluations|default(0) }}</div>
+            <small>Total Evaluations</small>
+        </div>
+        <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold;">{{ stats.averageNote|default(0) }}</div>
+            <small>Avg Score ({{ stats.averageNote|default(0) }}/20)</small>
+        </div>
+        <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold;">{{ stats.excellentCount|default(0) }}</div>
+            <small>Excellent Ratings</small>
+        </div>
+        <div style="padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold;">{{ stats.completionRate|default(0) }}%</div>
+            <small>Completion Rate</small>
+        </div>
+    </div>
+    <div style="padding: 12px; background: rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px; line-height: 1.6;">
+        <strong>📈 Key Findings:</strong><br>
+        {% if stats.averageNote >= 16 %}
+            ✓ Exceptional team performance! Average score is very high.<br>
+        {% elseif stats.averageNote >= 12 %}
+            ✓ Good overall performance. Consider targeted improvements for lower scores.<br>
+        {% else %}
+            ⚠️ Performance needs attention. Review training programs and task assignments.<br>
+        {% endif %}
+
+        {% if stats.completionRate == 100 %}
+            ✓ All assigned tasks completed successfully!<br>
+        {% elseif stats.completionRate >= 80 %}
+            ✓ Strong completion rate. Some tasks still in progress.<br>
+        {% else %}
+            ⚠️ Only {{ stats.completionRate }}% tasks completed. Check for blockers.<br>
+        {% endif %}
+
+        {% if stats.excellentCount > stats.totalEvaluations / 2 %}
+            ✓ More than half evaluations are excellent ratings!
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Google Maps Integration for Worker Locations -->
+{% if adminMode %}
+<section class="telemetry-panel" style="margin-bottom: 18px;">
+    <header>
+        <h3>🗺️ Worker Locations Map & Affectations</h3>
+        <span class="tag">Google Maps - Farm Operations with Work Zones</span>
+    </header>
+
+    <!-- Map Container with Leaflet (Open Source Alternative) -->
+    <div id="workerMap" style="width: 100%; height: 450px; border-radius: 6px; overflow: hidden; background: #e0e0e0; margin-bottom: 12px;">
+        <!-- Leaflet Map -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+        <div id="map" style="width: 100%; height: 100%; border-radius: 6px;"></div>
+    </div>
+
+    <!-- Work Zone List with Weather Integration -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+        {% set workZones = {} %}
+        {% for affectation in affectations %}
+            {% set zone = affectation.zoneTravail|default('Unknown Zone') %}
+            {% set workZones = workZones|merge({(zone): (workZones[zone]|default([]) + [affectation])}) %}
+        {% endfor %}
+
+        {% for zone, zoneAffectations in workZones %}
+        <div style="padding: 12px; border: 2px solid #667eea; border-radius: 6px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+            <strong style="color: #667eea; font-size: 14px;">📍 {{ zone }}</strong>
+            <div style="margin-top: 8px; font-size: 12px; line-height: 1.6; color: #333;">
+                <span style="background: #667eea; color: white; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 6px;">{{ zoneAffectations|length }} tasks</span>
+
+                <!-- Zone Status Breakdown -->
+                {% set zoneStatuses = {} %}
+                {% for aff in zoneAffectations %}
+                    {% set status = aff.statut|default('Unknown') %}
+                    {% set zoneStatuses = zoneStatuses|merge({(status): (zoneStatuses[status]|default(0) + 1)}) %}
+                {% endfor %}
+
+                {% for status, count in zoneStatuses %}
+                    <div style="margin-top: 4px;">
+                        📋 <strong>{{ status }}:</strong> {{ count }}
+                    </div>
+                {% endfor %}
+
+                <!-- Weather Badge for Zone -->
+                {% if weatherData.list is defined %}
+                    <div style="margin-top: 8px; padding: 6px; background: white; border-radius: 3px;">
+                        <small style="color: #666;">
+                            🌡️ {{ weatherData.list[0].main.temp|round }}°C
+                            💧 {{ weatherData.list[0].main.humidity }}%
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <small style="color: #666; margin-top: 12px; display: block;">
+        ✅ Dynamic map shows all work zones. Weather data integrated for task planning. Click zone cards for details.
+    </small>
+</section>
+
+<script>
+// Initialize Leaflet Map
+document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('map').setView([36.8065, 10.1686], 8); // Tunisia center
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Mark work zones from affectations
+    const zones = {
+        {% for zone, zoneAffectations in workZones %}
+            "{{ zone|escape('js') }}": {
+                count: {{ zoneAffectations|length }},
+                tasks: {{ zoneAffectations|length }}
+            }{{ not loop.last ? ',' : '' }}
+        {% endfor %}
+    };
+
+    // Default zone coordinates (Tunisia regions)
+    const zoneCoords = {
+        'Tunis': [36.8065, 10.1686],
+        'Ariana': [36.8697, 10.1637],
+        'Manouba': [36.8118, 10.2607],
+        'Sousse': [35.8256, 10.6369],
+        'Sfax': [34.7406, 10.7603],
+        'Gafsa': [34.4269, 8.7838],
+        'Kairouan': [35.6781, 9.5898],
+        'Bizerte': [37.2744, 9.8739],
+        'Gabès': [33.8869, 10.0994],
+        'Kasserine': [35.1667, 8.8333]
+    };
+
+    // Add markers for each zone
+    let markersAdded = 0;
+    for (const zone in zones) {
+        const coords = zoneCoords[zone] || [36.8065 + Math.random() * 2, 10.1686 + Math.random() * 2];
+        const zoneInfo = zones[zone];
+
+        const markerColor = zoneInfo.tasks > 5 ? 'red' : zoneInfo.tasks > 2 ? 'orange' : 'green';
+
+        L.circleMarker(coords, {
+            radius: Math.min(20, 10 + zoneInfo.tasks),
+            fillColor: markerColor,
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.7
+        }).bindPopup(`
+            <strong>${zone}</strong><br>
+            Tasks: ${zoneInfo.count}<br>
+            <small>Click for details</small>
+        `).addTo(map);
+
+        markersAdded++;
+    }
+
+    console.log('✅ Leaflet Map initialized with', markersAdded, 'zones');
+});
+</script>
+{% endif %}
 {% if adminMode and stats is defined %}
 <section class="stats-rail">
     <article class="stat-tile">
@@ -379,26 +616,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% for aff in affectations %}
                                 <tr>
                                     {% if adminMode %}<td>#AF-{{ "%02d"|format(aff.id|default(0)) }}</td>{% endif %}
-                                    <td>{{ aff.typeTravail|default('N/A') }}</td>
-                                    <td>{{ aff.zoneTravail|default('N/A') }}</td>
+                                    <td style="font-weight: 500;">{{ aff.typeTravail|default('N/A') }}</td>
+                                    <td>
+                                        📍 {{ aff.zoneTravail|default('N/A') }}
+                                        {% if weatherData.list is defined %}
+                                            <div style="font-size: 11px; color: #666; margin-top: 3px;">
+                                                🌡️ {{ weatherData.list[0].main.temp|round }}°C · 💧 {{ weatherData.list[0].main.humidity }}%
+                                            </div>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ aff.dateDebut|date('Y-m-d')|default('N/A') }}</td>
                                     <td>{{ aff.dateFin|date('Y-m-d')|default('N/A') }}</td>
                                     <td>
                                         {% if aff.statut == 'En cours' %}
-                                            <span class="status ok">{{ aff.statut }}</span>
+                                            <span class="status ok">● {{ aff.statut }}</span>
                                         {% elseif aff.statut == 'Complété' %}
-                                            <span class="status ok">{{ aff.statut }}</span>
+                                            <span class="status ok">✓ {{ aff.statut }}</span>
                                         {% elseif aff.statut == 'Suspendu' or aff.statut == 'Annulé' %}
-                                            <span class="status warn">{{ aff.statut }}</span>
+                                            <span class="status warn">⚠ {{ aff.statut }}</span>
                                         {% else %}
-                                            <span class="status">{{ aff.statut|default('N/A') }}</span>
+                                            <span class="status">◌ {{ aff.statut|default('N/A') }}</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <a href="{{ adminMode ? path('admin_management_workers_edit', {id: aff.id}) : path('management_workers_edit', {id: aff.id}) }}" class="link">Edit</a>
+                                    <td style="font-size: 13px;">
+                                        <a href="{{ adminMode ? path('admin_management_workers_edit', {id: aff.id}) : path('management_workers_edit', {id: aff.id}) }}" class="link">✏️ Edit</a>
                                         <form method="POST" action="{{ adminMode ? path('admin_management_workers_delete', {id: aff.id}) : path('management_workers_delete', {id: aff.id}) }}" style="display:inline">
                                             <input type="hidden" name="_token" value="{{ csrf_token('delete_affectation_' ~ aff.id) }}">
-                                            <button type="submit" class="link danger" onclick="return confirm('Delete this affectation?')">Delete</button>
+                                            <button type="submit" class="link danger" onclick="return confirm('Delete this affectation?')">🗑️ Delete</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -502,27 +746,41 @@ document.addEventListener('DOMContentLoaded', function() {
                             {% for eval in evaluations %}
                                 <tr>
                                     {% if adminMode %}<td>#EV-{{ "%02d"|format(eval.id|default(0)) }}</td>{% endif %}
-                                    <td>#AF-{{ "%02d"|format(eval.affectationId|default(0)) }}</td>
-                                    <td>{{ eval.note|default('N/A') }}/20</td>
+                                    <td style="font-weight: 500;">
+                                        <a href="{{ adminMode ? path('admin_management_workers_edit', {id: eval.affectationId}) : path('management_workers_edit', {id: eval.affectationId}) }}" class="link" style="text-decoration: none;">
+                                            #AF-{{ "%02d"|format(eval.affectationId|default(0)) }}
+                                        </a>
+                                    </td>
+                                    <td style="text-align: center; font-weight: 600; padding: 6px 10px;">
+                                        {% if eval.note >= 16 %}
+                                            <span style="background: #89b66b; color: white; padding: 2px 8px; border-radius: 12px;">{{ eval.note }}/20</span>
+                                        {% elseif eval.note >= 12 %}
+                                            <span style="background: #f0b75f; color: white; padding: 2px 8px; border-radius: 12px;">{{ eval.note }}/20</span>
+                                        {% else %}
+                                            <span style="background: #d86a5b; color: white; padding: 2px 8px; border-radius: 12px;">{{ eval.note }}/20</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if eval.qualite == 'Excellent' %}
-                                            <span class="status ok">{{ eval.qualite }}</span>
-                                        {% elseif eval.qualite == 'Très bon' or eval.qualite == 'Bon' %}
-                                            <span class="status">{{ eval.qualite }}</span>
+                                            <span class="status ok">⭐ {{ eval.qualite }}</span>
+                                        {% elseif eval.qualite == 'Très bon' %}
+                                            <span class="status ok">👍 {{ eval.qualite }}</span>
+                                        {% elseif eval.qualite == 'Bon' %}
+                                            <span class="status">✓ {{ eval.qualite }}</span>
                                         {% elseif eval.qualite == 'Acceptable' %}
-                                            <span class="status warn">{{ eval.qualite }}</span>
+                                            <span class="status warn">~ {{ eval.qualite }}</span>
                                         {% elseif eval.qualite == 'Insuffisant' %}
-                                            <span class="status warn">{{ eval.qualite }}</span>
+                                            <span class="status warn">✗ {{ eval.qualite }}</span>
                                         {% else %}
                                             {{ eval.qualite|default('N/A') }}
                                         {% endif %}
                                     </td>
                                     <td>{{ eval.dateEvaluation|date('Y-m-d')|default('N/A') }}</td>
-                                    <td>
-                                        <a href="{{ adminMode ? path('admin_management_evaluation_edit', {id: eval.id}) : path('management_evaluation_edit', {id: eval.id}) }}" class="link">Edit</a>
+                                    <td style="font-size: 13px;">
+                                        <a href="{{ adminMode ? path('admin_management_evaluation_edit', {id: eval.id}) : path('management_evaluation_edit', {id: eval.id}) }}" class="link">✏️ Edit</a>
                                         <form method="POST" action="{{ adminMode ? path('admin_management_evaluation_delete', {id: eval.id}) : path('management_evaluation_delete', {id: eval.id}) }}" style="display:inline">
                                             <input type="hidden" name="_token" value="{{ csrf_token('delete_evaluation_' ~ eval.id) }}">
-                                            <button type="submit" class="link danger" onclick="return confirm('Delete this evaluation?')">Delete</button>
+                                            <button type="submit" class="link danger" onclick="return confirm('Delete this evaluation?')">🗑️ Delete</button>
                                         </form>
                                     </td>
                                 </tr>

@@ -31,8 +31,8 @@ final class HomeController extends AbstractController
         $session->remove('auth_transition');
 
         try {
-            $equipments = $crudService->listEquipments();
-            $maintenances = $crudService->listMaintenances();
+            $equipments = $oracleCrud->listEquipments();
+            $maintenances = $oracleCrud->listMaintenances();
         } catch (\Throwable) {
             $equipments = [];
             $maintenances = [];
