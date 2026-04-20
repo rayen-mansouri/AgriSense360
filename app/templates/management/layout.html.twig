@@ -150,6 +150,10 @@
                     btn.setAttribute('aria-expanded', String(next !== 'true'));
                 });
             }
+
+            document.querySelectorAll('form').forEach((form) => {
+                form.setAttribute('novalidate', 'novalidate');
+            });
         </script>
 </body>
 </html>

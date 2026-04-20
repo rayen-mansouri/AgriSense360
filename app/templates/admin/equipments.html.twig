@@ -5,12 +5,21 @@
 {% block subhead %}Database telemetry, maintenance analytics, and operational CRUD for admin-level supervision.{% endblock %}
 
 {% block body %}
+    {% for errors in app.flashes('errors') %}
+        {% for message in errors %}
+            <div class="form-warning">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="form-warning">{{ message }}</div>
+    {% endfor %}
+
     <section class="telemetry-panel" style="margin-bottom: 18px;">
         <header>
             <h3>Selected User Scope</h3>
             <span class="tag">Admin can switch and manage each account data</span>
         </header>
-        <form method="get" action="{{ path('admin_management_equipments') }}" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+        <form method="get" action="{{ path('admin_management_equipments') }}" novalidate style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
             <label style="min-width:280px; display:grid; gap:6px;">
                 <span>User</span>
                 <select class="input" name="user_id" required>
@@ -199,7 +208,7 @@
                 <span class="pill">EQUIPMENTS</span>
                 <h2>Create or update equipment</h2>
             </div>
-            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="equipment-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}">
+            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="equipment-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" novalidate>
                 <input type="hidden" name="equipment_id" id="equipment_id">
                 <input type="hidden" name="target_user_id" value="{{ selectedUserId }}">
                 <input type="hidden" name="form_type" value="equipment">
@@ -231,7 +240,7 @@
                 <span class="pill">MAINTENANCE</span>
                 <h2>Create or update maintenance</h2>
             </div>
-            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="maintenance-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}">
+            <form method="post" action="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" class="crud-form" id="maintenance-form" data-create-url="{{ path('admin_management_equipments', {'user_id': selectedUserId}) }}" novalidate>
                 <input type="hidden" name="maintenance_id" id="maintenance_id">
                 <input type="hidden" name="target_user_id" value="{{ selectedUserId }}">
                 <input type="hidden" name="form_type" value="maintenance">
@@ -320,6 +329,16 @@
         <section class="crud-list" id="maintenance-table-zone">
             <div class="list-head">
                 <h3>MAINTENANCE table</h3>
+                <input class="input" type="search" id="maintenance-search" placeholder="Search by id, equipment, date, type, cost">
+                <select class="input" id="maintenance-search-column">
+                    <option value="all">All columns</option>
+                    <option value="id">ID</option>
+                    <option value="equipmentId">Equipment ID</option>
+                    <option value="equipmentName">Equipment Name</option>
+                    <option value="maintenanceDate">Date</option>
+                    <option value="maintenanceType">Type</option>
+                    <option value="cost">Cost</option>
+                </select>
             </div>
             <div class="table-wrap">
                 <table class="data-table" id="maintenance-table">
@@ -336,7 +355,7 @@
                     </thead>
                     <tbody>
                     {% for maintenanceRow in maintenances %}
-                        <tr>
+                        <tr data-id="{{ maintenanceRow.id|default('')|e('html_attr') }}" data-equipment-id="{{ maintenanceRow.equipmentId|default('')|e('html_attr') }}" data-equipment-name="{{ maintenanceRow.equipmentName|default('')|lower|e('html_attr') }}" data-maintenance-date="{{ maintenanceRow.maintenanceDate|default('')|lower|e('html_attr') }}" data-maintenance-type="{{ maintenanceRow.maintenanceType|default('')|lower|e('html_attr') }}" data-cost="{{ maintenanceRow.cost|default('')|e('html_attr') }}">
                             <td>{{ maintenanceRow.id }}</td>
                             <td>{{ maintenanceRow.equipmentId }}</td>
                             <td>{{ maintenanceRow.equipmentName }}</td>
@@ -456,6 +475,9 @@
             const maintenanceReset = document.getElementById('maintenance-reset');
             const searchInput = document.getElementById('equipment-search');
             const equipmentRows = document.querySelectorAll('#equipments-table tbody tr');
+            const maintenanceSearchInput = document.getElementById('maintenance-search');
+            const maintenanceSearchColumn = document.getElementById('maintenance-search-column');
+            const maintenanceRows = document.querySelectorAll('#maintenance-table tbody tr');
             const recentLogDateInput = document.getElementById('recent-log-date');
             const recentLogResetButton = document.getElementById('recent-log-reset');
             const recentLogRows = Array.from(document.querySelectorAll('.log-list li:not([data-log-empty="true"])'));
@@ -529,6 +551,30 @@
                         row.style.display = text.includes(term) ? '' : 'none';
                     });
                 });
+            }
+
+            function applyMaintenanceSearch() {
+                if (!maintenanceSearchInput) {
+                    return;
+                }
+
+                const term = maintenanceSearchInput.value.trim().toLowerCase();
+                const column = maintenanceSearchColumn ? maintenanceSearchColumn.value : 'all';
+
+                maintenanceRows.forEach((row) => {
+                    const text = column === 'all'
+                        ? row.textContent.toLowerCase()
+                        : String(row.dataset[column] || '').toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            }
+
+            if (maintenanceSearchInput) {
+                maintenanceSearchInput.addEventListener('input', applyMaintenanceSearch);
+            }
+
+            if (maintenanceSearchColumn) {
+                maintenanceSearchColumn.addEventListener('change', applyMaintenanceSearch);
             }
 
             if (recentLogDateInput) {

@@ -78,16 +78,22 @@
                     <div class="auth-alert success" role="status">{{ message }}</div>
                 {% endfor %}
 
-                <form method="post" class="auth-form">
+                <form method="post" class="auth-form" novalidate>
                     {% if authType == 'signup' %}
                         <div class="auth-grid">
                             <label class="field">
                                 <span>First name</span>
                                 <input class="input" type="text" name="first_name" value="{{ formValues.firstName|default('') }}" autocomplete="given-name" required>
+                                {% if fieldErrors.first_name is defined %}
+                                    <small class="field-warning">{{ fieldErrors.first_name }}</small>
+                                {% endif %}
                             </label>
                             <label class="field">
                                 <span>Last name</span>
                                 <input class="input" type="text" name="last_name" value="{{ formValues.lastName|default('') }}" autocomplete="family-name" required>
+                                {% if fieldErrors.last_name is defined %}
+                                    <small class="field-warning">{{ fieldErrors.last_name }}</small>
+                                {% endif %}
                             </label>
                         </div>
                     {% endif %}
@@ -95,11 +101,17 @@
                     <label class="field">
                         <span>Email</span>
                         <input class="input" type="email" name="email" value="{{ formValues.email|default('') }}" autocomplete="email" required>
+                        {% if fieldErrors.email is defined %}
+                            <small class="field-warning">{{ fieldErrors.email }}</small>
+                        {% endif %}
                     </label>
 
                     <label class="field">
                         <span>Password</span>
                         <input class="input" type="password" name="password" autocomplete="{% if authType == 'signup' %}new-password{% else %}current-password{% endif %}" required>
+                        {% if fieldErrors.password is defined %}
+                            <small class="field-warning">{{ fieldErrors.password }}</small>
+                        {% endif %}
                     </label>
 
                     <button class="primary auth-submit" type="submit">{{ submitLabel }}</button>
@@ -165,6 +177,10 @@
             });
 
             updateVisual();
+
+            form.addEventListener('submit', () => {
+                document.body.classList.add('is-leaving');
+            });
         })();
     </script>
 </body>

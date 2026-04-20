@@ -1,6 +1,7 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block title %}Admin Operations Dashboard{% endblock %}
+{% block body_state_class %}{% if authTransition|default(false) %} auth-entry{% endif %}{% endblock %}
 {% block eyebrow %}Control Center{% endblock %}
 {% block heading %}Administrative Operations Dashboard{% endblock %}
 {% block subhead %}Executive visibility into equipment reliability, maintenance pressure, and operational spend across AgriSense infrastructure.{% endblock %}

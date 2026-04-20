@@ -2,262 +2,828 @@
 
 {% block title %}Workers Management{% endblock %}
 {% block eyebrow %}Workers Management{% endblock %}
-{% block heading %}Workers, assignments, and payments{% endblock %}
-{% block subhead %}CRUD UI for Ouvrier, Affectation, and Paiement. Actions are visual only.{% endblock %}
+{% block heading %}Task assignments and evaluations{% endblock %}
+{% block subhead %}Manage affectations and worker performance evaluations{% endblock %}
 
 {% block body %}
-<section class="crud-section">
-    <div class="crud-card">
-        <div class="crud-head">
-            <div>
-                <h2>Ouvrier</h2>
-                <p>Track workforce roles and availability.</p>
-            </div>
-            <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add ouvrier</button>
-            </div>
-        </div>
-        <div class="crud-grid">
-            <div class="crud-list">
-                <div class="list-head">
-                    <input class="input" type="search" placeholder="Search ouvriers">
-                    <span class="pill">2 records</span>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Id</th>
-                            <th>Nom</th>
-                            <th>Prenom</th>
-                            <th>Poste</th>
-                            <th>Salaire</th>
-                            <th>Disponibilite</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>#OW-12</td>
-                            <td>Ben Ali</td>
-                            <td>Rim</td>
-                            <td>Field lead</td>
-                            <td>1200</td>
-                            <td><span class="status ok">Available</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#OW-18</td>
-                            <td>Jradi</td>
-                            <td>Omar</td>
-                            <td>Irrigation</td>
-                            <td>900</td>
-                            <td><span class="status warn">Busy</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="crud-form">
-                <h3>Create / Edit ouvrier</h3>
-                <form>
-                    <div class="form-grid">
-                        <label class="field">
-                            <span>Nom</span>
-                            <input class="input" type="text" placeholder="Last name">
-                        </label>
-                        <label class="field">
-                            <span>Prenom</span>
-                            <input class="input" type="text" placeholder="First name">
-                        </label>
-                        <label class="field">
-                            <span>Poste</span>
-                            <input class="input" type="text" placeholder="Role">
-                        </label>
-                        <label class="field">
-                            <span>Salaire</span>
-                            <input class="input" type="number" placeholder="0">
-                        </label>
-                        <label class="field">
-                            <span>Disponibilite</span>
-                            <select class="input">
-                                <option>Available</option>
-                                <option>Busy</option>
-                                <option>On leave</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+<!-- Chart.js for statistics visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+<!-- Admin Selected User Scope (Only visible in admin mode) -->
+{% if adminMode and availableUsers is defined %}
+<section class="telemetry-panel" style="margin-bottom: 18px;">
+    <header>
+        <h3>Selected User Scope</h3>
+        <span class="tag">Admin can manage worker assignments per user account</span>
+    </header>
+    <form method="get" action="{{ path('admin_management_workers') }}" style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+        <label style="min-width:280px; display:grid; gap:6px;">
+            <span>User</span>
+            <select class="input" name="user_id" required onchange="this.form.submit()">
+                {% for user in availableUsers %}
+                    <option value="{{ user.id }}" {% if user.id == selectedUserId %}selected{% endif %}>
+                        #{{ user.id }} - {{ user.firstName }} {{ user.lastName }} ({{ user.roleName }})
+                    </option>
+                {% endfor %}
+            </select>
+        </label>
+    </form>
+</section>
+{% endif %}
+
+<!-- Admin Dashboard Statistics (Only visible in admin mode) -->
+{% if adminMode and stats is defined %}
+<section class="stats-rail">
+    <article class="stat-tile">
+        <span class="k">Total Affectations</span>
+        <span class="v">{{ stats.totalAffectations|default(0) }}</span>
+        <small>Task assignments in system</small>
+    </article>
+    <article class="stat-tile">
+        <span class="k">Completion Rate</span>
+        <span class="v">{{ stats.completionRate|default(0) }}%</span>
+        <small>Tasks successfully completed</small>
+    </article>
+    <article class="stat-tile">
+        <span class="k">Evaluations Count</span>
+        <span class="v">{{ stats.totalEvaluations|default(0) }}</span>
+        <small>Performance reviews</small>
+    </article>
+    <article class="stat-tile">
+        <span class="k">Average Performance</span>
+        <span class="v">{{ stats.averageNote|default(0) }}/20</span>
+        <small>Mean worker rating</small>
+    </article>
+</section>
+
+<!-- Charts and Technical Analytics Section -->
+<section class="telemetry-grid" style="margin-top: 24px;">
+    <!-- Status Distribution Chart -->
+    <article class="telemetry-panel">
+        <header>
+            <h3>Task Status Distribution</h3>
+            <span class="tag">Current workflow states</span>
+        </header>
+        <canvas id="statusChart" style="max-height: 280px;"></canvas>
+    </article>
+
+    <!-- Quality Distribution Chart -->
+    <article class="telemetry-panel">
+        <header>
+            <h3>Performance Quality Ratings</h3>
+            <span class="tag">Worker performance assessment</span>
+        </header>
+        <canvas id="qualityChart" style="max-height: 280px;"></canvas>
+    </article>
+
+    <!-- Task Type Distribution -->
+    {% if stats.typeCounts %}
+    <article class="telemetry-panel">
+        <header>
+            <h3>Task Types Breakdown</h3>
+            <span class="tag">Distribution of work assignments</span>
+        </header>
+        <canvas id="typeChart" style="max-height: 280px;"></canvas>
+    </article>
+    {% endif %}
+
+    <!-- Work Zones Distribution -->
+    {% if stats.zoneCounts %}
+    <article class="telemetry-panel">
+        <header>
+            <h3>Work Zones Activity</h3>
+            <span class="tag">Geographical distribution</span>
+        </header>
+        <canvas id="zoneChart" style="max-height: 280px;"></canvas>
+    </article>
+    {% endif %}
+
+    <!-- Technical Dashboard -->
+    <article class="telemetry-panel" style="grid-column: 1 / -1;">
+        <header>
+            <h3>Database Signals & Technical Metrics</h3>
+            <span class="tag">Live system telemetry</span>
+        </header>
+        <dl class="kv-grid">
+            <div>
+                <dt>Database Engine</dt>
+                <dd>SQLite 3 (ACID)</dd>
+            </div>
+            <div>
+                <dt>Total Affectations</dt>
+                <dd>{{ stats.totalAffectations|default(0) }} records</dd>
+            </div>
+            <div>
+                <dt>Total Evaluations</dt>
+                <dd>{{ stats.totalEvaluations|default(0) }} records</dd>
+            </div>
+            <div>
+                <dt>Average Rating</dt>
+                <dd>{{ stats.averageNote|default(0) }}/20</dd>
+            </div>
+            <div>
+                <dt>Completion Status</dt>
+                <dd>{{ stats.statusCounts['Complété']|default(0) }} / {{ stats.totalAffectations|default(0) }}</dd>
+            </div>
+            <div>
+                <dt>In Progress Tasks</dt>
+                <dd>{{ stats.statusCounts['En cours']|default(0) }}</dd>
+            </div>
+            <div>
+                <dt>Pending Tasks</dt>
+                <dd>{{ stats.statusCounts['En attente']|default(0) }}</dd>
+            </div>
+            <div>
+                <dt>Suspended/Cancelled</dt>
+                <dd>{{ (stats.statusCounts['Suspendu']|default(0)) + (stats.statusCounts['Annulé']|default(0)) }}</dd>
+            </div>
+            <div>
+                <dt>Task Types Count</dt>
+                <dd>{{ stats.typeCounts|length }} different types</dd>
+            </div>
+            <div>
+                <dt>Work Zones Count</dt>
+                <dd>{{ stats.zoneCounts|length }} zones</dd>
+            </div>
+            <div>
+                <dt>Excellent Quality Reviews</dt>
+                <dd>{{ stats.qualityCounts['Excellent']|default(0) }}</dd>
+            </div>
+            <div>
+                <dt>Time Span Coverage</dt>
+                <dd>{{ stats.dateStats.daysSpan|default(0) }} days</dd>
+            </div>
+            <div>
+                <dt>Earliest Assignment</dt>
+                <dd>{{ stats.dateStats.earliestDate|default('N/A') }}</dd>
+            </div>
+            <div>
+                <dt>Latest Assignment</dt>
+                <dd>{{ stats.dateStats.latestDate|default('N/A') }}</dd>
+            </div>
+            <div>
+                <dt>Ongoing Active Tasks</dt>
+                <dd>{{ stats.dateStats.ongoingCount|default(0) }}</dd>
+            </div>
+            <div>
+                <dt>Connection Type</dt>
+                <dd>PDO via Doctrine DBAL</dd>
+            </div>
+        </dl>
+    </article>
+</section>
+
+<!-- Chart.js Render Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Color palette matching admin dashboard
+    const colors = {
+        success: '#89b66b',
+        warning: '#f0b75f',
+        danger: '#d86a5b',
+        primary: '#667eea',
+        accent: '#764ba2'
+    };
+
+    // Status Chart
+    const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+    if (statusCtx) {
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['En attente', 'En cours', 'Complété', 'Suspendu', 'Annulé'],
+                datasets: [{
+                    data: [
+                        {{ stats.statusCounts['En attente']|default(0) }},
+                        {{ stats.statusCounts['En cours']|default(0) }},
+                        {{ stats.statusCounts['Complété']|default(0) }},
+                        {{ stats.statusCounts['Suspendu']|default(0) }},
+                        {{ stats.statusCounts['Annulé']|default(0) }}
+                    ],
+                    backgroundColor: [
+                        '#e8d4c4',
+                        '#b3d9e8',
+                        colors.success,
+                        colors.warning,
+                        colors.danger
+                    ],
+                    borderColor: 'white',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 12 } } }
+                }
+            }
+        });
+    }
+
+    // Quality Chart
+    const qualityCtx = document.getElementById('qualityChart')?.getContext('2d');
+    if (qualityCtx) {
+        new Chart(qualityCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Excellent', 'Très bon', 'Bon', 'Acceptable', 'Insuffisant'],
+                datasets: [{
+                    label: 'Reviews',
+                    data: [
+                        {{ stats.qualityCounts['Excellent']|default(0) }},
+                        {{ stats.qualityCounts['Très bon']|default(0) }},
+                        {{ stats.qualityCounts['Bon']|default(0) }},
+                        {{ stats.qualityCounts['Acceptable']|default(0) }},
+                        {{ stats.qualityCounts['Insuffisant']|default(0) }}
+                    ],
+                    backgroundColor: [
+                        colors.success,
+                        '#89c9b3',
+                        '#a8d5ba',
+                        colors.warning,
+                        colors.danger
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: true, labels: { font: { size: 11 } } } }
+            }
+        });
+    }
+
+    // Type Chart
+    const typeCtx = document.getElementById('typeChart')?.getContext('2d');
+    if (typeCtx) {
+        const typeLabels = Object.keys({{ stats.typeCounts|json_encode }});
+        const typeData = Object.values({{ stats.typeCounts|json_encode }});
+        new Chart(typeCtx, {
+            type: 'pie',
+            data: {
+                labels: typeLabels,
+                datasets: [{
+                    data: typeData,
+                    backgroundColor: [
+                        colors.primary,
+                        colors.success,
+                        colors.warning,
+                        colors.danger,
+                        colors.accent,
+                        '#8ba3d0'
+                    ],
+                    borderColor: 'white',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'right', labels: { font: { size: 11 } } } }
+            }
+        });
+    }
+
+    // Zone Chart
+    const zoneCtx = document.getElementById('zoneChart')?.getContext('2d');
+    if (zoneCtx) {
+        const zoneLabels = Object.keys({{ stats.zoneCounts|json_encode }});
+        const zoneData = Object.values({{ stats.zoneCounts|json_encode }});
+        new Chart(zoneCtx, {
+            type: 'radar',
+            data: {
+                labels: zoneLabels,
+                datasets: [{
+                    label: 'Tasks',
+                    data: zoneData,
+                    backgroundColor: 'rgba(102, 126, 234, 0.15)',
+                    borderColor: colors.primary,
+                    pointBackgroundColor: colors.primary,
+                    pointBorderColor: 'white',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { r: { beginAtZero: true, grid: { color: '#f0f0f0' } } },
+                plugins: { legend: { labels: { font: { size: 11 } } } }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+
+<section class="crud-section">
+    <!-- Flash Messages Section -->
+    {% for message in app.flashes('error') %}
+        <div style="background-color: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 16px; margin-bottom: 20px; color: #c33; font-weight: 500;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">⚠️</span>
+                <div>
+                    <strong>Erreur de validation</strong>
+                    <p style="margin: 8px 0 0 0; font-weight: 400;">{{ message }}</p>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    {% for message in app.flashes('success') %}
+        <div style="background-color: #efe; border: 1px solid #cfc; border-radius: 8px; padding: 16px; margin-bottom: 20px; color: #3c3; font-weight: 500;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">✅</span>
+                <div>
+                    <strong>Succès</strong>
+                    <p style="margin: 8px 0 0 0; font-weight: 400;">{{ message }}</p>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Affectation (Task Assignments) Card -->
     <div class="crud-card">
         <div class="crud-head">
             <div>
                 <h2>Affectation</h2>
-                <p>Assign tasks with start and end dates.</p>
+                <p>Assign and manage work tasks with dates and status.</p>
             </div>
             <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add affectation</button>
+                <button class="primary" onclick="document.querySelector('form[data-form-type=affectation]')?.scrollIntoView({behavior:'smooth'})">Add affectation</button>
             </div>
         </div>
         <div class="crud-grid">
+            <!-- Affectations List -->
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search affectations">
-                    <span class="pill">2 records</span>
+                    {% if adminMode %}
+                        <input class="input" type="search" placeholder="Search by ID or type..." id="affectation-search">
+                    {% else %}
+                        <input class="input" type="search" placeholder="Search affectations..." id="affectation-search">
+                    {% endif %}
+                    <span class="pill">{{ affectations|length }} records</span>
                 </div>
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Id</th>
-                            <th>Tache</th>
-                            <th>DateDebut</th>
-                            <th>DateFin</th>
+                            {% if adminMode %}<th>Id</th>{% endif %}
+                            <th>Type</th>
+                            <th>Zone</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>#AF-07</td>
-                            <td>Soil prep</td>
-                            <td>2026-02-01</td>
-                            <td>2026-02-08</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#AF-09</td>
-                            <td>Harvest crew</td>
-                            <td>2026-03-12</td>
-                            <td>2026-03-18</td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                    <tbody id="affectation-list">
+                        {% if affectations|length > 0 %}
+                            {% for aff in affectations %}
+                                <tr>
+                                    {% if adminMode %}<td>#AF-{{ "%02d"|format(aff.id|default(0)) }}</td>{% endif %}
+                                    <td>{{ aff.typeTravail|default('N/A') }}</td>
+                                    <td>{{ aff.zoneTravail|default('N/A') }}</td>
+                                    <td>{{ aff.dateDebut|date('Y-m-d')|default('N/A') }}</td>
+                                    <td>{{ aff.dateFin|date('Y-m-d')|default('N/A') }}</td>
+                                    <td>
+                                        {% if aff.statut == 'En cours' %}
+                                            <span class="status ok">{{ aff.statut }}</span>
+                                        {% elseif aff.statut == 'Complété' %}
+                                            <span class="status ok">{{ aff.statut }}</span>
+                                        {% elseif aff.statut == 'Suspendu' or aff.statut == 'Annulé' %}
+                                            <span class="status warn">{{ aff.statut }}</span>
+                                        {% else %}
+                                            <span class="status">{{ aff.statut|default('N/A') }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ adminMode ? path('admin_management_workers_edit', {id: aff.id}) : path('management_workers_edit', {id: aff.id}) }}" class="link">Edit</a>
+                                        <form method="POST" action="{{ adminMode ? path('admin_management_workers_delete', {id: aff.id}) : path('management_workers_delete', {id: aff.id}) }}" style="display:inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete_affectation_' ~ aff.id) }}">
+                                            <button type="submit" class="link danger" onclick="return confirm('Delete this affectation?')">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="{% if adminMode %}7{% else %}6{% endif %}" style="text-align:center; padding:20px">No affectations found</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
+
+            <!-- Affectation Form -->
             <div class="crud-form">
-                <h3>Create / Edit affectation</h3>
-                <form>
+                <h3>{{ affectationEditing ? 'Edit affectation' : 'Create affectation' }}</h3>
+                <form method="POST" data-form-type="affectation">
+                    <input type="hidden" name="form_type" value="affectation">
+                    <input type="hidden" name="_token" value="{{ csrf_token(affectationEditing ? 'edit_affectation_' ~ affectation.id : 'create_affectation') }}">
+                    {% if affectationEditing %}
+                        <input type="hidden" name="affectation_id" value="{{ affectation.id|default('') }}">
+                    {% endif %}
+
                     <div class="form-grid">
                         <label class="field">
-                            <span>Tache</span>
-                            <input class="input" type="text" placeholder="Task name">
+                            <span>Type de travail *</span>
+                            <input class="input" type="text" name="type_travail" placeholder="Ex: Récolte, Labour, Plantage" value="{{ affectation.typeTravail|default('') }}" minlength="3" maxlength="100" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Minimum 3 caractères requis</small>
                         </label>
                         <label class="field">
-                            <span>Date debut</span>
-                            <input class="input" type="date">
+                            <span>Zone de travail *</span>
+                            <input class="input" type="text" name="zone_travail" placeholder="Ex: Champ Nord" value="{{ affectation.zoneTravail|default('') }}" minlength="3" maxlength="100" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Minimum 3 caractères requis</small>
                         </label>
                         <label class="field">
-                            <span>Date fin</span>
-                            <input class="input" type="date">
+                            <span>Date début *</span>
+                            <input class="input" type="date" name="date_debut" value="{{ affectation.dateDebut|date('Y-m-d')|default('') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Requis</small>
+                        </label>
+                        <label class="field">
+                            <span>Date fin *</span>
+                            <input class="input" type="date" name="date_fin" value="{{ affectation.dateFin|date('Y-m-d')|default('') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Doit être >= à la date début</small>
+                        </label>
+                        <label class="field" style="grid-column: 1 / -1">
+                            <span>Statut *</span>
+                            <select class="input" name="statut" required>
+                                <option value="">Select status</option>
+                                <option value="En attente" {% if affectation.statut == 'En attente' %}selected{% endif %}>En attente</option>
+                                <option value="En cours" {% if affectation.statut == 'En cours' %}selected{% endif %}>En cours</option>
+                                <option value="Complété" {% if affectation.statut == 'Complété' %}selected{% endif %}>Complété</option>
+                                <option value="Suspendu" {% if affectation.statut == 'Suspendu' %}selected{% endif %}>Suspendu</option>
+                                <option value="Annulé" {% if affectation.statut == 'Annulé' %}selected{% endif %}>Annulé</option>
+                            </select>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">Save</button>
+                        <a href="{{ adminMode ? path('admin_management_workers') : path('management_workers') }}" class="ghost">Cancel</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Evaluation (Performance) Card -->
     <div class="crud-card">
         <div class="crud-head">
             <div>
-                <h2>Paiement</h2>
-                <p>Payment history and status tracking.</p>
+                <h2>Evaluation Performance</h2>
+                <p>Track and rate worker performance on completed tasks.</p>
             </div>
             <div class="crud-actions">
-                <button class="ghost" type="button">Import</button>
-                <button class="primary" type="button">Add paiement</button>
+                <button class="primary" onclick="document.querySelector('form[data-form-type=evaluation]')?.scrollIntoView({behavior:'smooth'})">Add evaluation</button>
             </div>
         </div>
         <div class="crud-grid">
+            <!-- Evaluations List -->
             <div class="crud-list">
                 <div class="list-head">
-                    <input class="input" type="search" placeholder="Search paiements">
-                    <span class="pill">2 records</span>
+                    {% if adminMode %}
+                        <input class="input" type="search" placeholder="Search by ID or quality..." id="evaluation-search">
+                    {% else %}
+                        <input class="input" type="search" placeholder="Search evaluations..." id="evaluation-search">
+                    {% endif %}
+                    <span class="pill">{{ evaluations|length }} records</span>
                 </div>
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Id</th>
-                            <th>Montant</th>
-                            <th>DatePaiement</th>
-                            <th>Statut</th>
+                            {% if adminMode %}<th>Id</th>{% endif %}
+                            <th>Affectation</th>
+                            <th>Note</th>
+                            <th>Quality</th>
+                            <th>Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>#PM-04</td>
-                            <td>420</td>
-                            <td>2026-01-28</td>
-                            <td><span class="status ok">Paid</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#PM-11</td>
-                            <td>380</td>
-                            <td>2026-02-05</td>
-                            <td><span class="status warn">Pending</span></td>
-                            <td>
-                                <button class="link" type="button">Edit</button>
-                                <button class="link danger" type="button">Delete</button>
-                            </td>
-                        </tr>
+                    <tbody id="evaluation-list">
+                        {% if evaluations|length > 0 %}
+                            {% for eval in evaluations %}
+                                <tr>
+                                    {% if adminMode %}<td>#EV-{{ "%02d"|format(eval.id|default(0)) }}</td>{% endif %}
+                                    <td>#AF-{{ "%02d"|format(eval.affectationId|default(0)) }}</td>
+                                    <td>{{ eval.note|default('N/A') }}/20</td>
+                                    <td>
+                                        {% if eval.qualite == 'Excellent' %}
+                                            <span class="status ok">{{ eval.qualite }}</span>
+                                        {% elseif eval.qualite == 'Très bon' or eval.qualite == 'Bon' %}
+                                            <span class="status">{{ eval.qualite }}</span>
+                                        {% elseif eval.qualite == 'Acceptable' %}
+                                            <span class="status warn">{{ eval.qualite }}</span>
+                                        {% elseif eval.qualite == 'Insuffisant' %}
+                                            <span class="status warn">{{ eval.qualite }}</span>
+                                        {% else %}
+                                            {{ eval.qualite|default('N/A') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ eval.dateEvaluation|date('Y-m-d')|default('N/A') }}</td>
+                                    <td>
+                                        <a href="{{ adminMode ? path('admin_management_evaluation_edit', {id: eval.id}) : path('management_evaluation_edit', {id: eval.id}) }}" class="link">Edit</a>
+                                        <form method="POST" action="{{ adminMode ? path('admin_management_evaluation_delete', {id: eval.id}) : path('management_evaluation_delete', {id: eval.id}) }}" style="display:inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete_evaluation_' ~ eval.id) }}">
+                                            <button type="submit" class="link danger" onclick="return confirm('Delete this evaluation?')">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="{% if adminMode %}6{% else %}5{% endif %}" style="text-align:center; padding:20px">No evaluations found</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
+
+            <!-- Evaluation Form -->
             <div class="crud-form">
-                <h3>Create / Edit paiement</h3>
-                <form>
+                <h3>{{ evaluationEditing ? 'Edit evaluation' : 'Create evaluation' }}</h3>
+                <form method="POST" data-form-type="evaluation">
+                    <input type="hidden" name="form_type" value="evaluation">
+                    <input type="hidden" name="_token" value="{{ csrf_token(evaluationEditing ? 'edit_evaluation_' ~ evaluation.id : 'create_evaluation') }}">
+                    {% if evaluationEditing %}
+                        <input type="hidden" name="evaluation_id" value="{{ evaluation.id|default('') }}">
+                    {% endif %}
+
                     <div class="form-grid">
-                        <label class="field">
-                            <span>Montant</span>
-                            <input class="input" type="number" placeholder="0">
-                        </label>
-                        <label class="field">
-                            <span>Date paiement</span>
-                            <input class="input" type="date">
-                        </label>
-                        <label class="field">
-                            <span>Statut</span>
-                            <select class="input">
-                                <option>Paid</option>
-                                <option>Pending</option>
-                                <option>Failed</option>
+                        <label class="field" style="grid-column: 1 / -1">
+                            <span>Affectation *</span>
+                            <select class="input" name="affectation_id" required>
+                                <option value="">Select an affectation</option>
+                                {% for aff in affectations %}
+                                    <option value="{{ aff.id }}" {% if evaluation.affectationId == aff.id %}selected{% endif %}>
+                                        #AF-{{ "%02d"|format(aff.id) }} - {{ aff.typeTravail }} ({{ aff.dateDebut|date('Y-m-d') }} to {{ aff.dateFin|date('Y-m-d') }})
+                                    </option>
+                                {% endfor %}
                             </select>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Une affectation valide est requise</small>
+                        </label>
+                        <label class="field">
+                            <span>Note (0-20) *</span>
+                            <input class="input" type="number" name="note" min="0" max="20" placeholder="Ex: 15" value="{{ evaluation.note|default('') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Entre 0 et 20</small>
+                        </label>
+                        <label class="field">
+                            <span>Qualité *</span>
+                            <select class="input" name="qualite" required>
+                                <option value="">Select quality</option>
+                                <option value="Excellent" {% if evaluation.qualite == 'Excellent' %}selected{% endif %}>Excellent</option>
+                                <option value="Très bon" {% if evaluation.qualite == 'Très bon' %}selected{% endif %}>Très bon</option>
+                                <option value="Bon" {% if evaluation.qualite == 'Bon' %}selected{% endif %}>Bon</option>
+                                <option value="Acceptable" {% if evaluation.qualite == 'Acceptable' %}selected{% endif %}>Acceptable</option>
+                                <option value="Insuffisant" {% if evaluation.qualite == 'Insuffisant' %}selected{% endif %}>Insuffisant</option>
+                            </select>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Requis</small>
+                        </label>
+                        <label class="field" style="grid-column: 1 / -1">
+                            <span>Date d'évaluation *</span>
+                            <input class="input" type="date" name="date_evaluation" value="{{ evaluation.dateEvaluation|date('Y-m-d')|default('') }}" max="{{ 'now'|date('Y-m-d') }}" required>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Doit être aujourd'hui ou antérieure (pas de date future)</small>
+                        </label>
+                        <label class="field" style="grid-column: 1 / -1">
+                            <span>Commentaires *</span>
+                            <textarea class="input" name="commentaire" placeholder="Add your comments..." rows="4" minlength="5" maxlength="500" style="font-family: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px;" required>{{ evaluation.commentaire|default('') }}</textarea>
+                            <small style="color: #666; font-size: 12px; margin-top: 4px;">Minimum 5 caractères requis</small>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button class="primary" type="button">Save</button>
-                        <button class="ghost" type="button">Reset</button>
+                        <button class="primary" type="submit">Save</button>
+                        <a href="{{ adminMode ? path('admin_management_workers') : path('management_workers') }}" class="ghost">Cancel</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </section>
+
+<!-- Client-side Validation Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validate affectation date range
+    const affectationForm = document.querySelector('form[data-form-type="affectation"]');
+    if (affectationForm) {
+        const dateDebut = affectationForm.querySelector('input[name="date_debut"]');
+        const dateFin = affectationForm.querySelector('input[name="date_fin"]');
+
+        affectationForm.addEventListener('submit', function(e) {
+            if (dateDebut.value && dateFin.value) {
+                const start = new Date(dateDebut.value);
+                const end = new Date(dateFin.value);
+
+                if (end < start) {
+                    e.preventDefault();
+                    alert('❌ Erreur: La date fin doit être supérieure ou égale à la date début');
+                    dateFin.focus();
+                    dateFin.style.borderColor = '#d86a5b';
+                    return false;
+                }
+            }
+        });
+
+        // Real-time validation feedback
+        dateFin.addEventListener('change', function() {
+            if (dateDebut.value && this.value) {
+                const start = new Date(dateDebut.value);
+                const end = new Date(this.value);
+
+                if (end < start) {
+                    this.style.borderColor = '#d86a5b';
+                } else {
+                    this.style.borderColor = '';
+                }
+            }
+        });
+    }
+
+    // Validate note range
+    const evaluationForm = document.querySelector('form[data-form-type="evaluation"]');
+    if (evaluationForm) {
+        const affectationSelect = evaluationForm.querySelector('select[name="affectation_id"]');
+        const noteInput = evaluationForm.querySelector('input[name="note"]');
+        const dateEvaluationInput = evaluationForm.querySelector('input[name="date_evaluation"]');
+
+        // Validate affectation selection
+        affectationSelect.addEventListener('change', function() {
+            if (this.value === '' || parseInt(this.value) <= 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+
+        // Validate note range
+        noteInput.addEventListener('change', function() {
+            const value = parseInt(this.value);
+            if (value < 0 || value > 20) {
+                this.style.borderColor = '#d86a5b';
+                alert('❌ Erreur: La note doit être entre 0 et 20');
+                this.value = '';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+
+        // Validate evaluation date on change
+        dateEvaluationInput.addEventListener('change', function() {
+            if (this.value) {
+                const evaluationDate = new Date(this.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                evaluationDate.setHours(0, 0, 0, 0);
+
+                if (evaluationDate > today) {
+                    this.style.borderColor = '#d86a5b';
+                    alert('❌ Erreur: La date d\'évaluation ne peut pas être dans le futur');
+                    this.value = '';
+                } else {
+                    this.style.borderColor = '';
+                }
+            }
+        });
+
+        // Validate on form submit
+        evaluationForm.addEventListener('submit', function(e) {
+            let isValid = true;
+
+            // Check affectation selection
+            if (affectationSelect.value === '' || parseInt(affectationSelect.value) <= 0) {
+                e.preventDefault();
+                alert('❌ Erreur: Vous devez sélectionner une affectation');
+                affectationSelect.focus();
+                affectationSelect.style.borderColor = '#d86a5b';
+                isValid = false;
+            }
+
+            // Check evaluation date
+            if (isValid && dateEvaluationInput.value) {
+                const evaluationDate = new Date(dateEvaluationInput.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                evaluationDate.setHours(0, 0, 0, 0);
+
+                if (evaluationDate > today) {
+                    e.preventDefault();
+                    alert('❌ Erreur: La date d\'évaluation ne peut pas être dans le futur');
+                    dateEvaluationInput.focus();
+                    dateEvaluationInput.style.borderColor = '#d86a5b';
+                    isValid = false;
+                }
+            }
+
+            return isValid;
+        });
+    }
+
+    // Character count feedback
+    const typeInput = document.querySelector('input[name="type_travail"]');
+    const zoneInput = document.querySelector('input[name="zone_travail"]');
+    const commentaires = document.querySelector('textarea[name="commentaire"]');
+
+    if (typeInput) {
+        typeInput.addEventListener('input', function() {
+            if (this.value.length < 3 && this.value.length > 0) {
+                this.style.borderColor = '#f0b75f';
+            } else if (this.value.length === 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+
+    if (zoneInput) {
+        zoneInput.addEventListener('input', function() {
+            if (this.value.length < 3 && this.value.length > 0) {
+                this.style.borderColor = '#f0b75f';
+            } else if (this.value.length === 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+
+    if (commentaires) {
+        commentaires.addEventListener('input', function() {
+            if (this.value.length < 5 && this.value.length > 0) {
+                this.style.borderColor = '#f0b75f';
+            } else if (this.value.length === 0) {
+                this.style.borderColor = '#d86a5b';
+            } else {
+                this.style.borderColor = '';
+            }
+        });
+    }
+
+    // Search/Filter by ID and other fields (Admin only)
+    const affectationSearch = document.getElementById('affectation-search');
+    if (affectationSearch) {
+        affectationSearch.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const affectationRows = document.querySelectorAll('#affectation-list tr');
+            let visibleCount = 0;
+
+            affectationRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let matches = false;
+
+                if (query === '') {
+                    matches = true;
+                } else {
+                    // Search in all cells (ID, Type, Zone, Start Date, End Date, Status)
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(query)) {
+                            matches = true;
+                        }
+                    });
+                }
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            // Show "no results" message if needed
+            const emptyRow = document.querySelector('#affectation-list tr[style*="display: none"]');
+            if (visibleCount === 0 && query !== '') {
+                console.log('Aucune affectation trouvée pour: ' + query);
+            }
+        });
+    }
+
+    // Search/Filter evaluations by ID and quality (Admin only)
+    const evaluationSearch = document.getElementById('evaluation-search');
+    if (evaluationSearch) {
+        evaluationSearch.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            const evaluationRows = document.querySelectorAll('#evaluation-list tr');
+            let visibleCount = 0;
+
+            evaluationRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let matches = false;
+
+                if (query === '') {
+                    matches = true;
+                } else {
+                    // Search in all cells (ID, Affectation, Note, Quality, Date)
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(query)) {
+                            matches = true;
+                        }
+                    });
+                }
+
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            // Show "no results" message if needed
+            if (visibleCount === 0 && query !== '') {
+                console.log('Aucune évaluation trouvée pour: ' + query);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

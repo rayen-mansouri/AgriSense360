@@ -1,0 +1,275 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}Détails Affectation #{{ affectation.id_affectation }}{% endblock %}
+{% block eyebrow %}Gestion d'Ouvrier{% endblock %}
+{% block heading %}Détails de l'Affectation #{{ affectation.id_affectation }}{% endblock %}
+{% block subhead %}Consultez les informations complètes de cette affectation de travail.{% endblock %}
+
+{% set active_tab = 'affectation' %}
+
+{% block topbar_actions %}
+    <a href="{{ path('affectation_travail_edit', {'id_affectation': affectation.id_affectation}) }}" class="primary">✏️ Modifier</a>
+    <a href="{{ path('affectation_travail_index') }}" class="ghost">Retour à la liste</a>
+{% endblock %}
+
+{% block management_content %}
+<section class="worker-management">
+    <div class="details-card">
+        <div class="details-header">
+            <div>
+                <h2>Affectation #{{ affectation.id_affectation }}</h2>
+            </div>
+            <div class="details-actions">
+                <form method="POST" action="{{ path('affectation_travail_delete', {'id_affectation': affectation.id_affectation}) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette affectation ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ affectation.id_affectation) }}">
+                    <button type="submit" class="btn btn-danger">🗑️ Supprimer</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">ID</span>
+                <span class="detail-value">#{{ affectation.id_affectation }}</span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">Type de travail</span>
+                <span class="detail-value">{{ affectation.typeTravail }}</span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">Date de début</span>
+                <span class="detail-value">{{ affectation.dateDebut|date('d/m/Y') }}</span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">Date de fin</span>
+                <span class="detail-value">{{ affectation.dateFin|date('d/m/Y') }}</span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">Zone de travail</span>
+                <span class="detail-value">{{ affectation.zoneTravail ?? 'Non spécifiée' }}</span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">Statut</span>
+                <span class="detail-value">
+                    {% if affectation.statut == 'En attente' %}
+                        <span class="status-badge status-pending">En attente</span>
+                    {% elseif affectation.statut == 'En cours' %}
+                        <span class="status-badge status-active">En cours</span>
+                    {% elseif affectation.statut == 'Complété' %}
+                        <span class="status-badge status-done">Complété</span>
+                    {% elseif affectation.statut == 'Suspendu' %}
+                        <span class="status-badge status-warning">Suspendu</span>
+                    {% elseif affectation.statut == 'Annulé' %}
+                        <span class="status-badge status-error">Annulé</span>
+                    {% else %}
+                        <span class="status-badge">{{ affectation.statut }}</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        {% if affectation.evaluations|length > 0 %}
+            <div class="evaluations-section">
+                <h3>📊 Évaluations liées ({{ affectation.evaluations|length }})</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Note</th>
+                            <th>Qualité</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for evaluation in affectation.evaluations %}
+                            <tr>
+                                <td><strong>#{{ evaluation.id_evaluation }}</strong></td>
+                                <td>{{ evaluation.dateEvaluation ? evaluation.dateEvaluation|date('d/m/Y') : '-' }}</td>
+                                <td><strong>{{ evaluation.note }}/5</strong></td>
+                                <td>{{ evaluation.qualite ?? '-' }}</td>
+                                <td>
+                                    <a href="{{ path('evaluation_performance_show', {'id_evaluation': evaluation.id_evaluation}) }}" class="action-link">Voir</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+
+        <div class="details-actions-bottom">
+            <a href="{{ path('affectation_travail_index') }}" class="btn btn-secondary">← Retour à la liste</a>
+        </div>
+    </div>
+</section>
+
+<style>
+.worker-management {
+    padding: 20px;
+    max-width: 900px;
+}
+
+.details-card {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #eee;
+}
+
+.details-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.details-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+    padding: 20px 0;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.detail-value {
+    font-size: 16px;
+    color: #333;
+    line-height: 1.6;
+}
+
+.evaluations-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px solid #eee;
+}
+
+.evaluations-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.data-table thead {
+    background: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+}
+
+.data-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.action-link {
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.action-link:hover {
+    color: #45a049;
+    text-decoration: underline;
+}
+
+.details-actions-bottom {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #da190b;
+}
+
+.btn-secondary {
+    background: #757575;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #616161;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-active { background: #d1ecf1; color: #0c5460; }
+.status-done { background: #d4edda; color: #155724; }
+.status-warning { background: #fff3cd; color: #856404; }
+.status-error { background: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
