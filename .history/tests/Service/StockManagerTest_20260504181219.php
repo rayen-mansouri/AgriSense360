@@ -1,0 +1,119 @@
+<?php
+// tests/Service/StockManagerTest.php
+
+namespace App\Tests\Service;
+
+use src\Entity\Stock;
+use App\Service\StockManager;
+use PHPUnit\Framework\TestCase;
+
+class StockManagerTest extends TestCase
+{
+    private StockManager $stockManager;
+    private Stock $stock;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->stockManager = new StockManager();
+        $this->stock = new Stock();
+    }
+
+    
+    public function testValidStockWithPositiveQuantity(): void
+    {
+        // Arrange
+        $this->stock->setQuantiteActuelle(100);
+        
+        // Act & Assert
+        $this->assertTrue($this->stockManager->validate($this->stock));
+    }
+
+    public function testValidStockWithZeroQuantity(): void
+    {
+        $this->stock->setQuantiteActuelle(0);
+        
+        $this->assertTrue($this->stockManager->validate($this->stock));
+    }
+
+    public function testInvalidStockWithNegativeQuantity(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('La quantité ne peut pas être négative');
+        
+        $this->stock->setQuantiteActuelle(-10);
+        
+        $this->stockManager->validate($this->stock);
+    }
+
+
+    public function testValidStockWithSeuilLessThanQuantity(): void
+    {
+        $this->stock->setQuantiteActuelle(100);
+        $this->stock->setSeuilAlerte(20);
+        
+        $this->assertTrue($this->stockManager->validate($this->stock));
+    }
+
+    public function testValidStockWithSeuilEqualToQuantity(): void
+    {
+        // Arrange
+        $this->stock->setQuantiteActuelle(50);
+        $this->stock->setSeuilAlerte(50);
+        
+        // Act & Assert
+        $this->assertTrue($this->stockManager->validate($this->stock));
+    }
+
+    public function testInvalidStockWithSeuilGreaterThanQuantity(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Le seuil d\'alerte ne peut pas dépasser la quantité disponible');
+        
+        $this->stock->setQuantiteActuelle(30);
+        $this->stock->setSeuilAlerte(50);
+        
+        $this->stockManager->validate($this->stock);
+    }
+
+    public function testValidStockWithNoSeuil(): void
+    {
+        $this->stock->setQuantiteActuelle(100);
+        $this->stock->setSeuilAlerte(null);
+        
+        $this->assertTrue($this->stockManager->validate($this->stock));
+    }
+
+
+    public function testStockInAlert(): void
+    {
+        $this->stock->setQuantiteActuelle(10);
+        $this->stock->setSeuilAlerte(20);
+        
+        $this->assertTrue($this->stockManager->isEnAlerte($this->stock));
+    }
+
+    public function testStockNotInAlert(): void
+    {
+        $this->stock->setQuantiteActuelle(50);
+        $this->stock->setSeuilAlerte(20);
+        
+        $this->assertFalse($this->stockManager->isEnAlerte($this->stock));
+    }
+
+    public function testStockWithNoSeuilNotInAlert(): void
+    {
+        $this->stock->setQuantiteActuelle(10);
+        $this->stock->setSeuilAlerte(null);
+        
+        $this->assertFalse($this->stockManager->isEnAlerte($this->stock));
+    }
+
+    public function testStockWhenQuantityEqualsSeuil(): void
+    {
+        $this->stock->setQuantiteActuelle(20);
+        $this->stock->setSeuilAlerte(20);
+        
+        $this->assertTrue($this->stockManager->isEnAlerte($this->stock));
+    }
+}

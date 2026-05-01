@@ -1,0 +1,160 @@
+{% extends 'partials/sidebar_styles.html.twig' %}
+{% block title %}{{ produit.nom }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:18px;display:flex;gap:10px;align-items:center">
+    <a href="{{ path('home') }}" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+    <a href="{{ path('produit_edit', {id: produit.id}) }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-pen"></i> Modifier</a>
+</div>
+
+<div class="card" style="margin-bottom:22px">
+    <div class="show-grid">
+        <!-- Image -->
+        <div class="show-img">
+            {% if produit.photoUrl %}
+                <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}">
+            {% else %}
+                <i class="fa-solid fa-seedling" style="font-size:72px;color:var(--border-mid)"></i>
+            {% endif %}
+        </div>
+        <!-- Détails -->
+        <div>
+            <span class="item-badge" style="font-size:13px;padding:5px 14px">{{ produit.categorie ?: 'Autre' }}</span>
+            <h1 class="show-name">{{ produit.nom }}</h1>
+            {% if produit.description %}<p class="show-desc">{{ produit.description }}</p>{% endif %}
+            <div class="show-price">{{ produit.prixUnitaire }} DT <span style="font-size:15px;font-weight:400;color:var(--text-muted)">/ unité</span></div>
+
+            <!-- STOCK -->
+            {% if stock %}
+            <div class="show-stock-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <strong style="font-size:14px"><i class="fa-solid fa-warehouse"></i> État du stock</strong>
+                    <span class="statut-badge statut-{{ stock.statut|lower }}">{{ stock.statut }}</span>
+                </div>
+                <div class="show-meta">
+                    <div>
+                        <span class="meta-label">Quantité disponible</span>
+                        <span class="meta-value" style="font-size:22px;color:{{ stock.isEnAlerte ? 'var(--red)':'var(--green-ok)' }}">
+                            {{ stock.quantiteActuelle }} {{ stock.uniteMesure }}
+                        </span>
+                    </div>
+                    {% if stock.seuilAlerte %}<div><span class="meta-label">Seuil d'alerte</span><span class="meta-value">{{ stock.seuilAlerte }} {{ stock.uniteMesure }}</span></div>{% endif %}
+                    {% if stock.emplacement %}<div><span class="meta-label">Emplacement</span><span class="meta-value">{{ stock.emplacement }}</span></div>{% endif %}
+                    {% if stock.dateReception %}<div><span class="meta-label">Date réception</span><span class="meta-value">{{ stock.dateReception|date('d/m/Y') }}</span></div>{% endif %}
+                    {% if stock.dateExpiration %}
+                    <div>
+                        <span class="meta-label">Expiration</span>
+                        {% set daysLeft = date().diff(stock.dateExpiration).days %}
+                        <span class="meta-value" style="color:{{ daysLeft <= 7 ? 'var(--red)':(daysLeft <= 30 ? 'var(--orange)':'var(--text)') }}">
+                            {{ stock.dateExpiration|date('d/m/Y') }}
+                            {% if daysLeft <= 30 %} — <strong>{{ daysLeft }}j restants</strong>{% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if stock.seuilAlerte and stock.seuilAlerte > 0 %}
+                {% set pctRaw = (stock.quantiteActuelle / stock.seuilAlerte * 100)|round %}
+                {% set pct = pctRaw < 0 ? 0 : (pctRaw > 100 ? 100 : pctRaw) %}
+                <div style="margin-top:14px">
+                    <div class="progress-bar" style="height:8px">
+                        <div class="progress-fill {{ pct < 50 ? 'fill-danger':(pct < 100 ? 'fill-warning':'fill-ok') }}" style="width:{{ pct }}%"></div>
+                    </div>
+                    <span class="progress-label">{{ pct }}% du seuil d'alerte</span>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div style="background:#fff8e1;border:1.5px solid #ffe082;border-radius:var(--r-md);padding:14px;margin-bottom:16px;color:#f57f17;font-weight:600">
+                <i class="fa-solid fa-triangle-exclamation"></i> Aucun stock enregistré pour ce produit.
+                <a href="{{ path('stock_new') }}" style="color:var(--primary);margin-left:8px;font-weight:700">Ajouter un stock →</a>
+            </div>
+            {% endif %}
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <a href="{{ path('produit_edit', {id: produit.id}) }}" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Modifier</a>
+                {% if stock %}
+                <a href="{{ path('stock_edit', {id: stock.id}) }}" class="btn btn-secondary"><i class="fa-solid fa-warehouse"></i> Modifier le stock</a>
+                {% endif %}
+                <form method="POST" action="{{ path('produit_delete', {id: produit.id}) }}" onsubmit="return confirm('Supprimer ce produit ?')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete'~produit.id) }}">
+                    <button type="submit" class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)"><i class="fa-solid fa-trash"></i> Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card" style="margin-top: 22px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#f3e5f5;color:#9c27b0">
+            <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">📱 Identifiants du produit</h2>
+            <p class="form-card-subtitle">Codes-barres et QR code pour traçabilité</p>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; padding: 20px;">
+        
+      {# templates/produit/show.html.twig #}
+
+<!-- Code-barres -->
+<div class="card" style="margin-top: 20px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#e3f2fd;color:#2196f3">
+            <i class="fa-solid fa-barcode"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">🏷️ Code-barres du produit</h2>
+            <p class="form-card-subtitle">Identifiant unique pour la traçabilité</p>
+        </div>
+    </div>
+    
+    <div style="text-align: center; padding: 20px;">
+        {% if produit.barcodeUrl %}
+            <img src="{{ produit.barcodeUrl }}" alt="Code-barres" style="background: white; padding: 15px; border-radius: 12px;">
+            <p style="margin-top: 10px;">
+                <strong>SKU :</strong> {{ produit.sku }}
+            </p>
+            <a href="{{ produit.barcodeUrl }}" download="codebarres_{{ produit.id }}.png" class="btn btn-sm btn-primary">
+                <i class="fa-solid fa-download"></i> Télécharger
+            </a>
+        {% else %}
+            <p>Aucun code-barres généré</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- RECOMMANDATIONS SIMILAIRES -->
+{% if recommendations is not empty %}
+<div class="card">
+    <div class="section-header">
+        <h2 class="section-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple)"></i> Produits similaires dans votre inventaire</h2>
+        <span style="font-size:12px;color:var(--text-hint);font-style:italic">Suggestions basées sur la catégorie et le prix</span>
+    </div>
+    <div class="reco-grid">
+        {% for item in recommendations %}
+        {% set p = item.produit %}{% set s = item.stock %}
+        <a href="{{ path('produit_show', {id: p.id}) }}" class="reco-card" style="text-decoration:none;display:block">
+            <div class="reco-card-header">
+                <div class="reco-card-img">
+                    {% if p.photoUrl %}<img src="{{ asset(p.photoUrl) }}" alt="{{ p.nom }}">
+                    {% else %}<div class="reco-card-img-ph"><i class="fa-solid fa-leaf"></i></div>{% endif %}
+                </div>
+                <span class="reco-score">{{ item.score }} pts</span>
+            </div>
+            <div class="reco-card-name">{{ p.nom }}</div>
+            <div class="reco-card-cat"><i class="fa-solid fa-tag"></i> {{ p.categorie }}</div>
+            <div class="reco-card-price">{{ p.prixUnitaire }} DT</div>
+            <div class="reco-reason"><i class="fa-solid fa-lightbulb"></i> {{ item.reason }}</div>
+            {% if s %}
+            <div style="margin-top:10px">
+                <span class="statut-badge statut-{{ s.statut|lower }}">{{ s.statut }} — {{ s.quantiteActuelle }} {{ s.uniteMesure }}</span>
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
