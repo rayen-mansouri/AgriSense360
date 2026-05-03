@@ -31,3 +31,7 @@ ia_service/__pycache__/
 ia_service/*.pyc
 /venv/
 ia_service/data/
+
+###> phpstan/phpstan ###
+phpstan.neon
+###< phpstan/phpstan ###
