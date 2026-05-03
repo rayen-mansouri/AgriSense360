@@ -12,8 +12,6 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class RegistrationController extends AbstractController
 {
-    private const ALLOWED_PUBLIC_ROLES = ['ROLE_GERANT', 'ROLE_OUVRIER'];
-
     #[Route('/register', name: 'app_register')]
     public function register(
         Request $request,
@@ -25,20 +23,13 @@ class RegistrationController extends AbstractController
         }
 
         $error = null;
-        $success = null;
 
         if ($request->isMethod('POST')) {
             $name     = trim($request->request->get('name', ''));
             $email    = trim($request->request->get('email', ''));
-            $phone    = trim($request->request->get('phone', ''));
             $password = $request->request->get('password', '');
             $confirm  = $request->request->get('confirm_password', '');
-            $role     = $request->request->get('role', 'ROLE_GERANT');
-
-            // Only allow gerant/ouvrier from public registration
-            if (!in_array($role, self::ALLOWED_PUBLIC_ROLES)) {
-                $role = 'ROLE_GERANT';
-            }
+            $type     = $request->request->get('type', 'worker'); // 'owner' | 'worker'
 
             if (empty($name) || empty($email) || empty($password)) {
                 $error = 'Veuillez remplir tous les champs obligatoires.';
@@ -52,23 +43,35 @@ class RegistrationController extends AbstractController
                 $user = new User();
                 $user->setName($name);
                 $user->setEmail($email);
-                $user->setPhone($phone ?: null);
-                $user->setRoles($role);
-                $user->setStatus('active');
                 $user->setAuthProvider('local');
                 $user->setPassword($passwordHasher->hashPassword($user, $password));
                 $user->setCreatedAt(new \DateTime());
                 $user->setUpdatedAt(new \DateTime());
+                $user->setFirstLogin(true);
 
-                $userRepository->save($user, true);
+                if ($type === 'owner') {
+                    // Owner — active immediately, sets up farm after onboarding
+                    $user->setRoles(['ROLE_OWNER']);
+                    $user->setStatus('active');
+                    $userRepository->save($user, true);
 
-                $success = 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.';
+                    $this->addFlash('success', 'Compte propriétaire créé ! Connectez-vous pour configurer votre profil et votre ferme.');
+                    return $this->redirectToRoute('app_login');
+                } else {
+                    // Worker — pending until they apply to a farm and get approved
+                    // NO CV at registration — it is uploaded when applying to a specific farm
+                    $user->setRoles(['ROLE_PENDING']);
+                    $user->setStatus('pending');
+                    $userRepository->save($user, true);
+
+                    $this->addFlash('success', 'Compte créé ! Connectez-vous, complétez votre profil, puis postulez à une ferme avec votre CV.');
+                    return $this->redirectToRoute('app_login');
+                }
             }
         }
 
         return $this->render('user/register.html.twig', [
-            'error'   => $error,
-            'success' => $success,
+            'error' => $error,
         ]);
     }
 }

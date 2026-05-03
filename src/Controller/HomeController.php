@@ -55,7 +55,7 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('profile_first_login');
         }
 
-        return $this->render('gerant/home.html.twig', [
+        return $this->render('home.html.twig', [
             'user' => $this->getUser()
         ]);
     }
@@ -94,7 +94,11 @@ class HomeController extends AbstractController
     private function redirectBasedOnRole(): Response
     {
         if ($this->isGranted('ROLE_ADMIN')) {
-            return $this->redirectToRoute('admin_home');
+            return $this->redirectToRoute('admin_dashboard');
+        }
+
+        if ($this->isGranted('ROLE_OWNER')) {
+            return $this->redirectToRoute('farm_dashboard');
         }
 
         if ($this->isGranted('ROLE_GERANT')) {
@@ -105,7 +109,7 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('ouvrier_home');
         }
 
-        // fallback (user normal)
-        return $this->redirectToRoute('app_index');
+        // ROLE_PENDING → farm browser to apply
+        return $this->redirectToRoute('ouvrier_farms');
     }
 }

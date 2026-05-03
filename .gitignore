@@ -28,3 +28,4 @@ public/videos/public/videos/
 .env
 .env.local
 .env.*.local
+public/videos/*.mp4

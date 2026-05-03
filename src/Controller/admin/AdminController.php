@@ -81,8 +81,34 @@ class AdminController extends AbstractController
                 $user->setName($name);
                 $user->setEmail($email);
                 $user->setPhone($phone ?: null);
-                $user->setRoles($role);
-                $user->setStatus($status);
+                $cvFile = $request->files->get('cv');
+
+if ($role === 'ROLE_ADMIN') {
+
+    $user->setRoles(['ROLE_ADMIN']);
+    $user->setStatus('approved');
+
+} else {
+
+    if (!$cvFile) {
+        $error = "CV obligatoire";
+    } else {
+
+        $result = $onboardingService->process($user, $cvFile);
+
+        $user->setCvFile($result['filename']);
+        $user->setAiSuggestedRole($result['role']);
+        $user->setDecisionReason($result['reason']);
+
+        $user->setRoles(['ROLE_PENDING']);
+
+        if ($result['decision'] === 'reject') {
+            $user->setStatus('rejected');
+        } else {
+            $user->setStatus('pending');
+        }
+    }
+}
                 $user->setAuthProvider('local');
                 $user->setFirstLogin(true);
                 $user->setPassword($passwordHasher->hashPassword($user, $password));
