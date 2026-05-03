@@ -25,3 +25,6 @@
 ###< symfony/asset-mapper ###
 >>>>>>> master
 public/videos/public/videos/
+.env
+.env.local
+.env.*.local
