@@ -17,8 +17,17 @@ class GerantController extends AbstractController
     #[Route('/ouvriers', name: 'gerant_ouvriers')]
     public function ouvriers(UserRepository $userRepository): Response
     {
-        // Get only ROLE_OUVRIER users
-        $all = $userRepository->findAll();
+        /** @var User $gerant */
+        $gerant = $this->getUser();
+        $farm = $gerant->getFarm();
+
+        if (!$farm) {
+            return $this->render('gerant/ouvriers.html.twig', [
+                'ouvriers' => [],
+            ]);
+        }
+
+        $all = $userRepository->findBy(['farm' => $farm]);
         $ouvriers = array_filter($all, fn($u) => in_array('ROLE_OUVRIER', $u->getRoles()));
 
         return $this->render('gerant/ouvriers.html.twig', [

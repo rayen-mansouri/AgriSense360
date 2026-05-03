@@ -1,647 +1,218 @@
 {% extends 'base.html.twig' %}
 {% set activePage = 'dashboard' %}
 {% set activeSection = 'main' %}
-
-{% block title %}Tableau de bord Gérant — AgriSense 360{% endblock %}
+{% block title %}Tableau de bord — AgriSense 360{% endblock %}
 
 {% block styles %}
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% include 'partials/sidebar_styles.html.twig' %}
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+.main{padding:0;background:var(--pg)}
 
-:root {
-    --green-900: #1a4a2a;
-    --green-700: #1a5c1a;
-    --green-500: #2e7d32;
-    --green-400: #4caf50;
-    --green-100: #e8f5e9;
-    --cream:     #f7f9f4;
-    --white:     #ffffff;
-    --text-dark: #172417;
-    --text-mid:  #3d5c3d;
-    --text-mute: #7a9a7a;
-    --border:    #dde8d8;
-    --sb-width:  280px;
-    --sb-coll:   72px;
-    --radius:    16px;
-    --radius-sm: 10px;
-    --shadow-md: 0 4px 20px rgba(0,0,0,.08);
-    --shadow-lg: 0 12px 40px rgba(0,0,0,.13);
-}
+/* ── HERO ── */
+.dash-hero{position:relative;height:210px;overflow:hidden}
+.dash-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.dash-hero-ov{position:absolute;inset:0;background:linear-gradient(120deg,rgba(8,24,8,.88) 0%,rgba(8,30,8,.55) 100%)}
+.dash-hero-inner{position:absolute;inset:0;display:flex;align-items:center;padding:0 36px;gap:24px}
+.dash-greeting h1{font-size:1.85rem;font-weight:900;color:#fff;margin-bottom:4px}
+.dash-greeting p{font-size:.88rem;color:rgba(255,255,255,.62)}
+.dash-hero-pills{margin-left:auto;display:flex;gap:28px}
+.dh-pill{text-align:center}
+.dh-val{display:block;font-size:1.9rem;font-weight:900;color:#5ab55a}
+.dh-lbl{font-size:.67rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em}
 
-body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background: var(--cream);
-    color: var(--text-dark);
-    min-height: 100vh;
-}
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:22px 28px}
+.kpi-card{background:var(--surface);border:1px solid var(--surface-b);border-radius:14px;padding:18px;display:flex;align-items:center;gap:13px;transition:transform .2s,box-shadow .2s}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:var(--sh-lg)}
+.kpi-ico{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kpi-ico svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ico-green{background:linear-gradient(135deg,#2d6a2d,#5ab55a)}
+.ico-blue{background:linear-gradient(135deg,#1e4080,#3b82f6)}
+.ico-purple{background:linear-gradient(135deg,#5b2c8d,#9b59b6)}
+.ico-amber{background:linear-gradient(135deg,#92400e,#f59e0b)}
+.kpi-val{font-size:1.75rem;font-weight:900;color:var(--h);line-height:1}
+.kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:3px}
 
-body.sidebar-collapsed .sidebar { width: var(--sb-coll); }
-body.sidebar-collapsed .content { margin-left: var(--sb-coll); }
-body.sidebar-collapsed .brand-text,
-body.sidebar-collapsed .nav-label,
-body.sidebar-collapsed .nav-title,
-body.sidebar-collapsed .sidebar-foot { opacity: 0; pointer-events: none; }
-body.sidebar-collapsed .toggle-text { display: none; }
+/* ── SECTIONS ── */
+.dsec{padding:0 28px 24px}
+.dsec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.dsec-title{font-size:.96rem;font-weight:800;color:var(--h)}
+.dsec-link{font-size:.78rem;color:var(--g);text-decoration:none;font-weight:600}
+.dsec-link:hover{text-decoration:underline}
 
-/* ── Ambient leaves ── */
-.ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-.ambient-leaf { position: absolute; color: var(--green-400); opacity: .06; }
-.ambient-leaf svg { width: 100%; height: 100%; }
-.ambient-leaf      { width:180px; height:180px; top:-40px;  left:-50px;  transform:rotate(-20deg); }
-.leaf-2 { width:120px; height:120px; top:60px;  right:-30px; transform:rotate(30deg);  opacity:.04; }
-.leaf-3 { width:200px; height:200px; bottom:-60px; left:30%; transform:rotate(15deg);  opacity:.05; }
-.leaf-4 { width:90px;  height:90px;  top:40%;  right:5%;    transform:rotate(-10deg); opacity:.04; }
-.leaf-5 { width:140px; height:140px; bottom:10%; left:-20px; transform:rotate(40deg);  opacity:.04; }
-.leaf-6 { width:110px; height:110px; top:25%;  left:45%;    transform:rotate(-30deg); opacity:.03; }
-.leaf-7 { width:160px; height:160px; bottom:20%; right:-40px;transform:rotate(20deg);  opacity:.04; }
-.leaf-8 { width:80px;  height:80px;  top:75%;  left:60%;    transform:rotate(-15deg); opacity:.03; }
+/* ── APPLICATION CARDS ── */
+.app-list{display:flex;flex-direction:column;gap:11px}
+.app-card{background:var(--surface);border:1px solid var(--surface-b);border-radius:13px;padding:15px 17px;display:flex;align-items:center;gap:13px}
+.app-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;font-weight:800;font-size:.88rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.app-av img{width:100%;height:100%;object-fit:cover}
+.app-info{flex:1;min-width:0}
+.app-name{font-size:.9rem;font-weight:700;color:var(--h)}
+.app-email{font-size:.73rem;color:var(--muted)}
+.app-meta{display:flex;align-items:center;gap:7px;margin-top:5px;flex-wrap:wrap}
+.ai-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(90,181,90,.12);border:1px solid rgba(90,181,90,.22);color:var(--g);font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:50px}
+.app-acts{display:flex;gap:7px;flex-shrink:0}
+.abt{padding:6px 13px;border-radius:50px;font-size:.76rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.abt-green{background:linear-gradient(135deg,var(--gd),var(--g));color:#fff}
+.abt-green:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(62,142,62,.4)}
+.abt-red{background:rgba(220,50,50,.09);color:#f87171;border:1px solid rgba(220,50,50,.18)}
+.abt-red:hover{background:rgba(220,50,50,.17)}
 
-/* ── Layout ── */
-.page    { display: flex; min-height: 100vh; position: relative; z-index: 1; }
-.content { margin-left: 72px; flex: 1; transition: margin-left .3s; }
-body:not(.sidebar-collapsed) .content { margin-left: var(--sb-width); }
+/* ── TEAM TABLE ── */
+.team-tbl{width:100%;border-collapse:collapse}
+.team-tbl th{text-align:left;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:0 10px 10px}
+.team-tbl td{padding:11px 10px;border-top:1px solid var(--surface-b);font-size:.84rem;color:var(--txt)}
+.team-tbl tr:first-child td{border-top:none}
+.team-tbl td:first-child{padding-left:0}
+.td-nm{display:flex;align-items:center;gap:9px;color:var(--h);font-weight:600}
+.r-pill{display:inline-flex;padding:2px 9px;border-radius:50px;font-size:.68rem;font-weight:700}
+.rp-g{background:rgba(90,181,90,.14);color:var(--g)}
+.rp-b{background:rgba(30,80,200,.14);color:#60a5fa}
+.vbtn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:7px;background:var(--surface2);border:1px solid var(--surface-b);color:var(--txt);font-size:.73rem;font-weight:600;text-decoration:none;transition:all .15s}
+.vbtn:hover{border-color:var(--g);color:var(--g)}
+.vbtn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2}
 
-/* ── Sidebar ── */
-.sidebar {
-    width: var(--sb-width);
-    background: var(--green-900);
-    position: fixed; top: 0; left: 0; bottom: 0;
-    display: flex; flex-direction: column;
-    z-index: 100;
-    transition: width .3s cubic-bezier(.4,0,.2,1);
-    overflow: hidden;
-}
-
-/* Brand */
-.brand {
-    display: flex; align-items: center; gap: 12px;
-    padding: 22px 20px 18px;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-    flex-shrink: 0;
-}
-
-.brand-logo {
-    width: 38px; height: 38px; border-radius: 10px;
-    background: var(--green-400);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; flex-shrink: 0;
-    object-fit: contain;
-}
-
-.brand-logo-emoji {
-    width: 38px; height: 38px; border-radius: 10px;
-    background: var(--green-400);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; flex-shrink: 0;
-}
-
-.brand-text { transition: opacity .2s; }
-.brand-name    { display: block; font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; color: #fff; line-height: 1.2; }
-.brand-tagline { display: block; font-size: .65rem; color: rgba(255,255,255,.38); margin-top: 2px; }
-
-/* Profile mini always visible */
-.profile-mini {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; margin: 8px 10px 4px;
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-    border: 1px solid rgba(255,255,255,.08);
-    transition: background .15s;
-    overflow: hidden; white-space: nowrap;
-}
-.profile-mini:hover  { background: rgba(255,255,255,.07); }
-.profile-mini.active { background: rgba(255,255,255,.1); }
-
-.profile-avatar {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: var(--green-400); color: #fff;
-    font-weight: 800; font-size: .85rem;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; overflow: hidden;
-}
-.profile-avatar img { width:100%; height:100%; object-fit:cover; }
-.profile-name  { font-size: .83rem; font-weight: 700; color: rgba(255,255,255,.88); }
-.profile-role  { font-size: .67rem; color: rgba(255,255,255,.38); margin-top: 1px; }
-.profile-arrow { margin-left: auto; color: rgba(255,255,255,.28); font-size: 1rem; }
-
-/* Nav */
-.managements { flex: 1; overflow-y: auto; padding: 8px 0; }
-.nav-title {
-    padding: 12px 20px 4px;
-    font-size: .62rem; font-weight: 700; letter-spacing: .12em;
-    text-transform: uppercase; color: rgba(255,255,255,.25);
-    transition: opacity .2s;
-}
-.managements ul { list-style: none; padding: 0; }
-.managements ul li { margin: 1px 8px; }
-
-.nav-link {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: var(--radius-sm);
-    color: rgba(255,255,255,.52); text-decoration: none;
-    font-size: .85rem; font-weight: 500;
-    transition: background .15s, color .15s;
-    white-space: nowrap; overflow: hidden;
-}
-.nav-link:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
-.nav-link.active { background: rgba(76,175,80,.25); color: #fff; font-weight: 700; }
-
-.nav-icon {
-    width: 30px; height: 30px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.nav-icon svg { width: 18px; height: 18px; }
-.nav-label { transition: opacity .2s; }
-
-.sidebar-divider { border:none; border-top:1px solid rgba(255,255,255,.07); margin:6px 0; }
-
-.sidebar-foot {
-    padding: 12px 20px 16px;
-    font-size: .72rem; color: rgba(255,255,255,.3);
-    display: flex; align-items: center; gap: 8px;
-    border-top: 1px solid rgba(255,255,255,.07);
-    white-space: nowrap; overflow: hidden;
-    transition: opacity .2s;
-}
-.pulse-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #4caf50; flex-shrink: 0;
-    animation: pulse 2s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-.logout-link {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; margin: 1px 8px;
-    border-radius: var(--radius-sm);
-    color: rgba(255,120,120,.55); text-decoration: none;
-    font-size: .85rem; font-weight: 500;
-    transition: background .15s, color .15s;
-    white-space: nowrap; overflow: hidden;
-}
-.logout-link:hover { background: rgba(200,50,50,.08); color: rgba(255,120,120,.9); }
-
-/* ── Topbar ── */
-.topbar {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 28px 36px 20px;
-    gap: 20px;
-}
-.topbar-left { flex: 1; }
-.topbar-left h1 {
-    font-family: 'Fraunces', serif;
-    font-size: 1.6rem; font-weight: 700;
-    color: var(--text-dark); line-height: 1.3;
-    margin-bottom: 6px;
-}
-.topbar-sub { font-size: .88rem; color: var(--text-mute); }
-
-.topbar-right { display: flex; gap: 20px; }
-.stat { text-align: center; }
-.stat-value { display: block; font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 700; color: var(--green-500); }
-.stat-label { display: block; font-size: .72rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em; }
-
-.sidebar-toggle {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 14px; border-radius: 50px;
-    background: transparent; border: 1.5px solid var(--border);
-    color: var(--text-mid); font-size: .8rem; font-weight: 600;
-    cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: background .15s; margin-bottom: 14px;
-}
-.sidebar-toggle:hover { background: var(--green-100); }
-.toggle-icon { display: block; width: 16px; height: 12px; position: relative; }
-.toggle-icon::before, .toggle-icon::after,
-.toggle-icon span { display:block; height:2px; background:currentColor; border-radius:2px; position:absolute; left:0; right:0; transition:.3s; }
-.toggle-icon::before { content:''; top:0; }
-.toggle-icon::after  { content:''; bottom:0; }
-.toggle-icon span    { top:50%; transform:translateY(-50%); }
-
-/* ── Hero banner ── */
-.hero-banner {
-    margin: 0 36px 28px;
-    background: linear-gradient(135deg, var(--green-700) 0%, var(--green-500) 60%, var(--green-400) 100%);
-    border-radius: var(--radius);
-    padding: 36px 36px 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 0;
-    overflow: hidden;
-    position: relative;
-    min-height: 300px;
-}
-
-.hero-copy { padding-bottom: 36px; }
-.hero-kicker { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 10px; }
-.hero-copy h2 { font-family: 'Fraunces', serif; font-size: 1.9rem; font-weight: 700; color: #fff; line-height: 1.25; margin-bottom: 12px; }
-.hero-lead { font-size: .88rem; color: rgba(255,255,255,.72); line-height: 1.6; margin-bottom: 22px; max-width: 420px; }
-.hero-actions { display: flex; gap: 12px; }
-.hero-actions .primary {
-    padding: 11px 24px; background: #fff; color: var(--green-700);
-    border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700; font-size: .88rem; cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
-}
-.hero-actions .primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.2); }
-.hero-actions .ghost {
-    padding: 11px 24px; background: rgba(255,255,255,.12); color: #fff;
-    border: 1.5px solid rgba(255,255,255,.3); border-radius: 50px;
-    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600;
-    font-size: .88rem; cursor: pointer; transition: background .15s;
-}
-.hero-actions .ghost:hover { background: rgba(255,255,255,.2); }
-
-.hero-visual {
-    position: relative; border-radius: var(--radius) var(--radius) 0 0;
-    overflow: hidden; align-self: end;
-}
-.hero-visual img { width: 100%; height: 220px; object-fit: cover; display: block; border-radius: var(--radius) var(--radius) 0 0; }
-.hero-badge {
-    position: absolute; bottom: 14px; left: 14px;
-    background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
-    color: #fff; padding: 6px 12px; border-radius: 50px;
-    font-size: .76rem;
-}
-.hero-badge strong { display: block; font-size: .88rem; }
-
-.hero-panel {
-    grid-column: 1/-1;
-    display: flex; gap: 0;
-    background: rgba(0,0,0,.25);
-    border-top: 1px solid rgba(255,255,255,.1);
-}
-.panel-item {
-    flex: 1; padding: 16px 20px;
-    border-right: 1px solid rgba(255,255,255,.1);
-    display: flex; flex-direction: column; gap: 4px;
-}
-.panel-item:last-of-type { border-right: none; }
-.panel-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.45); }
-.panel-value { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 700; color: #fff; }
-.panel-chart { flex: 2; padding: 12px 20px; display: flex; flex-direction: column; gap: 4px; }
-.panel-chart svg { width: 100%; }
-.panel-note { font-size: .72rem; color: rgba(255,255,255,.4); }
-
-/* ── Sections ── */
-.section-pad { padding: 0 36px 28px; }
-.section-heading { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
-.section-sub { font-size: .84rem; color: var(--text-mute); margin-bottom: 18px; }
-
-/* Stats strip */
-.stats-strip {
-    margin: 0 36px 28px;
-    background: var(--green-900);
-    border-radius: var(--radius);
-    display: flex;
-}
-.stat-block {
-    flex: 1; padding: 24px 20px; text-align: center;
-    border-right: 1px solid rgba(255,255,255,.07);
-}
-.stat-block:last-child { border-right: none; }
-.stat-number { display: block; font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--green-400); }
-.stat-text   { display: block; font-size: .76rem; color: rgba(255,255,255,.4); margin-top: 4px; }
-
-/* Services grid */
-.services { padding: 0 36px 28px; }
-.services .section-title { margin-bottom: 18px; }
-.services .section-title span { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--green-500); display: block; margin-bottom: 6px; }
-.services .section-title h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.card {
-    background: var(--white); border-radius: var(--radius);
-    overflow: hidden; box-shadow: var(--shadow-md);
-    transition: transform .2s, box-shadow .2s;
-}
-.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.card img { width: 100%; height: 140px; object-fit: cover; display: block; }
-.card h3 { font-size: .92rem; font-weight: 700; padding: 14px 16px 4px; }
-.card p  { font-size: .8rem; color: var(--text-mute); padding: 0 16px 16px; line-height: 1.5; }
-
-/* About band */
-.about-band {
-    margin: 0 36px 28px;
-    display: grid; grid-template-columns: 1fr 300px;
-    gap: 24px; align-items: start;
-}
-.about-band h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
-.about-band > div > p { font-size: .85rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 18px; }
-.about-media img { width: 100%; height: 220px; object-fit: cover; border-radius: var(--radius); }
-
-.climate-card {
-    background: var(--green-100); border-radius: var(--radius-sm);
-    padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center;
-}
-.climate-card h3 { font-size: .88rem; font-weight: 700; margin-bottom: 4px; }
-.climate-card p  { font-size: .78rem; color: var(--text-mute); }
-.climate-graph svg { width: 100%; }
-.climate-stats { display: flex; gap: 14px; margin-top: 8px; }
-.climate-stats .stat-number { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 700; color: var(--green-500); display: block; }
-.climate-stats .stat-text   { font-size: .72rem; color: var(--text-mute); }
-
-/* Footer */
-footer.image-credits {
-    margin: 0 36px 36px;
-    padding-top: 18px; border-top: 1px solid var(--border);
-    font-size: .75rem; color: var(--text-mute);
-}
-.credit-links { display: flex; gap: 12px; margin-top: 6px; }
-.credit-links a { color: var(--green-500); text-decoration: none; }
-.credit-links a:hover { text-decoration: underline; }
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:.85rem}
+.empty svg{width:38px;height:38px;stroke:var(--muted);margin:0 auto 10px;display:block;opacity:.38;fill:none}
 </style>
 {% endblock %}
 
 {% block body %}
-<!-- Ambient leaves -->
-<div class="ambient" aria-hidden="true">
-    <div class="ambient-leaf"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44-6-6-10-10-10-14z" fill="currentColor"/><path d="M20 44c10-12 22-20 30-24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/></svg></div>
-    <div class="ambient-leaf leaf-2"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12c-2 18-14 34-34 42-5-4-8-6-8-8z" fill="currentColor"/></svg></div>
-    <div class="ambient-leaf leaf-3"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44-6-6-10-10-10-14z" fill="currentColor"/></svg></div>
-    <div class="ambient-leaf leaf-4"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12c-2 18-14 34-34 42z" fill="currentColor"/></svg></div>
-    <div class="ambient-leaf leaf-5"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10c-2 18-12 36-34 44z" fill="currentColor"/></svg></div>
-    <div class="ambient-leaf leaf-6"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12z" fill="currentColor"/></svg></div>
-    <div class="ambient-leaf leaf-7"><svg viewBox="0 0 64 64"><path d="M10 40C18 18 38 8 54 10z" fill="currentColor"/></svg></div>
-    <div class="ambient-leaf leaf-8"><svg viewBox="0 0 64 64"><path d="M12 46C18 22 36 10 54 12z" fill="currentColor"/></svg></div>
-</div>
+<div class="layout">
+  {% include 'partials/sidebar.html.twig' %}
 
-<div class="page">
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar" id="sidebar">
-        <div class="brand">
-            <div class="brand-logo-emoji">🌱</div>
-            <div class="brand-text">
-                <span class="brand-name">AgriSense 360</span>
-                <span class="brand-tagline">Smart AI Companion for Farms</span>
-            </div>
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="dash-hero">
+      <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1400&q=80" alt="Vue aérienne agricole">
+      <div class="dash-hero-ov"></div>
+      <div class="dash-hero-inner">
+        <div class="dash-greeting">
+          <h1>Bonjour, {{ user.name }}</h1>
+          <p>Voici l'état de votre exploitation agricole aujourd'hui</p>
         </div>
-
-        <!-- Profile button -->
-        <a href="{{ path('profile_show') }}" class="profile-mini">
-            <div class="profile-avatar">
-                {% if user.profilePicture %}
-                    <img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="Photo">
-                {% else %}
-                    {{ user.name|first|upper }}
-                {% endif %}
-            </div>
-            <div>
-                <div class="profile-name">{{ user.name }}</div>
-                <div class="profile-role">Gérant</div>
-            </div>
-            <span class="profile-arrow">›</span>
-        </a>
-
-        <hr class="sidebar-divider">
-
-        <nav class="managements">
-            <p class="nav-title">Gestions</p>
-            <ul>
-                <li>
-                    <a class="nav-link active" href="{{ path('gerant_home') }}">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                        </span>
-                        <span class="nav-label">Tableau de bord</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="nav-link" href="#">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 15c0 2 3 4 7 4s7-2 7-4"/><path d="M9 11c0-2 1.5-3 3-3s3 1 3 3"/><path d="M8 7c0-1.6 1.8-3 4-3s4 1.4 4 3"/></svg>
-                        </span>
-                        <span class="nav-label">Gestion animaux</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="nav-link" href="#">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 15h16l-2-6H6l-2 6z"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>
-                        </span>
-                        <span class="nav-label">Gestion équipements</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="nav-link" href="#">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4h12v6H6z"/><path d="M5 10h14v8H5z"/></svg>
-                        </span>
-                        <span class="nav-label">Gestion stock</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="nav-link" href="#">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18c4-3 12-3 16 0"/><path d="M7 10c2-2 8-2 10 0"/><path d="M9 6c1.5-1 4.5-1 6 0"/></svg>
-                        </span>
-                        <span class="nav-label">Gestion cultures</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="nav-link" href="#">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 8h10"/><path d="M6 12h12"/><path d="M8 16h8"/></svg>
-                        </span>
-                        <span class="nav-label">Gestion ouvriers</span>
-                    </a>
-                </li>
-                <li>
-                    <a class="nav-link" href="#">
-                        <span class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3"/><path d="M6 20c1.5-3 10.5-3 12 0"/></svg>
-                        </span>
-                        <span class="nav-label">Gestion utilisateurs</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <a href="{{ path('app_logout') }}" class="logout-link">
-            <span class="nav-icon">🚪</span>
-            <span class="nav-label">Déconnexion</span>
-        </a>
-
-        <div class="sidebar-foot">
-            <span class="pulse-dot"></span>
-            <span>Connecté aux données en temps réel</span>
+        <div class="dash-hero-pills">
+          <div class="dh-pill"><span class="dh-val">95%</span><span class="dh-lbl">IA Matching</span></div>
+          <div class="dh-pill"><span class="dh-val">24/7</span><span class="dh-lbl">Surveillance</span></div>
         </div>
-    </aside>
+      </div>
+    </div>
 
-    <!-- ── Main content ── -->
-    <main class="content">
-        <!-- Topbar -->
-        <header class="topbar">
-            <div class="topbar-left">
-                <button class="sidebar-toggle" type="button" id="sidebarToggle">
-                    <span class="toggle-icon"><span></span></span>
-                    <span class="toggle-text">Réduire le menu</span>
-                </button>
-                <h1>AgriSense 360 aide les fermes à croître mieux, plus vite, et plus intelligemment.</h1>
-                <p class="topbar-sub">Votre assistant IA unifie l'élevage, les cultures, les équipements, le stock et les équipes en un seul système.</p>
-            </div>
-            <div class="topbar-right">
-                <div class="stat">
-                    <span class="stat-value">98%</span>
-                    <span class="stat-label">Rendement</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-value">24/7</span>
-                    <span class="stat-label">Surveillance IA</span>
-                </div>
-            </div>
-        </header>
+    <!-- KPI CARDS -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-ico ico-green"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div><div class="kpi-val">{{ farms_count ?? 0 }}</div><div class="kpi-lbl">Fermes gérées</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-ico ico-blue"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div><div class="kpi-val">{{ pending_count ?? 0 }}</div><div class="kpi-lbl">Candidatures en attente</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-ico ico-purple"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div><div class="kpi-val">{{ team_count ?? 0 }}</div><div class="kpi-lbl">Équipe approuvée</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-ico ico-amber"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+        <div><div class="kpi-val">{{ posts_count ?? 0 }}</div><div class="kpi-lbl">Postes ouverts</div></div>
+      </div>
+    </div>
 
-        <!-- Hero banner -->
-        <section class="hero-banner">
-            <div class="hero-copy">
-                <p class="hero-kicker">Des fermes prêtes pour l'avenir</p>
-                <h2>Transformez chaque signal terrain en décision confiante.</h2>
-                <p class="hero-lead">AgriSense 360 surveille votre ferme en temps réel, détecte les risques tôt et guide vos équipes avec une vue unifiée et claire des opérations.</p>
-                <div class="hero-actions">
-                    <button class="primary">Explorer la plateforme</button>
-                    <button class="ghost">Voir comment ça marche</button>
-                </div>
+    <!-- CANDIDATURES EN ATTENTE -->
+    <section class="dsec">
+      <div class="dsec-head">
+        <span class="dsec-title">Candidatures en attente</span>
+        <a href="{{ path('gerant_ouvriers') }}" class="dsec-link">Voir toutes →</a>
+      </div>
+      {% if pending_applications is defined and pending_applications|length > 0 %}
+      <div class="app-list">
+        {% for ouvrier in pending_applications|slice(0,4) %}
+        <div class="app-card">
+          <div class="app-av">
+            {% set pic = ouvrier.profilePicture %}
+            {% if pic %}
+              {% if pic starts with 'http' %}<img src="{{ pic }}" alt="{{ ouvrier.name }}">
+              {% else %}<img src="{{ asset('uploads/profiles/' ~ pic) }}" alt="{{ ouvrier.name }}">
+              {% endif %}
+            {% else %}{{ ouvrier.name|first|upper }}{% endif %}
+          </div>
+          <div class="app-info">
+            <div class="app-name">{{ ouvrier.name }}</div>
+            <div class="app-email">{{ ouvrier.email }}</div>
+            <div class="app-meta">
+              <span class="ai-tag"><svg viewBox="0 0 12 12" style="width:9px;height:9px;fill:currentColor"><circle cx="6" cy="6" r="5"/></svg>Suggestion IA en cours</span>
             </div>
-            <div class="hero-visual">
-                <img src="https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80" alt="Terres agricoles au lever du soleil" loading="lazy">
-                <div class="hero-badge">
-                    <span>Prévision IA</span>
-                    <strong>Risque faible aujourd'hui</strong>
-                </div>
-            </div>
-            <div class="hero-panel">
-                <div class="panel-item">
-                    <span class="panel-label">Santé des champs</span>
-                    <span class="panel-value">92%</span>
-                </div>
-                <div class="panel-item">
-                    <span class="panel-label">Capteurs actifs</span>
-                    <span class="panel-value">148</span>
-                </div>
-                <div class="panel-item">
-                    <span class="panel-label">Tâches ouvriers</span>
-                    <span class="panel-value">36</span>
-                </div>
-                <div class="panel-chart">
-                    <span class="panel-label">Indice de stress climatique</span>
-                    <svg viewBox="0 0 120 40" aria-hidden="true">
-                        <path d="M2 30 L20 26 L38 28 L56 20 L74 18 L92 10 L118 12" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
-                        <path d="M2 30 L20 26 L38 28 L56 20 L74 18 L92 10 L118 12 L118 38 L2 38 Z" fill="rgba(255,255,255,0.08)"/>
-                        <circle cx="92" cy="10" r="3" fill="#ffffff"/>
-                    </svg>
-                    <span class="panel-note">Tendance à la hausse cette semaine</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Stats strip -->
-        <div class="stats-strip">
-            <div class="stat-block">
-                <span class="stat-number">16%</span>
-                <span class="stat-text">Réduction des intrants</span>
-            </div>
-            <div class="stat-block">
-                <span class="stat-number">4,8x</span>
-                <span class="stat-text">Réponse aux incidents</span>
-            </div>
-            <div class="stat-block">
-                <span class="stat-number">37%</span>
-                <span class="stat-text">Tâches complétées</span>
-            </div>
+          </div>
+          <div class="app-acts">
+            <a href="{{ path('gerant_ouvrier_show', {id: ouvrier.id}) }}" class="abt abt-green">Voir le profil</a>
+            <button class="abt abt-red">Refuser</button>
+          </div>
         </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Aucune candidature en attente pour le moment
+      </div>
+      {% endif %}
+    </section>
 
-        <!-- Services -->
-        <section class="services">
-            <div class="section-title">
-                <span>Ce que nous gérons</span>
-                <h2>Chaque département dans un seul centre de contrôle.</h2>
-            </div>
-            <div class="grid">
-                <article class="card">
-                    <img src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=700&q=80" alt="Troupeau de bovins" loading="lazy">
-                    <h3>Gestion des animaux</h3>
-                    <p>Surveillez la santé, les calendriers d'alimentation et la productivité avec des alertes prédictives.</p>
-                </article>
-                <article class="card">
-                    <img src="https://images.unsplash.com/photo-1611735341450-74d61e660ad2?auto=format&fit=crop&w=700&q=80" alt="Équipements agricoles" loading="lazy">
-                    <h3>Gestion des équipements</h3>
-                    <p>Suivez les cycles de maintenance, l'utilisation et l'état de chaque machine.</p>
-                </article>
-                <article class="card">
-                    <img src="https://images.unsplash.com/photo-1472141521881-95d0e87e2e39?auto=format&fit=crop&w=700&q=80" alt="Stockage de grains" loading="lazy">
-                    <h3>Gestion du stock</h3>
-                    <p>Contrôlez les inventaires, anticipez la demande et réduisez le gaspillage.</p>
-                </article>
-                <article class="card">
-                    <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=700&q=80" alt="Champs de cultures" loading="lazy">
-                    <h3>Gestion des cultures</h3>
-                    <p>Planifiez les cycles avec des données sur les sols, le climat et la modélisation de rendement.</p>
-                </article>
-                <article class="card">
-                    <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=700&q=80" alt="Ouvriers dans les champs" loading="lazy">
-                    <h3>Gestion des ouvriers</h3>
-                    <p>Coordonnez les tâches, la planification et l'exécution terrain en temps réel.</p>
-                </article>
-            </div>
-        </section>
+    <!-- ÉQUIPE APPROUVÉE -->
+    <section class="dsec">
+      <div class="dsec-head">
+        <span class="dsec-title">Équipe approuvée</span>
+        <a href="{{ path('gerant_ouvriers') }}" class="dsec-link">Voir toute l'équipe →</a>
+      </div>
+      {% if approved_team is defined and approved_team|length > 0 %}
+      <table class="team-tbl">
+        <thead><tr>
+          <th>Nom</th><th>Rôle</th><th>Statut</th><th>Membre depuis</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for member in approved_team|slice(0,6) %}
+        <tr>
+          <td><div class="td-nm">
+            <div class="app-av" style="width:30px;height:30px;font-size:.75rem;flex-shrink:0">{{ member.name|first|upper }}</div>
+            {{ member.name }}
+          </div></td>
+          <td>
+            {% if 'ROLE_OUVRIER' in member.roles %}<span class="r-pill rp-g">Ouvrier</span>
+            {% elseif 'ROLE_GERANT' in member.roles %}<span class="r-pill rp-b">Gérant</span>
+            {% else %}<span class="r-pill rp-g">Membre</span>{% endif %}
+          </td>
+          <td><span class="r-pill rp-g">Actif</span></td>
+          <td>{{ member.createdAt ? member.createdAt|date('d/m/Y') : '—' }}</td>
+          <td>
+            <a href="{{ path('gerant_ouvrier_show', {id: member.id}) }}" class="vbtn">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Voir
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Aucun membre dans l'équipe pour le moment
+      </div>
+      {% endif %}
+    </section>
 
-        <!-- About band -->
-        <div class="about-band">
-            <div>
-                <h2>Conçu pour les fermes modernes et les équipes agro-industrielles.</h2>
-                <p>Nous combinons l'assistance IA, les données terrain et les flux de travail des équipes en un seul système d'exploitation. De la santé animale à la précision du stock, tout reste connecté, responsable et mesurable.</p>
-                <div class="climate-card">
-                    <div>
-                        <h3>Impact climatique sur le rendement</h3>
-                        <p>Surveiller la chaleur, l'humidité et les précipitations aide à protéger les cultures avant que le stress ne devienne une perte.</p>
-                    </div>
-                    <div class="climate-graph">
-                        <svg viewBox="0 0 220 120">
-                            <rect x="0" y="0" width="220" height="120" rx="16" fill="rgba(255,255,255,0.4)"/>
-                            <path d="M20 90 L60 70 L100 78 L140 52 L180 60" fill="none" stroke="rgba(32,176,160,0.9)" stroke-width="4" stroke-linecap="round"/>
-                            <circle cx="60" cy="70" r="5" fill="#20b0a0"/>
-                            <circle cx="140" cy="52" r="5" fill="#20b0a0"/>
-                            <text x="20" y="108" fill="rgba(23,35,24,0.6)" font-size="10">2019</text>
-                            <text x="176" y="108" fill="rgba(23,35,24,0.6)" font-size="10">2025</text>
-                        </svg>
-                        <div class="climate-stats">
-                            <div><span class="stat-number">+1,7°C</span><span class="stat-text">Hausse moy. température</span></div>
-                            <div><span class="stat-number">-12%</span><span class="stat-text">Risque rendement</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=600&q=80" alt="Champ de riz" style="width:100%; height:220px; object-fit:cover; border-radius:16px;">
-                <div style="background:var(--green-900); border-radius:var(--radius-sm); padding:18px; margin-top:14px; color:#fff;">
-                    <h3 style="font-family:'Fraunces',serif; font-size:.95rem; margin-bottom:6px;">Notre mission</h3>
-                    <p style="font-size:.8rem; color:rgba(255,255,255,.5); line-height:1.6;">Aider les agriculteurs à libérer une croissance durable grâce à une intelligence précise et exploitable sur l'ensemble du cycle agricole.</p>
-                </div>
-            </div>
-        </div>
-
-        <footer class="image-credits">
-            <p>AgriSense 360 — Tableau de bord Gérant · {{ user.name }}</p>
-        </footer>
-    </main>
+  </main>
 </div>
 
 <script>
-(function() {
-    const sidebar = document.getElementById('sidebar');
-    const btn     = document.getElementById('sidebarToggle');
-    const body    = document.body;
-    const key     = 'gerant_sidebar_collapsed';
-
-    if (localStorage.getItem(key) !== '0') { body.classList.add('sidebar-collapsed'); }
-
-    btn.addEventListener('click', function() {
-        const collapsed = body.classList.toggle('sidebar-collapsed');
-        localStorage.setItem(key, collapsed ? '1' : '0');
-        btn.querySelector('.toggle-text').textContent = collapsed ? 'Développer le menu' : 'Réduire le menu';
-    });
+(function(){
+  var key='gerant_sidebar_collapsed';
+  if(localStorage.getItem(key)!=='0') document.body.classList.add('sidebar-collapsed');
+  window._sbToggle=function(){
+    var c=document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem(key,c?'1':'0');
+  };
 })();
 </script>
 {% endblock %}

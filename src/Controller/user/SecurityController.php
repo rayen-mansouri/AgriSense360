@@ -35,16 +35,12 @@ class SecurityController extends AbstractController
     {
         $roles = $user->getRoles();
 
-        if (in_array('ROLE_ADMIN', $roles)) {
-            return $this->redirectToRoute('admin_home');
-        }
-        if (in_array('ROLE_GERANT', $roles)) {
-            return $this->redirectToRoute('gerant_home');
-        }
-        if (in_array('ROLE_OUVRIER', $roles)) {
-            return $this->redirectToRoute('ouvrier_home');
-        }
+        if (in_array('ROLE_ADMIN', $roles))   return $this->redirectToRoute('admin_dashboard');
+        if (in_array('ROLE_OWNER', $roles))   return $this->redirectToRoute('farm_dashboard');
+        if (in_array('ROLE_GERANT', $roles))  return $this->redirectToRoute('gerant_home');
+        if (in_array('ROLE_OUVRIER', $roles)) return $this->redirectToRoute('ouvrier_home');
 
-        return $this->redirectToRoute('app_index');
+        // ROLE_PENDING → farm browser
+        return $this->redirectToRoute('ouvrier_farms');
     }
 }

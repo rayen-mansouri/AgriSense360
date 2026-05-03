@@ -17,10 +17,21 @@
 </style>
 {% endblock %}
 {% block body %}
-<div class="layout">
-    {% include 'partials/sidebar.html.twig' %}
-    <main class="main">
-        <div class="breadcrumb"><span>Mon compte</span><span>›</span><span>Mes rapports</span></div>
+{% include 'partials/sidebar.html.twig' %}
+<main class="main" id="mainContent">
+    <header class="topbar">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <span></span><span></span><span></span>
+        </button>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <button class="theme-toggle" id="themeToggle" aria-label="Thème">
+                <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+            </button>
+        </div>
+    </header>
+    <div class="breadcrumb"><span>Mon compte</span><span>›</span><span>Mes rapports</span></div>
+    <div class="content-wrapper">
         <div class="card">
             <div class="card-head"><span class="card-title">📊 Mes rapports</span><span class="badge badge-green">5 rapports</span></div>
             <div class="card-body">
@@ -56,6 +67,28 @@
                 </div>
             </div>
         </div>
-    </main>
-</div>
+    </div>
+</main>
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth <= 768) { sidebar.classList.toggle('open'); }
+            else { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded'); }
+        });
+    }
+    const html = document.documentElement;
+    const saved = localStorage.getItem('agri-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+</script>
 {% endblock %}
