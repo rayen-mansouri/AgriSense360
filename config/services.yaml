@@ -1,26 +1,33 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
 parameters:
 
 services:
+    # default configuration for services in *this* file
     _defaults:
         autowire: true
         autoconfigure: true
 
+    # makes classes in src/ available to be used as services
     App\:
         resource: '../src/'
-        exclude:
-            - '../src/DependencyInjection/'
-            - '../src/Entity/'
-            - '../src/Kernel.php'
 
+    # ── Bind Google OAuth credentials to GoogleAuthController ──────────────
+    App\Controller\user\GoogleAuthController:
+        arguments:
+            $googleClientId:     '%env(GOOGLE_CLIENT_ID)%'
+            $googleClientSecret: '%env(GOOGLE_CLIENT_SECRET)%'
+
+    # ── Bind MailService parameters ──────────────────────────────────────
     App\Service\MailService:
         arguments:
             $fromEmail: '%env(MAIL_FROM)%'
-            $toEmail:   '%env(MAIL_TO)%'
+            $toEmail: '%env(MAIL_TO)%'
 
+    # ── Bind WeatherService parameters ──────────────────────────────────
     App\Service\WeatherService:
         arguments:
-            $apiKey: '%env(OPENWEATHER_API_KEY)%'  
-
-    App\Service\HarvestIaService:
-        arguments:
-            $flaskUrl: '%env(FLASK_IA_URL)%'      
+            $apiKey: '%env(OPENWEATHER_API_KEY)%'

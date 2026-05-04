@@ -1,0 +1,461 @@
+{% extends 'base.html.twig' %}
+{% block title %}AgriSense 360 — Gestion Agricole Intelligente{% endblock %}
+
+{% block navbar %}
+<nav class="home-nav" id="homeNav">
+  <div class="home-nav__inner">
+    <a class="home-nav__logo" href="#hero">
+      <img src="{{ asset('images/logo.png') }}" alt="Logo AgriSense 360" class="home-nav__logo-img">
+      <span>AgriSense <strong>360</strong></span>
+    </a>
+    <ul class="home-nav__links">
+      {% if is_granted('ROLE_GERANT') %}
+        <li><a href="{{ path('gerant_home') }}">Accueil</a></li>
+        <li><a href="{{ path('gerant_ouvriers') }}">Travailleurs</a></li>
+        <li><a href="#">Cultures</a></li>
+        <li><a href="#">Stockés</a></li>
+        <li><a href="#">Équipements</a></li>
+        <li><a href="#">Affectations</a></li>
+        <li><a href="#">Animaux</a></li>
+      {% else %}
+        <li><a href="#hero">Accueil</a></li>
+        <li><a href="#features">À propos</a></li>
+        <li><a href="#how">Comment ça marche</a></li>
+        <li><a href="#who">Pour qui</a></li>
+        <li><a href="#contact">Contact</a></li>
+      {% endif %}
+    </ul>
+    <div class="home-nav__right">
+      <button class="nav-theme-btn" id="themeToggle" aria-label="Thème">
+        <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      </button>
+      <div class="home-nav__actions">
+        {% if app.user %}
+          {% if is_granted('ROLE_GERANT') %}
+            <div class="gerant-profile-wrapper" style="position:relative;">
+                <div class="gerant-profile" style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('gerant-dropdown').classList.toggle('show')">
+                    <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:var(--g);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;">
+                        {% if app.user.profilePicture %}
+                            <img src="{{ asset('uploads/profiles/' ~ app.user.profilePicture) }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">
+                        {% else %}
+                            {{ app.user.name|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-size:0.85rem; font-weight:700; color:var(--ch3); line-height:1.2;">{{ app.user.name }}</span>
+                        <span style="font-size:0.7rem; color:var(--cp);">Gérant</span>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div id="gerant-dropdown" class="profile-dropdown" style="display:none; position:absolute; right:0; top:45px; background:var(--ns); border:1px solid var(--cbr); border-radius:12px; padding:8px; min-width:150px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                    <a href="{{ path('profile_show') }}" style="display:block; padding:8px 12px; color:var(--ch3); text-decoration:none; font-size:0.85rem; border-radius:6px; margin-bottom:4px;">Mon Profil</a>
+                    <a href="{{ path('app_logout') }}" style="display:block; padding:8px 12px; color:#f87171; text-decoration:none; font-size:0.85rem; border-radius:6px;">Déconnexion</a>
+                </div>
+            </div>
+          {% else %}
+            <a href="{{ path('app_logout') }}" class="hn-btn hn-btn--outline">Déconnexion</a>
+          {% endif %}
+        {% else %}
+          <a href="{{ path('app_login') }}" class="hn-btn hn-btn--outline">Se connecter</a>
+          <a href="{{ path('app_register') }}" class="hn-btn hn-btn--solid">S'inscrire</a>
+        {% endif %}
+      </div>
+      <button class="home-nav__burger" id="navBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{% block styles %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --pg:#0a0f0a;--pc:#e8f5e4;
+  --s1:#0d1a0d;--s2:#0a0f0a;
+  --cb:rgba(255,255,255,.04);--cbr:rgba(255,255,255,.08);
+  --ch3:#fff;--cp:rgba(232,245,228,.55);
+  --ns:rgba(10,18,10,.92);--nl:rgba(255,255,255,.75);
+  --sh3:#fff;--sp:rgba(232,245,228,.5);
+  --wh3:#fff;--wp:rgba(232,245,228,.6);--wl:rgba(232,245,228,.75);
+  --fi:rgba(255,255,255,.05);--fb:rgba(255,255,255,.1);--fc:#fff;--fp:rgba(255,255,255,.3);
+  --ftbg:#060d06;--ftc:rgba(255,255,255,.3);
+  --g:#5ab55a;--gm:#3e8e3e;--gd:#2d6a2d;
+  --sbar:linear-gradient(135deg,#1a3a1a,#0d2a0d);
+  --nbtn-bg:rgba(255,255,255,.08);--nbtn-border:rgba(255,255,255,.12);--nbtn-c:rgba(255,255,255,.65);
+}
+[data-theme="light"]{
+  --pg:#f0f7ee;--pc:#1a3a1a;
+  --s1:#e8f5e4;--s2:#f0f7ee;
+  --cb:rgba(255,255,255,.85);--cbr:rgba(0,0,0,.07);
+  --ch3:#1a3a1a;--cp:#4a6741;
+  --ns:rgba(240,247,238,.93);--nl:rgba(26,58,26,.72);
+  --sh3:#1a3a1a;--sp:#4a6741;
+  --wh3:#1a3a1a;--wp:#4a6741;--wl:#3a5e3a;
+  --fi:rgba(255,255,255,.8);--fb:rgba(0,0,0,.09);--fc:#1a3a1a;--fp:rgba(26,58,26,.35);
+  --ftbg:#dff0db;--ftc:rgba(26,58,26,.45);
+  --g:#3e8e3e;--gm:#3e8e3e;--gd:#2d6a2d;
+  --sbar:linear-gradient(135deg,#2d6a2d,#3e8e3e);
+  --nbtn-bg:rgba(0,0,0,.06);--nbtn-border:rgba(0,0,0,.1);--nbtn-c:rgba(26,58,26,.6);
+}
+body{font-family:'Inter',sans-serif;background:var(--pg);color:var(--pc);overflow-x:hidden;transition:background .3s,color .3s}
+
+/* ── NAV ── */
+.home-nav{position:fixed;top:0;left:0;width:100%;z-index:1000;transition:background .35s,box-shadow .35s;padding:0}
+.home-nav.scrolled{background:var(--ns);backdrop-filter:blur(14px);box-shadow:0 2px 24px rgba(0,0,0,.3)}
+.home-nav__inner{max-width:1280px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;gap:24px}
+.home-nav__logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff;font-size:1.3rem;font-weight:700;flex-shrink:0}
+[data-theme="light"] .home-nav__logo{color:#1a3a1a}
+.home-nav__logo-img{height:36px;width:36px;object-fit:contain;border-radius:8px}
+.home-nav__logo strong{color:var(--g)}
+.home-nav__links{display:flex;list-style:none;gap:4px;margin:0 auto}
+.home-nav__links a{text-decoration:none;color:var(--nl);font-size:.88rem;font-weight:500;padding:7px 13px;border-radius:8px;transition:color .2s,background .2s}
+.home-nav__links a:hover{color:var(--g);background:rgba(90,181,90,.1)}
+.home-nav__right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.home-nav__actions{display:flex;gap:10px}
+.hn-btn{padding:9px 20px;border-radius:50px;text-decoration:none;font-weight:600;font-size:.86rem;transition:all .22s}
+.hn-btn--outline{border:1.5px solid rgba(90,181,90,.6);color:var(--g)}
+.hn-btn--outline:hover{background:rgba(90,181,90,.1)}
+.hn-btn--solid{background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;border:none}
+.hn-btn--solid:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(62,142,62,.4)}
+.home-nav__burger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:4px}
+.home-nav__burger span{display:block;width:24px;height:2px;background:var(--pc);border-radius:2px;transition:.3s}
+.nav-theme-btn{background:var(--nbtn-bg);border:1px solid var(--nbtn-border);border-radius:8px;padding:8px;cursor:pointer;color:var(--nbtn-c);display:flex;align-items:center;transition:all .2s}
+.nav-theme-btn:hover{opacity:.8}
+.nav-theme-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+[data-theme="dark"] .icon-moon{display:none}
+[data-theme="light"] .icon-sun{display:none}
+
+/* ── HERO ── */
+#hero{position:relative;width:100%;height:100vh;overflow:hidden}
+#hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(160deg,rgba(0,0,0,.65) 0%,rgba(10,40,10,.5) 100%);z-index:2}
+.hero-content{position:relative;z-index:3;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 10% 80px;max-width:1280px;margin:0 auto}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(90,181,90,.18);border:1px solid rgba(90,181,90,.4);color:#5ab55a;font-size:.78rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:50px;margin-bottom:28px}
+.hero-badge::before{content:'';width:6px;height:6px;background:#5ab55a;border-radius:50%;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero-content h1{font-size:clamp(2.4rem,5.5vw,4.2rem);font-weight:900;line-height:1.12;color:#fff;margin-bottom:22px}
+.hero-content h1 span{background:linear-gradient(90deg,#5ab55a,#a8e6a3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-content p{font-size:1.1rem;color:rgba(255,255,255,.75);max-width:540px;line-height:1.7;margin-bottom:38px}
+.hero-btns{display:flex;gap:16px;flex-wrap:wrap}
+.hero-btns a{padding:14px 32px;border-radius:50px;font-weight:700;font-size:.95rem;text-decoration:none;transition:all .25s}
+.hero-btn-primary{background:linear-gradient(135deg,#3e8e3e,#5ab55a);color:#fff;box-shadow:0 8px 30px rgba(62,142,62,.4)}
+.hero-btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(62,142,62,.55)}
+.hero-btn-secondary{border:1.5px solid rgba(255,255,255,.4);color:#fff;backdrop-filter:blur(6px)}
+.hero-btn-secondary:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.7)}
+.hero-scroll{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,255,255,.5);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
+.scroll-dot{width:2px;height:36px;background:linear-gradient(to bottom,rgba(255,255,255,.6),transparent);border-radius:2px;animation:scrollDown 1.6s infinite}
+@keyframes scrollDown{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ── SECTIONS ── */
+.home-section{padding:100px 32px;max-width:1280px;margin:0 auto}
+.section-label{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--g);margin-bottom:14px}
+.section-title{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;color:var(--ch3);line-height:1.2;margin-bottom:18px}
+.section-sub{font-size:1rem;color:var(--cp);max-width:600px;line-height:1.75}
+.text-center{text-align:center}
+.text-center .section-sub{margin:0 auto}
+
+/* ── FEATURES SECTION ── */
+#features{background:linear-gradient(180deg,var(--pg) 0%,var(--s1) 100%)}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:60px}
+.feat-card{background:var(--cb);border:1px solid var(--cbr);border-radius:20px;padding:32px 28px;transition:transform .3s,border-color .3s,box-shadow .3s}
+.feat-card:hover{transform:translateY(-6px);border-color:rgba(90,181,90,.3);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.feat-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--gd),var(--gm));display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.feat-icon svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.feat-card h3{font-size:1.05rem;font-weight:700;color:var(--ch3);margin-bottom:10px}
+.feat-card p{font-size:.88rem;color:var(--cp);line-height:1.7}
+
+/* ── HOW IT WORKS ── */
+#how{background:var(--s1)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0;margin-top:60px;position:relative}
+.steps::before{content:'';position:absolute;top:36px;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,rgba(90,181,90,.4),transparent);z-index:0}
+.step{text-align:center;padding:0 16px;position:relative;z-index:1}
+.step-num{width:72px;height:72px;margin:0 auto 20px;border-radius:50%;background:linear-gradient(135deg,var(--gd),var(--gm));display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(62,142,62,.15)}
+.step-num svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.step h3{font-size:.92rem;font-weight:700;color:var(--sh3);margin-bottom:8px}
+.step p{font-size:.8rem;color:var(--sp);line-height:1.6}
+
+/* ── WHO SECTION ── */
+#who{background:linear-gradient(180deg,var(--s1) 0%,var(--pg) 100%)}
+.who-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:60px}
+.who-card{border-radius:24px;padding:44px 40px;position:relative;overflow:hidden;transition:transform .3s}
+.who-card:hover{transform:translateY(-4px)}
+.who-card--owner{background:linear-gradient(135deg,rgba(62,142,62,.2),rgba(45,106,45,.15));border:1px solid rgba(90,181,90,.25)}
+.who-card--worker{background:linear-gradient(135deg,rgba(20,60,80,.3),rgba(10,30,60,.2));border:1px solid rgba(100,170,220,.2)}
+.who-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;background:rgba(255,255,255,.08)}
+.who-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.who-card h3{font-size:1.4rem;font-weight:800;color:var(--wh3);margin-bottom:14px}
+.who-card p{color:var(--wp);margin-bottom:24px;line-height:1.7}
+.who-list{list-style:none;margin-bottom:32px}
+.who-list li{padding:8px 0;color:var(--wl);font-size:.9rem;display:flex;align-items:center;gap:10px}
+.who-list li::before{content:'';width:6px;height:6px;background:var(--g);border-radius:50%;flex-shrink:0}
+.who-btn{display:inline-block;padding:12px 28px;border-radius:50px;font-weight:700;font-size:.9rem;text-decoration:none;transition:all .25s}
+.who-btn--green{background:linear-gradient(135deg,var(--gd),var(--g));color:#fff}
+.who-btn--green:hover{box-shadow:0 8px 28px rgba(62,142,62,.45);transform:translateY(-2px)}
+.who-btn--blue{background:linear-gradient(135deg,#1e5080,#2d7ab5);color:#fff}
+.who-btn--blue:hover{box-shadow:0 8px 28px rgba(45,122,181,.45);transform:translateY(-2px)}
+
+/* ── STATS ── */
+.stats-bar{background:var(--sbar);padding:60px 32px;border-top:1px solid rgba(90,181,90,.15);border-bottom:1px solid rgba(90,181,90,.15)}
+.stats-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+.stat-item h3{font-size:2.6rem;font-weight:900;background:linear-gradient(90deg,#5ab55a,#a8e6a3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-item p{font-size:.85rem;color:rgba(255,255,255,.6);margin-top:6px;letter-spacing:.04em}
+
+/* ── CONTACT ── */
+#contact{background:var(--s1)}
+.contact-wrap{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:60px;align-items:start}
+.contact-info h3{font-size:1.6rem;font-weight:700;color:var(--ch3);margin-bottom:16px}
+.contact-info p{color:var(--cp);line-height:1.8;margin-bottom:28px}
+.contact-detail{display:flex;align-items:center;gap:12px;color:var(--cp);font-size:.9rem;margin-bottom:14px}
+.contact-detail svg{width:16px;height:16px;stroke:var(--g);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.contact-form{display:flex;flex-direction:column;gap:16px}
+.contact-form input,.contact-form textarea{background:var(--fi);border:1px solid var(--fb);border-radius:12px;padding:14px 18px;color:var(--fc);font-size:.9rem;font-family:inherit;transition:border-color .2s}
+.contact-form input::placeholder,.contact-form textarea::placeholder{color:var(--fp)}
+.contact-form input:focus,.contact-form textarea:focus{outline:none;border-color:rgba(90,181,90,.5);background:rgba(90,181,90,.06)}
+.contact-form textarea{min-height:130px;resize:vertical}
+.contact-form button{padding:14px;background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;font-weight:700;font-size:.95rem;border:none;border-radius:50px;cursor:pointer;transition:all .25s;font-family:inherit}
+.contact-form button:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(62,142,62,.45)}
+
+/* ── FOOTER ── */
+footer{background:var(--ftbg);border-top:1px solid rgba(255,255,255,.06);padding:40px 32px;text-align:center;color:var(--ftc);font-size:.82rem}
+footer a{color:var(--g);text-decoration:none;opacity:.8}
+footer a:hover{opacity:1}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .who-grid{grid-template-columns:1fr}
+  .contact-wrap{grid-template-columns:1fr}
+  .stats-inner{grid-template-columns:repeat(2,1fr);gap:32px}
+}
+@media(max-width:700px){
+  .home-nav__links{display:none}
+  .home-nav__links.open{display:flex;flex-direction:column;position:absolute;top:70px;left:0;width:100%;background:var(--ns);backdrop-filter:blur(14px);padding:20px 24px;gap:4px}
+  .home-nav__burger{display:flex}
+  .steps{grid-template-columns:1fr 1fr}
+  .steps::before{display:none}
+  .hero-content{padding:0 6% 80px}
+}
+[data-theme="light"] .home-nav__right .home-nav__actions .hn-btn--outline{border-color:rgba(62,142,62,.6)}
+[data-theme="light"] .contact-info h3{color:var(--ch3)}
+.profile-dropdown.show { display:block !important; }
+.profile-dropdown a:hover { background:var(--cb); }
+[data-theme="light"] .gerant-profile span { color: var(--ch3); }
+[data-theme="light"] .gerant-profile span:last-child { color: var(--cp); }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+<section id="hero">
+  <video autoplay muted loop playsinline poster="{{ asset('images/logo.png') }}">
+    <source src="{{ asset('videos/farm.mp4') }}" type="video/mp4">
+  </video>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Agriculture Intelligente</div>
+    <h1>Gérez votre ferme<br>avec <span>l'Intelligence<br>Artificielle</span></h1>
+    <p>AgriSense 360 connecte propriétaires agricoles et ouvriers qualifiés grâce à une plateforme IA puissante et simple d'utilisation.</p>
+    <div class="hero-btns">
+      {% if not app.user %}
+        <a href="{{ path('app_register') }}" class="hero-btn-primary">Commencer gratuitement</a>
+        <a href="#how" class="hero-btn-secondary">Comment ça marche →</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-dot"></div>
+    Défiler
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FEATURES ═══════════════════════════ -->
+<section id="features">
+  <div class="home-section">
+    <p class="section-label text-center">Pourquoi nous choisir</p>
+    <h2 class="section-title text-center">Tout ce dont votre exploitation<br>a besoin</h2>
+    <p class="section-sub text-center">Une plateforme complète conçue pour moderniser l'agriculture et connecter les talents.</p>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/><circle cx="18" cy="6" r="3"/></svg></div>
+        <h3>Matching IA</h3>
+        <p>Notre IA analyse les profils et propose les meilleurs ouvriers pour chaque exploitation.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+        <h3>Recrutement Simplifié</h3>
+        <p>Publiez, recevez les candidatures et comparez les profils en quelques clics.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <h3>Suivi en Temps Réel</h3>
+        <p>Surveillez vos fermes, équipes et activités depuis un tableau de bord unique.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3>Sécurisé &amp; Fiable</h3>
+        <p>Données protégées avec chiffrement de bout en bout et sauvegardes automatiques.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <h3>Rapports Détaillés</h3>
+        <p>Visualisez vos performances agricoles avec des graphiques et statistiques avancés.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <h3>Facile à Utiliser</h3>
+        <p>Interface intuitive accessible sur tous les appareils, même en zone rurale.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ HOW IT WORKS ═══════════════════════════ -->
+<section id="how" style="background:#0d1a0d;padding:100px 0">
+  <div class="home-section" style="padding-top:0;padding-bottom:0">
+    <p class="section-label text-center">Processus</p>
+    <h2 class="section-title text-center">Comment ça marche ?</h2>
+    <p class="section-sub text-center">5 étapes simples pour démarrer avec AgriSense 360</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <h3>1. Créer un compte</h3>
+        <p>Inscrivez-vous en tant que propriétaire ou ouvrier agricole</p>
+      </div>
+      <div class="step">
+        <div class="step-num"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
+        <h3>2. Uploader votre CV</h3>
+        <p>Les ouvriers soumettent leur CV et compétences</p>
+      </div>
+      <div class="step">
+        <div class="step-num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+        <h3>3. Analyse IA</h3>
+        <p>Notre IA extrait et évalue automatiquement les profils</p>
+      </div>
+      <div class="step">
+        <div class="step-num"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>4. Suggestion de rôle</h3>
+        <p>Le système propose le poste le plus adapté</p>
+      </div>
+      <div class="step">
+        <div class="step-num"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h3>5. Décision du propriétaire</h3>
+        <p>Le propriétaire examine et accepte ou refuse</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ WHO IS IT FOR ═══════════════════════════ -->
+<section id="who">
+  <div class="home-section">
+    <p class="section-label text-center">Pour qui ?</p>
+    <h2 class="section-title text-center">Une plateforme pour tous</h2>
+    <p class="section-sub text-center">Que vous soyez propriétaire agricole ou ouvrier, AgriSense 360 vous accompagne.</p>
+    <div class="who-grid">
+      <div class="who-card who-card--owner">
+        <div class="who-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <h3>Je suis Propriétaire</h3>
+        <p>Gérez vos fermes et recrutez les meilleurs ouvriers agricoles grâce à l'IA.</p>
+        <ul class="who-list">
+          <li>Gérez plusieurs fermes depuis un seul tableau de bord</li>
+          <li>Publiez des offres et recevez des candidatures</li>
+          <li>Comparez les profils avec l'analyse IA</li>
+          <li>Gagnez du temps sur le recrutement</li>
+        </ul>
+        {% if not app.user %}
+          <a href="{{ path('app_register') }}" class="who-btn who-btn--green">Commencer comme Propriétaire</a>
+        {% endif %}
+      </div>
+      <div class="who-card who-card--worker">
+        <div class="who-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+        <h3>Je suis Ouvrier</h3>
+        <p>Trouvez des opportunités dans des exploitations agricoles près de chez vous.</p>
+        <ul class="who-list">
+          <li>Créez votre profil professionnel facilement</li>
+          <li>Soumettez votre CV et laissez l'IA faire le reste</li>
+          <li>Recevez des suggestions de postes adaptés</li>
+          <li>Développez votre carrière agricole</li>
+        </ul>
+        {% if not app.user %}
+          <a href="{{ path('app_register') }}" class="who-btn who-btn--blue">Commencer comme Ouvrier</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ STATS ═══════════════════════════ -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <h3>500+</h3>
+      <p>Fermes enregistrées</p>
+    </div>
+    <div class="stat-item">
+      <h3>1000+</h3>
+      <p>Ouvriers actifs</p>
+    </div>
+    <div class="stat-item">
+      <h3>95%</h3>
+      <p>Précision du matching</p>
+    </div>
+    <div class="stat-item">
+      <h3>24/7</h3>
+      <p>Support disponible</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CONTACT ═══════════════════════════ -->
+<section id="contact">
+  <div class="home-section">
+    <p class="section-label">Contact</p>
+    <h2 class="section-title">Parlons de votre projet</h2>
+    <div class="contact-wrap">
+      <div class="contact-info">
+        <h3>Nous sommes là pour vous aider</h3>
+        <p>Une question sur la plateforme ? Besoin d'un accompagnement personnalisé ? Notre équipe répond dans les 24h.</p>
+        <div class="contact-detail"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg><span>contact@agrisense360.dz</span></div>
+        <div class="contact-detail"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>+213 00 000 000</span></div>
+        <div class="contact-detail"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Algérie</span></div>
+      </div>
+      <form class="contact-form" onsubmit="return false">
+        <input type="text" placeholder="Votre nom complet" id="contactName">
+        <input type="email" placeholder="Votre adresse email" id="contactEmail">
+        <input type="text" placeholder="Sujet" id="contactSubject">
+        <textarea placeholder="Votre message..." id="contactMessage"></textarea>
+        <button type="submit">Envoyer le message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer>
+  <p>AgriSense 360 — &copy; 2024 Tous droits réservés. |
+    <a href="#">Politique de confidentialité</a> |
+    <a href="#">Conditions d'utilisation</a>
+  </p>
+</footer>
+
+<script>
+const nav = document.getElementById('homeNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+const burger = document.getElementById('navBurger');
+const links = document.querySelector('.home-nav__links');
+burger.addEventListener('click', () => links.classList.toggle('open'));
+document.querySelectorAll('.home-nav__links a').forEach(a => {
+  a.addEventListener('click', () => links.classList.remove('open'));
+});
+document.getElementById('themeToggle').addEventListener('click', function(){
+  var h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);localStorage.setItem('agri-theme',n);
+});
+</script>
+{% endblock %}

@@ -1,103 +1,143 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriSense360 – {% block title %}Tableau de bord{% endblock %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    {% block stylesheets %}{% endblock %}
+    <script>(function(){var t=localStorage.getItem('agri-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <title>{% block title %}AgriSense 360{% endblock %}</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --green-dark:#2d6a2d;
+            --green-mid:#3e8e3e;
+            --green-light:#5ab55a;
+            --green-pale:#d4edda;
+            --bg:#e8f5e4;
+            --white:#fff;
+            --text-dark:#1e3a1e;
+            --text-mid:#4a6741;
+            --text-light:#7fa87a;
+            --border:#c3ddbf;
+            --shadow:0 4px 20px rgba(46,107,46,.12);
+            --radius:14px;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-dark);
+        }
+
+        /* NAVBAR */
+/* NAVBAR */
+.navbar {
+    width: 100%;
+    padding: 22px 40px; /* 🔥 taller header */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--white);
+    box-shadow: var(--shadow);
+}
+
+.logo {
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: var(--green-dark);
+}
+
+/* BUTTONS */
+.nav-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-main {
+    padding: 10px 22px;
+    background: var(--green-mid);
+    color: white;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.btn-main:hover {
+    background: var(--green-dark);
+}
+
+.btn-outline {
+    padding: 10px 20px;
+    border: 2px solid var(--green-mid);
+    border-radius: 50px;
+    text-decoration: none;
+    color: var(--green-mid);
+    font-weight: 600;
+}
+
+.btn-outline:hover {
+    background: var(--green-pale);
+}
+
+        .nav-links a:hover {
+            color: var(--green-dark);
+        }
+
+        .container {
+            padding: 40px 20px;
+        }
+
+        .btn-primary {
+            display:block;
+            width:100%;
+            padding:14px;
+            background:var(--green-mid);
+            color:#fff;
+            border-radius:50px;
+            text-align:center;
+            text-decoration:none;
+            font-weight:700;
+        }
+
+        .btn-outline {
+            display:block;
+            width:100%;
+            padding:13px;
+            border:2px solid var(--green-mid);
+            border-radius:50px;
+            text-align:center;
+            text-decoration:none;
+            color:var(--green-mid);
+        }
+
+    </style>
+
+    {% block styles %}{% endblock %}
+    {% block importmap %}{{ importmap('app') }}{% endblock %}
 </head>
+
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SIDEBAR NAVIGATION
-     Fixed left sidebar with all modules.
-     Teammates' modules are shown as "coming soon" badges.
-     ═══════════════════════════════════════════════════════════ -->
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <span class="brand-icon">🌿</span>
-        <span class="brand-name">AgriSense<em>360</em></span>
+{% block navbar %}
+{% if not app.user %}
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">🌱 AgriSense 360</div>
+
+    <div class="nav-actions">
+        <a href="{{ path('app_login') }}" class="btn-outline">Se connecter</a>
+        <a href="{{ path('app_register') }}" class="btn-main">S'inscrire</a>
     </div>
+</div>
+{% endif %}
+{% endblock %}
 
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Gestion</div>
-
-        {# Gestion Culture - with submenu for Parcelle #}
-        <div class="nav-item-group">
-            <a href="{{ path('culture_index') }}"
-               class="nav-link {% if app.request.attributes.get('_route') starts with 'culture' %}active{% endif %}">
-                <span class="nav-icon">🌱</span>
-                <span class="nav-label">Culture</span>
-            </a>
-            <a href="{{ path('parcelle_index') }}"
-               class="nav-link nav-sub {% if app.request.attributes.get('_route') starts with 'parcelle' %}active{% endif %}">
-                <span class="nav-icon">🗺️</span>
-                <span class="nav-label">Parcelle</span>
-            </a>
-        </div>
-
-        {# Gestion Animal - Coming Soon #}
-        <div class="nav-link nav-coming-soon" title="Module en cours d'intégration">
-            <span class="nav-icon">🐄</span>
-            <span class="nav-label">Animal</span>
-            <span class="coming-badge">Bientôt</span>
-        </div>
-
-        {# Gestion Équipement - Coming Soon #}
-        <div class="nav-link nav-coming-soon" title="Module en cours d'intégration">
-            <span class="nav-icon">🚜</span>
-            <span class="nav-label">Équipement</span>
-            <span class="coming-badge">Bientôt</span>
-        </div>
-
-        {# Gestion Stock - Coming Soon #}
-        <div class="nav-link nav-coming-soon" title="Module en cours d'intégration">
-            <span class="nav-icon">📦</span>
-            <span class="nav-label">Stock</span>
-            <span class="coming-badge">Bientôt</span>
-        </div>
-
-        {# Gestion Ouvrier - Coming Soon #}
-        <div class="nav-link nav-coming-soon" title="Module en cours d'intégration">
-            <span class="nav-icon">👥</span>
-            <span class="nav-label">Ouvrier</span>
-            <span class="coming-badge">Bientôt</span>
-        </div>
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="sidebar-user">
-            <span class="user-avatar">👤</span>
-            <span class="user-name">Agriculteur</span>
-        </div>
-        <button class="btn-logout" title="Se déconnecter" onclick="alert('Logout will be linked by user later')">
-            <span class="logout-icon">🚪</span>
-            <span class="logout-text">Déconnexion</span>
-        </button>
-    </div>
-</aside>
-
-<!-- ═══════════════════════════════════════════════════════════
-     MAIN CONTENT AREA
-     ═══════════════════════════════════════════════════════════ -->
-<main class="main-content">
-    {# Flash messages - success / error from controllers #}
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="flash flash-{{ label }}">
-                {{ message }}
-                <button class="flash-close" onclick="this.parentElement.remove()">×</button>
-            </div>
-        {% endfor %}
-    {% endfor %}
-
-    {% block content %}{% endblock %}
-</main>
+{% block body %}{% endblock %}
 
 {% block javascripts %}{% endblock %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
+
 </body>
 </html>

@@ -1,0 +1,218 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'dashboard' %}
+{% set activeSection = 'main' %}
+{% block title %}Tableau de bord — AgriSense 360{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+.main{padding:0;background:var(--pg)}
+
+/* ── HERO ── */
+.dash-hero{position:relative;height:210px;overflow:hidden}
+.dash-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.dash-hero-ov{position:absolute;inset:0;background:linear-gradient(120deg,rgba(8,24,8,.88) 0%,rgba(8,30,8,.55) 100%)}
+.dash-hero-inner{position:absolute;inset:0;display:flex;align-items:center;padding:0 36px;gap:24px}
+.dash-greeting h1{font-size:1.85rem;font-weight:900;color:#fff;margin-bottom:4px}
+.dash-greeting p{font-size:.88rem;color:rgba(255,255,255,.62)}
+.dash-hero-pills{margin-left:auto;display:flex;gap:28px}
+.dh-pill{text-align:center}
+.dh-val{display:block;font-size:1.9rem;font-weight:900;color:#5ab55a}
+.dh-lbl{font-size:.67rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:22px 28px}
+.kpi-card{background:var(--surface);border:1px solid var(--surface-b);border-radius:14px;padding:18px;display:flex;align-items:center;gap:13px;transition:transform .2s,box-shadow .2s}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:var(--sh-lg)}
+.kpi-ico{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kpi-ico svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ico-green{background:linear-gradient(135deg,#2d6a2d,#5ab55a)}
+.ico-blue{background:linear-gradient(135deg,#1e4080,#3b82f6)}
+.ico-purple{background:linear-gradient(135deg,#5b2c8d,#9b59b6)}
+.ico-amber{background:linear-gradient(135deg,#92400e,#f59e0b)}
+.kpi-val{font-size:1.75rem;font-weight:900;color:var(--h);line-height:1}
+.kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:3px}
+
+/* ── SECTIONS ── */
+.dsec{padding:0 28px 24px}
+.dsec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.dsec-title{font-size:.96rem;font-weight:800;color:var(--h)}
+.dsec-link{font-size:.78rem;color:var(--g);text-decoration:none;font-weight:600}
+.dsec-link:hover{text-decoration:underline}
+
+/* ── APPLICATION CARDS ── */
+.app-list{display:flex;flex-direction:column;gap:11px}
+.app-card{background:var(--surface);border:1px solid var(--surface-b);border-radius:13px;padding:15px 17px;display:flex;align-items:center;gap:13px}
+.app-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;font-weight:800;font-size:.88rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.app-av img{width:100%;height:100%;object-fit:cover}
+.app-info{flex:1;min-width:0}
+.app-name{font-size:.9rem;font-weight:700;color:var(--h)}
+.app-email{font-size:.73rem;color:var(--muted)}
+.app-meta{display:flex;align-items:center;gap:7px;margin-top:5px;flex-wrap:wrap}
+.ai-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(90,181,90,.12);border:1px solid rgba(90,181,90,.22);color:var(--g);font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:50px}
+.app-acts{display:flex;gap:7px;flex-shrink:0}
+.abt{padding:6px 13px;border-radius:50px;font-size:.76rem;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.abt-green{background:linear-gradient(135deg,var(--gd),var(--g));color:#fff}
+.abt-green:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(62,142,62,.4)}
+.abt-red{background:rgba(220,50,50,.09);color:#f87171;border:1px solid rgba(220,50,50,.18)}
+.abt-red:hover{background:rgba(220,50,50,.17)}
+
+/* ── TEAM TABLE ── */
+.team-tbl{width:100%;border-collapse:collapse}
+.team-tbl th{text-align:left;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:0 10px 10px}
+.team-tbl td{padding:11px 10px;border-top:1px solid var(--surface-b);font-size:.84rem;color:var(--txt)}
+.team-tbl tr:first-child td{border-top:none}
+.team-tbl td:first-child{padding-left:0}
+.td-nm{display:flex;align-items:center;gap:9px;color:var(--h);font-weight:600}
+.r-pill{display:inline-flex;padding:2px 9px;border-radius:50px;font-size:.68rem;font-weight:700}
+.rp-g{background:rgba(90,181,90,.14);color:var(--g)}
+.rp-b{background:rgba(30,80,200,.14);color:#60a5fa}
+.vbtn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:7px;background:var(--surface2);border:1px solid var(--surface-b);color:var(--txt);font-size:.73rem;font-weight:600;text-decoration:none;transition:all .15s}
+.vbtn:hover{border-color:var(--g);color:var(--g)}
+.vbtn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:.85rem}
+.empty svg{width:38px;height:38px;stroke:var(--muted);margin:0 auto 10px;display:block;opacity:.38;fill:none}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+  {% include 'partials/sidebar.html.twig' %}
+
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="dash-hero">
+      <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1400&q=80" alt="Vue aérienne agricole">
+      <div class="dash-hero-ov"></div>
+      <div class="dash-hero-inner">
+        <div class="dash-greeting">
+          <h1>Bonjour, {{ user.name }}</h1>
+          <p>Voici l'état de votre exploitation agricole aujourd'hui</p>
+        </div>
+        <div class="dash-hero-pills">
+          <div class="dh-pill"><span class="dh-val">95%</span><span class="dh-lbl">IA Matching</span></div>
+          <div class="dh-pill"><span class="dh-val">24/7</span><span class="dh-lbl">Surveillance</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-ico ico-green"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div><div class="kpi-val">{{ farms_count ?? 0 }}</div><div class="kpi-lbl">Fermes gérées</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-ico ico-blue"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div><div class="kpi-val">{{ pending_count ?? 0 }}</div><div class="kpi-lbl">Candidatures en attente</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-ico ico-purple"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div><div class="kpi-val">{{ team_count ?? 0 }}</div><div class="kpi-lbl">Équipe approuvée</div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-ico ico-amber"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+        <div><div class="kpi-val">{{ posts_count ?? 0 }}</div><div class="kpi-lbl">Postes ouverts</div></div>
+      </div>
+    </div>
+
+    <!-- CANDIDATURES EN ATTENTE -->
+    <section class="dsec">
+      <div class="dsec-head">
+        <span class="dsec-title">Candidatures en attente</span>
+        <a href="{{ path('gerant_ouvriers') }}" class="dsec-link">Voir toutes →</a>
+      </div>
+      {% if pending_applications is defined and pending_applications|length > 0 %}
+      <div class="app-list">
+        {% for ouvrier in pending_applications|slice(0,4) %}
+        <div class="app-card">
+          <div class="app-av">
+            {% set pic = ouvrier.profilePicture %}
+            {% if pic %}
+              {% if pic starts with 'http' %}<img src="{{ pic }}" alt="{{ ouvrier.name }}">
+              {% else %}<img src="{{ asset('uploads/profiles/' ~ pic) }}" alt="{{ ouvrier.name }}">
+              {% endif %}
+            {% else %}{{ ouvrier.name|first|upper }}{% endif %}
+          </div>
+          <div class="app-info">
+            <div class="app-name">{{ ouvrier.name }}</div>
+            <div class="app-email">{{ ouvrier.email }}</div>
+            <div class="app-meta">
+              <span class="ai-tag"><svg viewBox="0 0 12 12" style="width:9px;height:9px;fill:currentColor"><circle cx="6" cy="6" r="5"/></svg>Suggestion IA en cours</span>
+            </div>
+          </div>
+          <div class="app-acts">
+            <a href="{{ path('gerant_ouvrier_show', {id: ouvrier.id}) }}" class="abt abt-green">Voir le profil</a>
+            <button class="abt abt-red">Refuser</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Aucune candidature en attente pour le moment
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- ÉQUIPE APPROUVÉE -->
+    <section class="dsec">
+      <div class="dsec-head">
+        <span class="dsec-title">Équipe approuvée</span>
+        <a href="{{ path('gerant_ouvriers') }}" class="dsec-link">Voir toute l'équipe →</a>
+      </div>
+      {% if approved_team is defined and approved_team|length > 0 %}
+      <table class="team-tbl">
+        <thead><tr>
+          <th>Nom</th><th>Rôle</th><th>Statut</th><th>Membre depuis</th><th></th>
+        </tr></thead>
+        <tbody>
+        {% for member in approved_team|slice(0,6) %}
+        <tr>
+          <td><div class="td-nm">
+            <div class="app-av" style="width:30px;height:30px;font-size:.75rem;flex-shrink:0">{{ member.name|first|upper }}</div>
+            {{ member.name }}
+          </div></td>
+          <td>
+            {% if 'ROLE_OUVRIER' in member.roles %}<span class="r-pill rp-g">Ouvrier</span>
+            {% elseif 'ROLE_GERANT' in member.roles %}<span class="r-pill rp-b">Gérant</span>
+            {% else %}<span class="r-pill rp-g">Membre</span>{% endif %}
+          </td>
+          <td><span class="r-pill rp-g">Actif</span></td>
+          <td>{{ member.createdAt ? member.createdAt|date('d/m/Y') : '—' }}</td>
+          <td>
+            <a href="{{ path('gerant_ouvrier_show', {id: member.id}) }}" class="vbtn">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Voir
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Aucun membre dans l'équipe pour le moment
+      </div>
+      {% endif %}
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  var key='gerant_sidebar_collapsed';
+  if(localStorage.getItem(key)!=='0') document.body.classList.add('sidebar-collapsed');
+  window._sbToggle=function(){
+    var c=document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem(key,c?'1':'0');
+  };
+})();
+</script>
+{% endblock %}

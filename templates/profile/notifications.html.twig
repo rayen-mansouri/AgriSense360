@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'notifications' %}
+{% set activeSection = 'profile' %}
+{% block title %}Notifications — AgriSense 360{% endblock %}
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    .notif-item { display: flex; gap: 14px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item.unread { background: #f6fbf4; border-radius: var(--radius-sm); padding: 16px; margin: 0 -22px; padding: 14px 22px; }
+    .notif-icon { width: 38px; height: 38px; border-radius: 50%; background: var(--green-pale); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .notif-icon.red { background: #fde8e8; }
+    .notif-icon.blue { background: #e3f2fd; }
+    .notif-body { flex: 1; }
+    .notif-title { font-size: .88rem; font-weight: 700; margin-bottom: 3px; }
+    .notif-desc  { font-size: .8rem; color: var(--text-mid); line-height: 1.4; }
+    .notif-time  { font-size: .72rem; color: var(--text-light); margin-top: 4px; }
+    .unread-dot  { width: 8px; height: 8px; background: #2e7d32; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+    .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .mark-all { font-size: .82rem; color: var(--green-mid); cursor: pointer; font-weight: 600; background: none; border: none; font-family: 'Plus Jakarta Sans',sans-serif; }
+</style>
+{% endblock %}
+{% block body %}
+{% include 'partials/sidebar.html.twig' %}
+<main class="main" id="mainContent">
+    <header class="topbar">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <span></span><span></span><span></span>
+        </button>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <button class="theme-toggle" id="themeToggle" aria-label="Thème">
+                <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+            </button>
+        </div>
+    </header>
+    <div class="breadcrumb"><span>Mon compte</span><span>›</span><span>Notifications</span></div>
+    <div class="content-wrapper">
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title">🔔 Mes notifications</span>
+                <button class="mark-all">Tout marquer comme lu</button>
+            </div>
+            <div class="card-body">
+                <div class="notif-item unread">
+                    <div class="notif-icon red">🌡️</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Alerte température — Serre B2</div>
+                        <div class="notif-desc">La température a dépassé 34°C. Vérifiez le système de ventilation.</div>
+                        <div class="notif-time">Il y a 1h</div>
+                    </div>
+                    <div class="unread-dot"></div>
+                </div>
+                <div class="notif-item unread">
+                    <div class="notif-icon">💧</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Irrigation automatique déclenchée</div>
+                        <div class="notif-desc">L'irrigation de la parcelle A3 a été déclenchée automatiquement.</div>
+                        <div class="notif-time">Il y a 2h</div>
+                    </div>
+                    <div class="unread-dot"></div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon blue">📦</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Stock mis à jour</div>
+                        <div class="notif-desc">50 kg de semences ont été ajoutés au stock principal.</div>
+                        <div class="notif-time">Il y a 3h</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon">✅</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Tâche complétée</div>
+                        <div class="notif-desc">La tâche de désherbage parcelle C1 a été marquée comme terminée.</div>
+                        <div class="notif-time">Hier, 16h30</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon">👤</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Nouveau compte créé</div>
+                        <div class="notif-desc">Un nouveau compte ouvrier a été ajouté à votre équipe.</div>
+                        <div class="notif-time">Il y a 2 jours</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth <= 768) { sidebar.classList.toggle('open'); }
+            else { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded'); }
+        });
+    }
+    const html = document.documentElement;
+    const saved = localStorage.getItem('agri-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+</script>
+{% endblock %}

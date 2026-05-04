@@ -18,9 +18,7 @@ framework:
             messenger.bus.default: []
 
         routing:
+            # Emails sent synchronously — no worker needed in dev/XAMPP
             Symfony\Component\Mailer\Messenger\SendEmailMessage: sync
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
-            
-            # Route your messages to the transports
-            # 'App\Message\YourMessage': async
