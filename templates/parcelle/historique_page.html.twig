@@ -1,8 +1,21 @@
-{% extends 'base.html.twig' %}
+{% set activePage = 'parcelles' %}
+{% set activeSection = 'main' %}
 
 {% block title %}Historique — {{ parcelle.nom }}{% endblock %}
 
-{% block content %}
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div style="padding: 30px;">
+
 
 {# ══════════════════════════════════════════════════════
    PAGE HEADER
@@ -10,7 +23,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <p class="page-breadcrumb">
-            <a href="{{ path('home') }}">🏠 Accueil</a> /
+            <a href="{{ path('app_home') }}">🏠 Accueil</a> /
             <a href="{{ path('parcelle_index') }}">Parcelles</a> /
             <a href="{{ path('parcelle_show', {id: parcelle.id}) }}">{{ parcelle.nom }}</a> /
             Historique
@@ -303,9 +316,9 @@
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 500;
-    background: var(--green-50, #f0fdf4);
-    border: 1px solid var(--green-200, #bbf7d0);
-    color: var(--text-dark);
+    background: var(--cb);
+    border: 1px solid var(--cbr);
+    color: var(--ch3);
     text-decoration: none;
     transition: all 0.15s;
 }
@@ -351,9 +364,9 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    border: 1px solid #86efac;
-    border-radius: 14px;
+    background: var(--cb);
+    border: 1px solid var(--cbr);
+    border-radius: 20px;
     padding: 16px 20px;
     margin-bottom: 28px;
 }
@@ -391,8 +404,8 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #fff;
-    border: 2px solid var(--green-300, #86efac);
+    background: var(--pg);
+    border: 2px solid var(--g);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -405,11 +418,11 @@
 
 /* ── History cards ──────────────────────────────────── */
 .hist-card {
-    background: #fff;
-    border: 1px solid var(--green-200, #bbf7d0);
-    border-radius: 12px;
+    background: var(--cb);
+    border: 1px solid var(--cbr);
+    border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 .hist-card-recolte {
     border-color: #5DCAA5;
@@ -422,8 +435,8 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 12px 16px;
-    background: var(--green-50, #f0fdf4);
-    border-bottom: 1px solid var(--green-200, #bbf7d0);
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--cbr);
 }
 .hist-card-recolte .hist-card-header {
     background: #E1F5EE;
@@ -471,9 +484,9 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    background: #f0fdf4;
-    border: 1px solid #86efac;
-    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--cbr);
+    border-radius: 15px;
     padding: 14px 16px;
     margin-bottom: 14px;
 }
@@ -501,9 +514,9 @@
 .hist-meta-item {
     display: flex;
     flex-direction: column;
-    background: var(--green-50, #f0fdf4);
-    border: 1px solid var(--green-200, #bbf7d0);
-    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--cbr);
+    border-radius: 10px;
     padding: 8px 12px;
     min-width: 90px;
 }
@@ -581,8 +594,9 @@
 }
 
 .rapport-modal-box {
-    background: #fff;
-    border-radius: 18px;
+    background: var(--pg);
+    border-radius: 24px;
+    border: 1px solid var(--cbr);
     width: 100%;
     max-width: 560px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.20);
@@ -755,4 +769,7 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 
+    </div>{# end .content-wrapper #}
+    </main>
+</div>{# end .layout #}
 {% endblock %}

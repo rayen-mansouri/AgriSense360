@@ -1,8 +1,20 @@
-{% extends 'base.html.twig' %}
+{% set activePage = 'cultures' %}
+{% set activeSection = 'main' %}
 
 {% block title %}Détails de la Culture{% endblock %}
 
-{% block content %}
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="content-wrapper">
 
 {# ═══════════════════════════════════════════════════
    PAGE HEADER
@@ -10,7 +22,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <p class="page-breadcrumb">
-            <a href="{{ path('home') }}">🏠 Accueil</a> /
+            <a href="{{ path('app_home') }}">🏠 Accueil</a> /
             <a href="{{ path('culture_index') }}">Cultures</a> /
             Détails
         </p>
@@ -96,4 +108,7 @@
     </div>
 </div>
 
+    </div>{# end .content-wrapper #}
+    </main>
+</div>{# end .layout #}
 {% endblock %}

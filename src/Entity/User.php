@@ -29,7 +29,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
     #[ORM\Column(type: 'json')]
-private array $roles = [];
+    private array $roles = [];
 
     #[ORM\Column(type: 'string', length: 50)]
     private string $status = 'pending';
@@ -94,17 +94,22 @@ private array $roles = [];
     public function setPhone(?string $phone): self { $this->phone = $phone; return $this; }
 
     public function getRoles(): array
-{
-    $roles = $this->roles;
-    $roles[] = 'ROLE_USER';
-    return array_unique($roles);
-}
+    {
+        if (!is_array($this->roles)) {
+            $this->roles = $this->roles ? [(string) $this->roles] : [];
+        }
 
-public function setRoles(array $roles): self
-{
-    $this->roles = $roles;
-    return $this;
-}
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = array_values($roles);
+        return $this;
+    }
     public function getStatus(): string { return $this->status; }
     public function setStatus(string $status): self { $this->status = $status; return $this; }
 

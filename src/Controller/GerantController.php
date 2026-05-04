@@ -57,4 +57,34 @@ class GerantController extends AbstractController
         }
         return $this->redirectToRoute('gerant_ouvriers');
     }
+
+    #[Route('/cultures', name: 'gerant_cultures')]
+    public function cultures(): Response
+    {
+        return $this->redirectToRoute('culture_index');
+    }
+
+    #[Route('/stockes', name: 'gerant_stockes')]
+    public function stockes(): Response
+    {
+        return $this->render('gerant/stockes.html.twig');
+    }
+
+    #[Route('/equipements', name: 'gerant_equipements')]
+    public function equipements(): Response
+    {
+        return $this->render('gerant/equipements.html.twig');
+    }
+
+    #[Route('/affectations', name: 'gerant_affectations')]
+    public function affectations(): Response
+    {
+        return $this->render('gerant/affectations.html.twig');
+    }
+
+    #[Route('/animaux', name: 'gerant_animaux')]
+    public function animaux(): Response
+    {
+        return $this->render('gerant/animaux.html.twig');
+    }
 }

@@ -1,37 +1,32 @@
-
-###> symfony/framework-bundle ###
-.env
-/.env.local
-/.env.local.php
-/.env.*.local
-/config/secrets/prod/prod.decrypt.private.php
-/public/bundles/
-/var/
+### Symfony ###
 /vendor/
-###< symfony/framework-bundle ###
-
-###> phpunit/phpunit ###
+/var/
+/public/bundles/
+/public/build/
+/config/secrets/*.local.php
 /phpunit.xml
+
+### Environment ###
+.env.local
+.env.local.php
+.env.test.local
+.env.dev.local
+
+### Python ###
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+### IDE ###
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+### AgriSense 360 Specific ###
+/public/uploads/*
+!/public/uploads/.gitkeep
 .phpunit.result.cache
-###< phpunit/phpunit ###
-
-###> symfony/phpunit-bridge ###
-.phpunit.result.cache
-/phpunit.xml
-###< symfony/phpunit-bridge ###
-
-###> symfony/asset-mapper ###
-/public/assets/
-/assets/vendor/
-###< symfony/asset-mapper ###
-
-ia_service/venv/
-ia_service/model/harvest_model.pkl
-ia_service/__pycache__/
-ia_service/*.pyc
-/venv/
-ia_service/data/
-
-###> phpstan/phpstan ###
-phpstan.neon
-###< phpstan/phpstan ###

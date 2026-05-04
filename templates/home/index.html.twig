@@ -2,19 +2,44 @@
 
 {% block title %}Dashboard Administrateur{% endblock %}
 
-{% block content %}
+{% block navbar %}{% endblock %}
 
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
 <style>
-.dash-section { margin-bottom: 48px; }
+    /* Dashboard specific overrides and local styles */
+    :root {
+        --bg-card: var(--cb);
+        --green-100: rgba(90,181,90,0.1);
+        --green-200: rgba(90,181,90,0.2);
+        --green-700: var(--gd);
+        --shadow-sm: none;
+        --shadow-md: none;
+        --font-display: 'Inter', sans-serif;
+    }
+    [data-theme="light"] {
+        --bg-card: #fff;
+        --green-100: #e8f5e9;
+        --green-200: #c8e6c9;
+        --green-700: #2e7d32;
+        --shadow-sm: 0 2px 4px rgba(0,0,0,.05);
+        --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    }
+
+    .dash-section { margin-bottom: 48px; }
 .dash-section-title {
-    font-size: 1.15rem; font-weight: 700; color: var(--text-dark);
-    margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
-    padding-bottom: 10px; border-bottom: 2px solid var(--green-200);
+    font-size: 1.25rem; font-weight: 800; color: var(--ch3);
+    margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--cbr);
+    position: relative;
+}
+.dash-section-title::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; width: 60px; height: 3px; background: var(--g); border-radius: 3px;
 }
 .dash-section-title .badge {
-    background: var(--green-100); color: var(--green-700);
-    font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 600;
-    margin-left: auto;
+    background: var(--green-100); color: var(--g);
+    font-size: 0.72rem; padding: 4px 12px; border-radius: 50px; font-weight: 700;
+    margin-left: auto; text-transform: uppercase; letter-spacing: 0.05em;
 }
 .kpi-grid {
     display: grid;
@@ -43,8 +68,17 @@
 .kpi-icon  { font-size: 2rem; margin-bottom: 10px; display: block; }
 .kpi-value { font-size: 2rem; font-weight: 800; color: var(--text-dark); line-height: 1; margin-bottom: 6px; font-family: var(--font-display); }
 .kpi-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-.kpi-bar   { margin-top: 12px; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
-.kpi-bar-fill { height: 100%; border-radius: 4px; transition: width 1.2s ease; width: 0; }
+.kpi-bar   { margin-top: 14px; height: 6px; background: var(--cbr); border-radius: 10px; overflow: hidden; }
+.kpi-bar-fill { 
+    height: 100%; border-radius: 10px; transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); width: 0;
+    background: linear-gradient(90deg, var(--g), var(--gm));
+}
+/* Colorful logic for data-bar */
+.kpi-card[data-bar="100"] .kpi-bar-fill { background: linear-gradient(90deg, #10b981, #059669); }
+.kpi-card.c-amber .kpi-bar-fill { background: linear-gradient(90deg, #f59e0b, #d97706); }
+.kpi-card.c-red .kpi-bar-fill { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.kpi-card.c-purple .kpi-bar-fill { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+.kpi-card.c-blue .kpi-bar-fill { background: linear-gradient(90deg, #3b82f6, #2563eb); }
 .kpi-card.c-green .kpi-bar-fill   { background: #4caf50; }
 .kpi-card.c-blue .kpi-bar-fill    { background: #2196f3; }
 .kpi-card.c-amber .kpi-bar-fill   { background: #ff9800; }
@@ -184,7 +218,16 @@
     background: #f0fdf4; color: #1e3c2c;
     border: 1px solid #86efac; font-weight: 500;
 }
+    /* ... existing styles ... */
 </style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="content-wrapper">
 
 {# ── HEADER ── #}
 <div class="page-header anim-in" style="margin-bottom:32px;">
@@ -471,6 +514,9 @@
     {% endif %}
 </div>
 
+        </div>
+    </main>
+</div>
 {% endblock %}
 
 {% block javascripts %}

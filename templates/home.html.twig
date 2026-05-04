@@ -10,13 +10,13 @@
     </a>
     <ul class="home-nav__links">
       {% if is_granted('ROLE_GERANT') %}
-        <li><a href="{{ path('gerant_home') }}">Accueil</a></li>
+        <li><a href="{{ path('app_home') }}">Accueil</a></li>
         <li><a href="{{ path('gerant_ouvriers') }}">Travailleurs</a></li>
-        <li><a href="#">Cultures</a></li>
-        <li><a href="#">Stockés</a></li>
-        <li><a href="#">Équipements</a></li>
-        <li><a href="#">Affectations</a></li>
-        <li><a href="#">Animaux</a></li>
+        <li><a href="{{ path('culture_index') }}">Cultures</a></li>
+        <li><a href="{{ path('gerant_stockes') }}">Stockés</a></li>
+        <li><a href="{{ path('gerant_equipements') }}">Équipements</a></li>
+        <li><a href="{{ path('gerant_affectations') }}">Affectations</a></li>
+        <li><a href="{{ path('gerant_animaux') }}">Animaux</a></li>
       {% else %}
         <li><a href="#hero">Accueil</a></li>
         <li><a href="#features">À propos</a></li>

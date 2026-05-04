@@ -1,17 +1,98 @@
-{% extends 'base.html.twig' %}
+{% set activePage = 'parcelles' %}
+{% set activeSection = 'main' %}
 
 {% block title %}Parcelles{% endblock %}
 
-{% block content %}
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div style="padding: 30px;">
+
 <style>
-/* ── Card footer ─────────────────────────────── */
+/* ── Dark theme CSS variables - override defaults ── */
+
+/* Page header */
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px; }
+.page-header-left { display: flex; flex-direction: column; gap: 4px; }
+.page-title { font-size: 1.75rem; font-weight: 800; color: var(--ch3); margin-bottom: 4px; }
+.page-subtitle { color: var(--cp); font-size: 0.9rem; }
+.page-breadcrumb { color: var(--cp); font-size: 0.85rem; }
+.page-breadcrumb a { color: var(--g); text-decoration: none; }
+.page-breadcrumb a:hover { text-decoration: underline; }
+
+/* Toolbar */
+.toolbar { background: var(--cb); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--cbr); display: flex; gap: 10px; flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--cp); pointer-events: none; }
+.search-input { width: 100%; padding: 10px 14px 10px 36px; border: 1px solid var(--cbr); border-radius: 8px; background: transparent; color: var(--ch3); font-size: 0.9rem; }
+.search-input::placeholder { color: var(--cp); }
+.search-input:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 2px rgba(90,181,90,0.15); }
+
+/* Sort group */
+.sort-group { display: flex; gap: 8px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--g); color: #fff; border-color: var(--g); }
+.btn-primary:hover { background: var(--gm); border-color: var(--gm); }
+.btn-secondary { background: var(--cb); color: var(--cp); border-color: var(--cbr); }
+.btn-secondary:hover { background: rgba(90,181,90,0.1); border-color: var(--g); color: var(--g); }
+.btn-secondary.active { background: rgba(90,181,90,0.15); border-color: var(--g); color: var(--g); }
+.btn-sm { padding: 6px 10px; font-size: 0.8rem; }
+
+/* Card grid */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+/* Parcelle card styling */
+.parcelle-card { 
+    background: var(--cb); 
+    border: 1px solid var(--cbr); 
+    border-radius: 20px; 
+    padding: 24px; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.parcelle-card:hover { 
+    transform: translateY(-8px); 
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+    border-color: var(--g);
+    background: rgba(255,255,255,0.06);
+}
+.parcelle-card::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--g); opacity: 0; transition: opacity 0.3s;
+}
+.parcelle-card:hover::after { opacity: 1; }
+.parcelle-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+.parcelle-card-name { font-size: 1.1rem; font-weight: 700; color: var(--ch3); }
+.parcelle-statut { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.statut-libre { background: rgba(76,175,80,0.2); color: #4CAF50; }
+.statut-occupee { background: rgba(160,120,80,0.2); color: #a07850; }
+
+/* Info grid */
+.parcelle-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 12px 0; }
+.parcelle-info-item { display: flex; flex-direction: column; gap: 2px; }
+.parcelle-info-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cp); }
+.parcelle-info-value { font-size: 0.95rem; font-weight: 500; color: var(--ch3); }
+
+/* Card footer */
 .parcelle-card-footer {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--cbr);
 }
 
 /* Full-width rows */
@@ -28,7 +109,7 @@
 }
 .parcelle-card-footer .btn:hover { transform: translateY(-1px); }
 
-/* Historique button — teal */
+/* Historique button */
 .btn-historique {
     background: linear-gradient(135deg, #1ABC9C, #16A085) !important;
     color: #fff !important;
@@ -45,14 +126,95 @@
 }
 .btn-danger:hover { opacity: .9; }
 
-/* ── Validation styles ───────────────────────── */
+/* Modal fixes */
+    /* Modal premium pop-up styling */
+    .modal-backdrop { 
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+        background: rgba(0,0,0,0.75); 
+        backdrop-filter: blur(8px);
+        z-index: 10000 !important; 
+        display: none; 
+        align-items: center; justify-content: center; 
+        padding: 20px; 
+    }
+    .modal { 
+        background: var(--sidebar-bg); 
+        box-shadow: 0 30px 70px rgba(0,0,0,0.6); 
+        border-radius: 28px; 
+        width: 100%; max-width: 540px; 
+        max-height: 90vh; 
+        overflow-y: auto; 
+        border: 1px solid var(--sidebar-border);
+        position: relative;
+        animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes modalScale {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header { 
+        padding: 24px 32px; 
+        display: flex; align-items: center; justify-content: space-between; 
+        border-bottom: 1px solid var(--sidebar-border); 
+    }
+    .modal-title { 
+        color: var(--ch3); 
+        font-weight: 800; font-size: 1.5rem; 
+        display: flex; align-items: center; gap: 10px;
+    }
+    .modal-close { 
+        background: none; border: none; color: var(--cp); 
+        font-size: 1.8rem; cursor: pointer; padding: 4px; 
+        transition: all 0.2s; line-height: 1;
+    }
+    .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
+    .modal-body { padding: 32px; }
+    .modal-footer { 
+        padding: 20px 32px; 
+        background: rgba(0,0,0,0.05);
+        border-top: 1px solid var(--sidebar-border); 
+        display: flex; justify-content: flex-end; gap: 12px; 
+    }
+    
+    /* Form refinement to match capture */
+    .form-group { margin-bottom: 20px; }
+    .form-group label { 
+        font-size: 0.9rem; font-weight: 700; color: var(--ch3); 
+        margin-bottom: 8px; display: block;
+    }
+    .form-control { 
+        width: 100%;
+        background: rgba(0,0,0,0.1); 
+        border: 1.5px solid var(--sidebar-border);
+        border-radius: 12px; padding: 12px 16px; 
+        color: var(--ch3); font-weight: 500;
+        transition: all 0.2s;
+    }
+    [data-theme="light"] .form-control { background: #f8fafc; border-color: rgba(0,0,0,0.1); color: #1a3a1a; }
+    .form-control:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 4px rgba(90,181,90,0.1); }
+    
+    /* Orange button from capture */
+    .btn-orange { 
+        background: #ff8c00; color: #fff; border: none; 
+        padding: 12px 28px; border-radius: 50px; 
+        font-weight: 700; font-size: 1rem;
+        box-shadow: 0 4px 15px rgba(255,140,0,0.3);
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: all 0.2s;
+    }
+    .btn-orange:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,140,0,0.4); background: #ff9f1a; }
+    .btn-orange:active { transform: scale(0.98); }
+
+
+/* Validation styles */
 .field-error {
     display: none;
     color: #e53935;
     font-size: 0.78rem;
     margin-top: 5px;
     padding: 4px 8px;
-    background: #ffebee;
+    background: rgba(229,57,53,0.1);
     border-left: 3px solid #e53935;
     border-radius: 0 4px 4px 0;
     font-weight: 500;
@@ -73,7 +235,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <p class="page-breadcrumb">
-            <a href="{{ path('home') }}">🏠 Accueil</a> / Parcelles
+            <a href="{{ path('app_home') }}">🏠 Accueil</a> / Parcelles
         </p>
         <h1 class="page-title">🗺️ Parcelles</h1>
         <p class="page-subtitle">{{ parcelles|length }} parcelle(s) enregistrée(s)</p>
@@ -168,19 +330,19 @@ const PARCELLES_DATA = [
 
         <div class="parcelle-info-grid">
             <div class="parcelle-info-item">
-                <span class="meta-label">📐 Surface totale</span>
-                <span class="meta-value">{{ parcelle.surface|number_format(0,',') }} m²</span>
+                <span class="parcelle-info-label">📐 Surface totale</span>
+                <span class="parcelle-info-value">{{ parcelle.surface|number_format(0,',') }} m²</span>
             </div>
             <div class="parcelle-info-item">
-                <span class="meta-label">📏 Restante</span>
-                <span class="meta-value">{{ parcelle.surfaceRestant|number_format(2,',') }} m²</span>
+                <span class="parcelle-info-label">📏 Restante</span>
+                <span class="parcelle-info-value">{{ parcelle.surfaceRestant|number_format(2,',') }} m²</span>
             </div>
             <div class="parcelle-info-item">
-                <span class="meta-label">📍 Localisation</span>
-                <span class="meta-value">{{ parcelle.localisation }}</span>
+                <span class="parcelle-info-label">📍 Localisation</span>
+                <span class="parcelle-info-value">{{ parcelle.localisation }}</span>
             </div>
             <div class="parcelle-info-item">
-                <span class="meta-label">🌍 Type de sol</span>
+                <span class="parcelle-info-label">🌍 Type de sol</span>
                 {% set solClass = parcelle.typeSol == 'Sol Limoneux' ? 'sol-limoneux'
                                : (parcelle.typeSol == 'Sol Argileux' ? 'sol-argileux' : 'sol-sablonneux') %}
                 <span class="type-sol-badge {{ solClass }}">{{ parcelle.typeSol }}</span>
@@ -188,14 +350,17 @@ const PARCELLES_DATA = [
         </div>
 
         {% set taux = parcelle.tauxOccupation %}
-        <div class="progress-wrap">
-            <div class="progress-label">
-                <span>📊 Occupation</span>
-                <span>{{ taux }}%</span>
+        <div style="margin-top: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:8px;">
+                <span style="font-size:0.75rem; font-weight:700; color:var(--cp); text-transform: uppercase;">📊 Occupation</span>
+                <span style="font-size: 0.85rem; font-weight:800; color:{{ taux >= 90 ? 'var(--danger)' : (taux >= 60 ? '#f59e0b' : 'var(--g)') }};">
+                    {{ taux }}%
+                </span>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width:{{ taux }}%;
-                    {% if taux >= 90 %}background:var(--red-600){% elseif taux >= 60 %}background:var(--amber){% endif %}">
+            <div style="height: 8px; background: rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; border: 1px solid var(--cbr);">
+                <div style="height: 100%; width: {{ taux }}%; 
+                    background: linear-gradient(90deg, var(--g) 0%, {{ taux >= 90 ? 'var(--danger)' : (taux >= 60 ? '#f59e0b' : 'var(--gm)') }} 100%);
+                    border-radius: 10px; transition: width 0.5s;">
                 </div>
             </div>
         </div>
@@ -249,33 +414,30 @@ const PARCELLES_DATA = [
 {# ════════════════════════════════════════════════════════════
    MODAL — Ajouter une parcelle
    ════════════════════════════════════════════════════════════ #}
-<div id="modal-add" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
-    <div style="background:#fff;border-radius:16px;width:95%;max-width:560px;margin:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;">
-        <div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-            <h2 style="margin:0;font-size:1.15rem;">➕ Nouvelle Parcelle</h2>
-            <button onclick="closeModal('modal-add')" style="background:none;border:none;font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+<div id="modal-add" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">+ Ajouter une Parcelle</h2>
+            <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
         </div>
         <form method="post" action="{{ path('parcelle_new') }}" id="form-add" novalidate>
-            <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+            <div class="modal-body">
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Nom de la parcelle *</label>
-                    <input type="text" name="nom" id="add-nom" placeholder="Ex: Parcelle Nord"
-                           style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Nom de la parcelle *</label>
+                    <input type="text" name="nom" id="add-nom" placeholder="Ex: Parcelle Nord" class="form-control">
                     <div class="field-error" id="add-nom-error">⚠️ Le nom doit contenir au moins 3 caractères.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Surface totale (m²) *</label>
-                    <input type="number" name="surface" id="add-surface" placeholder="Ex: 5000" step="0.01"
-                           style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Surface totale (m²) *</label>
+                    <input type="number" name="surface" id="add-surface" placeholder="Ex: 5000" step="0.01" class="form-control">
                     <div class="field-error" id="add-surface-error">⚠️ Veuillez entrer un nombre positif supérieur à 0.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Gouvernorat *</label>
-                    <select name="localisation" id="add-localisation"
-                            style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;background:#fff;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Gouvernorat *</label>
+                    <select name="localisation" id="add-localisation" class="form-control">
                         <option value="">-- Sélectionner --</option>
                         {% for g in gouvernorats %}
                             <option value="{{ g }}">{{ g }}</option>
@@ -284,10 +446,9 @@ const PARCELLES_DATA = [
                     <div class="field-error" id="add-localisation-error">⚠️ Veuillez sélectionner un gouvernorat.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Type de sol *</label>
-                    <select name="type_sol" id="add-typesol"
-                            style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;background:#fff;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Type de sol *</label>
+                    <select name="type_sol" id="add-typesol" class="form-control">
                         <option value="">-- Sélectionner --</option>
                         {% for t in typesSol %}
                             <option value="{{ t }}">{{ t }}</option>
@@ -297,9 +458,9 @@ const PARCELLES_DATA = [
                 </div>
 
             </div>
-            <div style="padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px;">
+            <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add')">Annuler</button>
-                <button type="button" class="btn btn-primary" onclick="validateAndSubmitAdd()">✅ Ajouter</button>
+                <button type="button" class="btn-orange" onclick="validateAndSubmitAdd()">✓ Enregistrer</button>
             </div>
         </form>
     </div>
@@ -308,39 +469,35 @@ const PARCELLES_DATA = [
 {# ════════════════════════════════════════════════════════════
    MODAL — Modifier une parcelle
    ════════════════════════════════════════════════════════════ #}
-<div id="modal-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
-    <div style="background:#fff;border-radius:16px;width:95%;max-width:560px;margin:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;">
-        <div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-            <h2 style="margin:0;font-size:1.15rem;">✏️ Modifier la Parcelle</h2>
-            <button onclick="closeModal('modal-edit')" style="background:none;border:none;font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+<div id="modal-edit" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">✏️ Modifier la Parcelle</h2>
+            <button class="modal-close" onclick="closeModal('modal-edit')">✕</button>
         </div>
         <form method="post" id="edit-form" action="" novalidate>
-            <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+            <div class="modal-body">
 
-                <div id="cultures-warning" style="display:none;background:#fff3e0;border:1px solid #FFB74D;border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#e65100;">
+                <div id="cultures-warning" style="display:none;background:var(--danger-bg);border:1px solid var(--danger);border-radius:12px;padding:12px 16px;font-size:0.85rem;color:var(--danger);margin-bottom:20px;">
                     ⚠️ Cette parcelle contient <strong id="cultures-warning-count">0</strong> culture(s). La surface ne peut pas être modifiée.
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Nom *</label>
-                    <input type="text" name="nom" id="edit-nom"
-                           style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Nom *</label>
+                    <input type="text" name="nom" id="edit-nom" class="form-control">
                     <div class="field-error" id="edit-nom-error">⚠️ Le nom doit contenir au moins 3 caractères.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Surface (m²) *</label>
-                    {# Visible input for display/edit — value is mirrored to hidden input for form submission #}
-                    <input type="number" id="edit-surface-display" step="0.01"
-                           style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Surface (m²) *</label>
+                    <input type="number" id="edit-surface-display" step="0.01" class="form-control">
                     <input type="hidden" name="surface" id="edit-surface">
                     <div class="field-error" id="edit-surface-error">⚠️ Veuillez entrer un nombre positif supérieur à 0.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Gouvernorat *</label>
-                    <select name="localisation" id="edit-localisation"
-                            style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;background:#fff;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Gouvernorat *</label>
+                    <select name="localisation" id="edit-localisation" class="form-control">
                         <option value="">-- Sélectionner --</option>
                         {% for g in gouvernorats %}
                             <option value="{{ g }}">{{ g }}</option>
@@ -349,10 +506,9 @@ const PARCELLES_DATA = [
                     <div class="field-error" id="edit-localisation-error">⚠️ Veuillez sélectionner un gouvernorat.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Type de sol *</label>
-                    <select name="type_sol" id="edit-type-sol"
-                            style="width:100%;box-sizing:border-box;border:1.5px solid #ddd;border-radius:8px;padding:10px 14px;font-size:.95rem;background:#fff;transition:border-color .2s;">
+                <div class="form-group">
+                    <label>Type de sol *</label>
+                    <select name="type_sol" id="edit-type-sol" class="form-control">
                         <option value="">-- Sélectionner --</option>
                         {% for t in typesSol %}
                             <option value="{{ t }}">{{ t }}</option>
@@ -361,9 +517,9 @@ const PARCELLES_DATA = [
                     <div class="field-error" id="edit-type-sol-error">⚠️ Veuillez sélectionner un type de sol.</div>
                 </div>
 
-                <div>
-                    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:.9rem;">Statut</label>
-                    <div id="edit-statut-display" style="padding:10px 14px;border-radius:8px;border:1.5px solid #ccc;display:flex;align-items:center;gap:8px;font-weight:600;">
+                <div class="form-group">
+                    <label>Statut</label>
+                    <div id="edit-statut-display" style="padding:12px 16px;border-radius:12px;border:1.5px solid var(--sidebar-border);display:flex;align-items:center;gap:8px;font-weight:600;background:rgba(0,0,0,0.1);">
                         <span id="edit-statut-icon">🟢</span>
                         <span id="edit-statut-text">Libre</span>
                     </div>
@@ -371,9 +527,9 @@ const PARCELLES_DATA = [
                 </div>
 
             </div>
-            <div style="padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px;">
+            <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit')">Annuler</button>
-                <button type="button" class="btn btn-primary" onclick="validateAndSubmitEdit()">💾 Enregistrer</button>
+                <button type="button" class="btn-orange" onclick="validateAndSubmitEdit()">✓ Enregistrer</button>
             </div>
         </form>
     </div>
@@ -382,30 +538,30 @@ const PARCELLES_DATA = [
 {# ════════════════════════════════════════════════════════════
    MODAL — Détails (double-clic)
    ════════════════════════════════════════════════════════════ #}
-<div id="modal-detail" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
-    <div style="background:#fff;border-radius:16px;width:95%;max-width:700px;margin:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;">
-        <div style="padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-            <h2 style="margin:0;font-size:1.15rem;" id="detail-nom">—</h2>
-            <button onclick="closeModal('modal-detail')" style="background:none;border:none;font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+<div id="modal-detail" class="modal-backdrop">
+    <div class="modal" style="max-width:700px;">
+        <div class="modal-header">
+            <h2 class="modal-title" id="detail-nom">—</h2>
+            <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
         </div>
-        <div style="padding:24px;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-                <div><span style="color:#888;font-size:.8rem;">📍 Localisation</span><br><strong id="detail-localisation">—</strong></div>
-                <div><span style="color:#888;font-size:.8rem;">🌍 Type de sol</span><br><strong id="detail-type-sol">—</strong></div>
-                <div><span style="color:#888;font-size:.8rem;">📐 Surface totale</span><br><strong id="detail-surface">—</strong></div>
-                <div><span style="color:#888;font-size:.8rem;">📏 Restante</span><br><strong id="detail-surface-restant">—</strong></div>
-                <div><span style="color:#888;font-size:.8rem;">🌱 Cultures</span><br><strong id="detail-cultures-count">—</strong></div>
-                <div><span style="color:#888;font-size:.8rem;">📊 Occupation</span><br>
+        <div class="modal-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                <div><span style="color:var(--cp);font-size:.8rem;font-weight:700;text-transform:uppercase;">📍 Localisation</span><br><strong id="detail-localisation" style="color:var(--ch3);">—</strong></div>
+                <div><span style="color:var(--cp);font-size:.8rem;font-weight:700;text-transform:uppercase;">🌍 Type de sol</span><br><strong id="detail-type-sol" style="color:var(--ch3);">—</strong></div>
+                <div><span style="color:var(--cp);font-size:.8rem;font-weight:700;text-transform:uppercase;">📐 Surface totale</span><br><strong id="detail-surface" style="color:var(--ch3);">—</strong></div>
+                <div><span style="color:var(--cp);font-size:.8rem;font-weight:700;text-transform:uppercase;">📏 Restante</span><br><strong id="detail-surface-restant" style="color:var(--ch3);">—</strong></div>
+                <div><span style="color:var(--cp);font-size:.8rem;font-weight:700;text-transform:uppercase;">🌱 Cultures</span><br><strong id="detail-cultures-count" style="color:var(--ch3);">—</strong></div>
+                <div><span style="color:var(--cp);font-size:.8rem;font-weight:700;text-transform:uppercase;">📊 Occupation</span><br>
                     <strong id="detail-taux">—</strong>
-                    <span id="detail-statut-badge" style="margin-left:8px;padding:2px 8px;border-radius:12px;font-size:.75rem;border:1px solid;">—</span>
+                    <span id="detail-statut-badge" style="margin-left:8px;padding:4px 10px;border-radius:12px;font-size:.75rem;border:1px solid;font-weight:700;">—</span>
                 </div>
             </div>
-            <div class="progress-bar" style="margin-bottom:16px;">
-                <div id="detail-progress-fill" class="progress-fill" style="width:0%;transition:width .4s;"></div>
+            <div class="progress-bar" style="height:10px;background:var(--sidebar-border);border-radius:5px;overflow:hidden;margin-bottom:20px;">
+                <div id="detail-progress-fill" class="progress-fill" style="height:100%;width:0%;transition:width .4s;"></div>
             </div>
             <div id="detail-cultures-container"></div>
         </div>
-        <div style="padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px;">
+        <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('modal-detail')">Fermer</button>
             <button type="button" id="detail-edit-btn" class="btn btn-primary">✏️ Modifier</button>
         </div>
@@ -431,12 +587,16 @@ const PARCELLES_DATA = [
 <script>
 /* ── Generic modal helpers ─────────────────────────────────── */
 function openModal(id) {
-    document.getElementById(id).style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.style.display = 'flex';
+    // Don't lock body overflow - modal handles scrolling internally
 }
 function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-    document.body.style.overflow = '';
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.style.display = 'none';
+    // Restore normal scrolling
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -758,11 +918,11 @@ function openCarteModal() {
         iframe.setAttribute('data-loaded', '1');
     }
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    // Don't lock body overflow - modal handles scrolling internally
 }
 function closeCarteModal() {
     document.getElementById('modal-carte').style.display = 'none';
-    document.body.style.overflow = '';
+    // Restore normal scrolling
 }
 
 /* ── Auto-open edit modal if ?edit_id= in URL ──────────────── */
@@ -786,4 +946,7 @@ window.addEventListener('DOMContentLoaded', function() {
 {% endif %}
 </script>
 
+    </div>{# end .content-wrapper #}
+    </main>
+</div>{# end .layout #}
 {% endblock %}

@@ -1,8 +1,21 @@
-{% extends 'base.html.twig' %}
+{% set activePage = 'analytics' %}
+{% set activeSection = 'main' %}
 
 {% block title %}Analytique IA — Rendements{% endblock %}
 
-{% block content %}
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div style="padding: 30px;">
+
 
 {# ══════════════════════════════════════════════════════
    PAGE HEADER
@@ -10,7 +23,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <p class="page-breadcrumb">
-            <a href="{{ path('home') }}">🏠 Accueil</a> /
+            <a href="{{ path('app_home') }}">🏠 Accueil</a> /
             <a href="{{ path('culture_index') }}">Cultures</a> /
             Analytique IA
         </p>
@@ -281,26 +294,17 @@
     border-radius: 14px;
     border: 1px solid transparent;
 }
-.kpi-green { background:#f0fdf4; border-color:#86efac; }
-.kpi-blue  { background:#eff6ff; border-color:#93c5fd; }
-.kpi-amber { background:#fffbeb; border-color:#fcd34d; }
-.kpi-teal  { background:#f0fdfa; border-color:#5DCAA5; }
+.empty-state { padding: 80px 40px; text-align: center; background: var(--cb); border-radius: 24px; border: 2px dashed var(--cbr); }
+.kpi-green { background: rgba(76,175,80,0.1); border-color: rgba(76,175,80,0.2); color: #4CAF50; }
+.kpi-blue  { background: rgba(33,150,243,0.1); border-color: rgba(33,150,243,0.2); color: #2196F3; }
+.kpi-amber { background: rgba(255,152,0,0.1); border-color: rgba(255,152,0,0.2); color: #FF9800; }
+.kpi-teal  { background: rgba(0,150,136,0.1); border-color: rgba(0,150,136,0.2); color: #009688; }
 .kpi-icon  { font-size:1.6rem; margin-bottom:8px; }
 .kpi-value { font-size:1.7rem; font-weight:800; color:var(--text-dark); line-height:1; }
 .kpi-label { font-size:0.78rem; color:var(--text-light); margin-top:4px; }
 
-.analytics-card {
-    background: #fff;
-    border: 1px solid var(--green-200, #bbf7d0);
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.analytics-card-header {
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--green-200, #bbf7d0);
-    background: var(--green-50, #f0fdf4);
-}
+.analytics-card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 20px; overflow: hidden; }
+.analytics-card-header { padding: 20px 24px; border-bottom: 1px solid var(--cbr); background: rgba(255,255,255,0.02); }
 .analytics-card-title {
     margin: 0;
     font-size: 1rem;
@@ -332,4 +336,7 @@
 .analytics-table tbody tr:hover td { background: var(--green-50, #f0fdf4); }
 </style>
 
+    </div>{# end .content-wrapper #}
+    </main>
+</div>{# end .layout #}
 {% endblock %}

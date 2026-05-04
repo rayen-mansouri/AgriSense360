@@ -663,6 +663,7 @@ html, body {
     justify-content: center;
     padding: 20px;
     animation: fadeIn 0.18s ease;
+    overflow: auto;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -675,6 +676,7 @@ html, body {
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
     animation: slideUp 0.22s ease;
+    margin: auto;
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
@@ -691,17 +693,18 @@ html, body {
     color: var(--text-dark);
 }
 .modal-close {
-    background: var(--green-50);
+    background: transparent;
     border: none;
     width: 32px; height: 32px;
     border-radius: 50%;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     cursor: pointer;
     color: var(--text-mid);
     display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
+    transition: all 0.15s;
+    line-height: 1;
 }
-.modal-close:hover { background: var(--red-100); color: var(--red-600); }
+.modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-dark); }
 
 .modal-body { padding: 20px 24px; }
 .modal-footer {
