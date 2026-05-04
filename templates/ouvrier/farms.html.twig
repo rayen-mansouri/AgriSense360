@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="{{ app.request.locale }}">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'nav.farms'|trans }} — AgriSense 360</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{--g5:#3e8e3e;--g7:#2d6a2d;--panel:#f4f9f1;--white:#fff;--border:#dde8d8;--text:#1e3a1e;--muted:#6b8f6b;--warn:#f59e0b;--danger:#dc2626}
+        body{min-height:100vh;font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4f0;color:var(--text)}
+        .nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(30,58,30,.05)}
+        .nav-brand{display:flex;align-items:center;gap:10px}
+        .nav-icon{width:38px;height:38px;border-radius:10px;background:var(--g5);display:flex;align-items:center;justify-content:center}
+        .nav-icon svg{width:20px;height:20px;fill:#fff}
+        .nav-name{font-family:'Fraunces',serif;font-weight:700;font-size:1rem;color:var(--text)}
+        .nav-right{display:flex;align-items:center;gap:12px}
+        .nav-link{padding:7px 14px;border-radius:8px;font-size:.82rem;font-weight:600;color:var(--muted);text-decoration:none;transition:all .18s}
+        .nav-link:hover,.nav-link.active{background:rgba(62,142,62,.1);color:var(--g7)}
+        .container{max-width:1100px;margin:0 auto;padding:36px 24px}
+        /* Toast */
+        .toast{position:fixed;top:80px;right:24px;z-index:9999;max-width:380px;padding:16px 20px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.15);font-size:.86rem;line-height:1.5;display:flex;align-items:flex-start;gap:12px;animation:slideIn .3s ease;background:var(--white);border-left:4px solid var(--g5)}
+        .toast.toast-error{border-left-color:var(--danger)}
+        .toast-close{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);margin-left:auto;padding:0 0 0 8px;flex-shrink:0}
+        @keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes slideOut{from{transform:translateX(0);opacity:1}to{transform:translateX(110%);opacity:0}}
+        /* Status banner */
+        .status-banner{border-radius:16px;padding:20px 26px;margin-bottom:28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+        .status-banner.pending{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.05));border:1px solid rgba(245,158,11,.3)}
+        .status-banner.active{background:linear-gradient(135deg,rgba(62,142,62,.12),rgba(62,142,62,.05));border:1px solid rgba(62,142,62,.3)}
+        .sb-icon{font-size:2rem;flex-shrink:0}.sb-body{flex:1;min-width:200px}
+        .sb-title{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:700;margin-bottom:4px}
+        .sb-desc{font-size:.83rem;color:var(--muted);line-height:1.5}
+        .sb-id{font-family:monospace;font-weight:700;color:var(--g5)}
+        .page-header{margin-bottom:28px}
+        .page-header h1{font-family:'Fraunces',serif;font-size:1.8rem;font-weight:700;color:var(--text);margin-bottom:6px}
+        .page-header p{font-size:.9rem;color:var(--muted);line-height:1.6}
+        /* Farm grid */
+        .farms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:20px}
+        .farm-card{background:var(--white);border-radius:16px;border:1.5px solid var(--border);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .18s}
+        .farm-card:hover{box-shadow:0 8px 32px rgba(30,58,30,.1);transform:translateY(-2px)}
+        .farm-card.applied{border-color:var(--warn);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
+        .farm-card.applied-active{border-color:var(--g5);box-shadow:0 0 0 3px rgba(62,142,62,.1)}
+        .farm-img{width:100%;height:160px;object-fit:cover;display:block}
+        .farm-img-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--g7),var(--g5));display:flex;align-items:center;justify-content:center;font-size:3rem}
+        .farm-card-body{padding:18px 22px;flex:1}
+        .farm-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(62,142,62,.08);border:1px solid rgba(62,142,62,.2);border-radius:50px;padding:3px 10px;font-size:.7rem;font-weight:700;color:var(--g7);font-family:monospace;margin-bottom:10px}
+        .farm-name{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:8px}
+        .farm-desc{font-size:.8rem;color:var(--muted);line-height:1.55;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+        .farm-meta{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+        .farm-meta-row{display:flex;align-items:center;gap:7px;font-size:.79rem;color:var(--muted)}
+        .farm-meta-row svg{width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:2;flex-shrink:0}
+        .farm-owner{display:flex;align-items:center;gap:9px;padding:9px 13px;background:var(--panel);border-radius:9px}
+        .farm-owner-av{width:30px;height:30px;border-radius:50%;background:var(--g5);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;color:#fff;flex-shrink:0}
+        .farm-owner-name{font-size:.8rem;font-weight:700;color:var(--text)}
+        .farm-owner-label{font-size:.68rem;color:var(--muted)}
+        .farm-card-footer{padding:13px 22px;border-top:1px solid var(--border);background:#fcfdfb}
+        .btn-apply{width:100%;padding:11px;background:var(--g5);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:background .18s;display:flex;align-items:center;justify-content:center;gap:7px}
+        .btn-apply:hover{background:var(--g7)}
+        .btn-apply:disabled{opacity:.45;cursor:not-allowed;background:var(--muted)}
+        .btn-withdraw{width:100%;padding:11px;background:transparent;color:var(--danger);border:1.5px solid rgba(220,38,38,.3);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:all .18s}
+        .btn-withdraw:hover{background:var(--danger);color:#fff}
+        .status-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:50px;padding:6px 14px;font-size:.78rem;font-weight:700;width:100%}
+        .pill-pending{background:rgba(245,158,11,.1);color:#b45309;border:1px solid rgba(245,158,11,.3)}
+        .pill-active{background:rgba(62,142,62,.1);color:var(--g7);border:1px solid rgba(62,142,62,.3)}
+        /* Modal */
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;padding:20px}
+        .modal-overlay.open{display:flex}
+        .modal{background:var(--white);border-radius:20px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.22);animation:slideUp .22s ease}
+        @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .modal-top{height:4px;background:linear-gradient(90deg,var(--g7),var(--g5),#81c784)}
+        .modal-inner{padding:28px 32px 32px}
+        .modal-title{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;margin-bottom:4px}
+        .modal-sub{font-size:.83rem;color:var(--muted);margin-bottom:20px}
+        .modal-sub strong{color:var(--g5)}
+        .drop-zone{border:2px dashed var(--border);border-radius:14px;padding:26px 20px;cursor:pointer;text-align:center;transition:all .2s;background:var(--panel)}
+        .drop-zone:hover,.drop-zone.drag-over,.drop-zone.has-file{border-color:var(--g5);background:rgba(62,142,62,.04)}
+        .dz-icon{font-size:2rem;margin-bottom:6px}
+        .dz-title{font-size:.86rem;font-weight:600;color:var(--text);margin-bottom:3px}
+        .dz-hint{font-size:.74rem;color:var(--muted)}
+        .dz-file{margin-top:8px;font-size:.8rem;color:var(--g5);font-weight:700;display:none}
+        .ai-note{display:flex;align-items:center;gap:9px;margin-top:14px;padding:10px 13px;background:rgba(62,142,62,.06);border:1px solid rgba(62,142,62,.18);border-radius:9px;font-size:.78rem;color:var(--g7)}
+        .modal-actions{display:flex;gap:10px;margin-top:20px}
+        .btn-cancel{flex:1;padding:12px;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer}
+        .btn-send{flex:2;padding:12px;background:var(--g5);color:#fff;border:none;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:background .18s;display:flex;align-items:center;justify-content:center;gap:7px}
+        .btn-send:hover{background:var(--g7)}
+        .btn-send:disabled{opacity:.55;cursor:not-allowed}
+        .empty-state{text-align:center;padding:60px 20px;background:var(--white);border-radius:16px;border:1px solid var(--border)}
+    </style>
+</head>
+<body>
+
+{% if notification %}
+<div class="toast" id="globalToast">
+    <span>{{ notification|raw }}</span>
+    <button class="toast-close" onclick="dismissToast()">✕</button>
+</div>
+{% endif %}
+
+<nav class="nav">
+    <div class="nav-brand">
+        <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 19.72L5.71 21l1-1.29A4.49 4.49 0 008 20c4 0 4-2 8-2s4 2 8 2v-2c-4 0-4-2-8-2-1.33 0-2.31.15-3.14.37C14 11.54 16 8.36 17 8z"/></svg></div>
+        <div class="nav-name">AgriSense 360</div>
+    </div>
+    <div class="nav-right">
+        {% if is_granted('ROLE_OUVRIER') %}<a href="{{ path('ouvrier_home') }}" class="nav-link">🏠 {{ 'nav.home'|trans }}</a>{% endif %}
+        <a href="{{ path('ouvrier_farms') }}" class="nav-link active">🌾 {{ 'nav.farms'|trans }}</a>
+        {% include 'components/_profile_widget.html.twig' %}
+    </div>
+</nav>
+
+<div class="container">
+    <div id="ajaxToast" class="toast" style="display:none">
+        <span id="ajaxToastMsg"></span>
+        <button class="toast-close" onclick="this.parentElement.style.display='none'">✕</button>
+    </div>
+
+    {% if appliedFarm %}
+        <div class="status-banner {{ worker.status == 'active' ? 'active' : 'pending' }}">
+            <div class="sb-icon">{{ worker.status == 'active' ? '✅' : '⏳' }}</div>
+            <div class="sb-body">
+                <div class="sb-title">{{ worker.status == 'active' ? 'farms.active_banner'|trans : 'farms.pending_banner'|trans }}</div>
+                <div class="sb-desc">{{ 'common.name'|trans }} : <span class="sb-id">{{ appliedFarm.name }}</span> · ID : <span class="sb-id">{{ appliedFarm.farmId }}</span>
+                    {% if worker.status == 'pending' %}<br>Le propriétaire examine votre CV.{% endif %}
+                </div>
+            </div>
+            <div>
+                {% if worker.status == 'active' %}
+                    <a href="{{ path('ouvrier_home') }}" class="nav-link active">{{ 'nav.home'|trans }} →</a>
+                {% elseif worker.status == 'pending' %}
+                    <form method="post" action="{{ path('ouvrier_withdraw') }}" onsubmit="return confirm('Retirer votre candidature ?')">
+                        <button type="submit" class="btn-withdraw" style="width:auto;padding:9px 18px">{{ 'farms.withdraw_btn'|trans }}</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="page-header">
+        <h1>🌾 {{ 'farms.title'|trans }}</h1>
+        <p>{% if not appliedFarm %}Postulez avec votre CV — notre IA analysera votre profil automatiquement.{% else %}Consultez toutes les fermes enregistrées.{% endif %}</p>
+    </div>
+
+    {% if farms|length == 0 %}
+        <div class="empty-state">
+            <div style="font-size:3rem;margin-bottom:12px">🏡</div>
+            <h3 style="font-family:'Fraunces',serif;font-size:1.3rem;margin-bottom:8px">{{ 'farms.no_farms'|trans }}</h3>
+            <p style="font-size:.88rem;color:var(--muted)">Revenez plus tard !</p>
+        </div>
+    {% else %}
+    <div class="farms-grid">
+        {% for farm in farms %}
+            {% set isApplied = appliedFarm and appliedFarm.id == farm.id %}
+            {% set cardClass = isApplied ? (worker.status == 'active' ? 'applied-active' : 'applied') : '' %}
+            <div class="farm-card {{ cardClass }}">
+                {% if farm.image %}
+                    <img class="farm-img" src="{{ app.request.basePath }}/uploads/farms/{{ farm.image }}" alt="{{ farm.name }}">
+                {% else %}
+                    <div class="farm-img-placeholder">🌾</div>
+                {% endif %}
+                <div class="farm-card-body">
+                    <div class="farm-badge">🔑 {{ farm.farmId }}</div>
+                    <div class="farm-name">{{ farm.name }}</div>
+                    {% if farm.description %}<div class="farm-desc">{{ farm.description }}</div>{% endif %}
+                    <div class="farm-meta">
+                        {% if farm.location %}<div class="farm-meta-row"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>{{ farm.location }}</div>{% endif %}
+                        {% if farm.surface %}<div class="farm-meta-row"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>{{ farm.surface }} ha</div>{% endif %}
+                        <div class="farm-meta-row"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>{{ farm.createdAt ? farm.createdAt|date('d/m/Y') : '—' }}</div>
+                    </div>
+                    {% if farm.owner %}
+                    <div class="farm-owner">
+                        <div class="farm-owner-av">{{ farm.owner.name|slice(0,1)|upper }}</div>
+                        <div><div class="farm-owner-name">{{ farm.owner.name }}</div><div class="farm-owner-label">{{ 'farms.owner'|trans }}</div></div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="farm-card-footer">
+                    {% if isApplied %}
+                        <span class="status-pill {{ worker.status == 'active' ? 'pill-active' : 'pill-pending' }}">
+                            {{ worker.status == 'active' ? '✅ Membre approuvé' : '⏳ Candidature envoyée' }}
+                        </span>
+                    {% elseif appliedFarm %}
+                        <button class="btn-apply" disabled>{{ 'farms.applied_already'|trans }}</button>
+                    {% else %}
+                        <button class="btn-apply" onclick="openModal({{ farm.id }}, '{{ farm.name|e('js') }}')">📤 {{ 'farms.apply_btn'|trans }}</button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{# Apply Modal #}
+<div class="modal-overlay" id="applyModal">
+    <div class="modal">
+        <div class="modal-top"></div>
+        <div class="modal-inner">
+            <div class="modal-title">📤 {{ 'farms.cv_upload'|trans }}</div>
+            <div class="modal-sub">{{ 'common.name'|trans }} : <strong id="modalFarmName">—</strong></div>
+            <div class="drop-zone" id="dropZone" onclick="document.getElementById('cvInput').click()">
+                <div class="dz-icon">📄</div>
+                <div class="dz-title">{{ 'farms.cv_drop'|trans }}</div>
+                <div class="dz-hint">{{ 'farms.cv_hint'|trans }}</div>
+                <input type="file" id="cvInput" name="cv" accept="application/pdf,.pdf" style="display:none">
+                <div class="dz-file" id="dzFile"></div>
+            </div>
+            <div class="ai-note">🤖 {{ 'farms.ai_note'|trans|raw }}</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">{{ 'common.cancel'|trans }}</button>
+                <button type="button" class="btn-send" id="sendBtn" onclick="submitApplication()">
+                    <span id="sendBtnText">📤 {{ 'common.apply'|trans }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Derive the apply base URL from the known farms route — handles any subfolder/base path
+const _farmsUrl = '{{ path('ouvrier_farms') }}';
+const _applyBase = _farmsUrl.replace(/\/farms$/, '/apply/');
+
+let currentFarmId = null;
+
+function openModal(farmId, farmName) {
+    currentFarmId = farmId;
+    document.getElementById('modalFarmName').textContent = farmName;
+    document.getElementById('applyModal').classList.add('open');
+    document.getElementById('cvInput').value = '';
+    document.getElementById('dzFile').style.display = 'none';
+    document.getElementById('dropZone').classList.remove('has-file');
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('sendBtnText').textContent = '📤 {{ 'common.apply'|trans }}';
+}
+function closeModal() { document.getElementById('applyModal').classList.remove('open'); }
+document.getElementById('applyModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+document.getElementById('cvInput').addEventListener('change', function() {
+    if (this.files[0]) {
+        const f = document.getElementById('dzFile');
+        f.textContent = '✓ ' + this.files[0].name;
+        f.style.display = 'block';
+        document.getElementById('dropZone').classList.add('has-file');
+    }
+});
+
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+        const dt = new DataTransfer(); dt.items.add(file);
+        document.getElementById('cvInput').files = dt.files;
+        document.getElementById('cvInput').dispatchEvent(new Event('change'));
+    }
+});
+
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('ajaxToast');
+    t.className = 'toast' + (type === 'error' ? ' toast-error' : '');
+    document.getElementById('ajaxToastMsg').innerHTML = msg;
+    t.style.display = 'flex';
+    setTimeout(() => { t.style.animation = 'slideOut .3s ease forwards'; setTimeout(() => { t.style.display='none'; t.style.animation=''; }, 300); }, 6000);
+}
+
+async function submitApplication() {
+    const cvInput = document.getElementById('cvInput');
+    if (!cvInput.files || !cvInput.files[0]) { showToast('Veuillez sélectionner votre CV en PDF.', 'error'); return; }
+    const btn = document.getElementById('sendBtn');
+    const txt = document.getElementById('sendBtnText');
+    btn.disabled = true; txt.textContent = '{{ 'farms.ai_analyzing'|trans }}';
+    const fd = new FormData();
+    fd.append('cv', cvInput.files[0]);
+    try {
+        const url = _applyBase + currentFarmId;
+        const res = await fetch(url, { method: 'POST', body: fd });
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+            const text = await res.text();
+            throw new Error('Réponse inattendue (' + res.status + '): ' + text.substring(0, 120));
+        }
+        const data = await res.json();
+        closeModal();
+        if (data.success) {
+            showToast('✅ ' + data.message);
+            setTimeout(() => window.location.reload(), 2500);
+        } else {
+            showToast('⚠ ' + data.message, 'error');
+            btn.disabled = false; txt.textContent = '📤 {{ 'common.apply'|trans }}';
+        }
+    } catch(e) {
+        showToast('Erreur: ' + e.message, 'error');
+        btn.disabled = false; txt.textContent = '📤 {{ 'common.apply'|trans }}';
+    }
+}
+
+function dismissToast() {
+    const t = document.getElementById('globalToast');
+    if (t) { t.style.animation = 'slideOut .3s ease forwards'; setTimeout(() => t.remove(), 300); }
+}
+{% if notification %}setTimeout(dismissToast, 8000);{% endif %}
+</script>
+</body>
+</html>

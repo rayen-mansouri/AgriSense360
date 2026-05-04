@@ -1,0 +1,114 @@
+{% set activePage = 'cultures' %}
+{% set activeSection = 'main' %}
+
+{% block title %}Détails de la Culture{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="content-wrapper">
+
+{# ═══════════════════════════════════════════════════
+   PAGE HEADER
+   ═══════════════════════════════════════════════════ #}
+<div class="page-header">
+    <div class="page-header-left">
+        <p class="page-breadcrumb">
+            <a href="{{ path('app_home') }}">🏠 Accueil</a> /
+            <a href="{{ path('culture_index') }}">Cultures</a> /
+            Détails
+        </p>
+        <h1 class="page-title">📋 Détails de la Culture</h1>
+        <p class="page-subtitle">{{ culture.nom }}</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a href="{{ path('culture_index') }}" class="btn btn-secondary">
+            ← Retour aux cultures
+        </a>
+        <form method="post" action="{{ path('culture_harvest', {id: culture.id}) }}" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('harvest-culture-' ~ culture.id) }}">
+            <button type="submit" class="btn btn-primary">
+                🌾 Récolter cette culture
+            </button>
+        </form>
+    </div>
+</div>
+
+{# ═══════════════════════════════════════════════════
+   CULTURE DETAILS CONTENT
+   ═══════════════════════════════════════════════════ #}
+<div class="details-container">
+    <div class="details-image-section">
+        {% if culture.img %}
+            <img src="{{ asset('images/cultures/' ~ culture.img) }}"
+                 alt="{{ culture.nom }}"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:var(--green-100);font-size:48px;">
+                {{ cultureTypeEmoji(culture.typeCulture) }}
+            </div>
+        {% else %}
+            <div class="img-fallback" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--green-100);font-size:48px;">
+                {{ cultureTypeEmoji(culture.typeCulture) }}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="details-info-section">
+        <div class="details-grid">
+            <div class="detail-row">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">{{ culture.typeCulture }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Nom:</span>
+                <span class="detail-value">{{ culture.nom }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">État:</span>
+                {% set etatClass = etatToCssClass(culture.etat) %}
+                <span class="detail-value etat-badge {{ etatClass }}">
+                    {{ etatToEmoji(culture.etat) }} {{ culture.etat }}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Date Plantation:</span>
+                <span class="detail-value">{{ culture.datePlantation ? culture.datePlantation|date('d/m/Y') : '-' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Date Récolte:</span>
+                <span class="detail-value">{{ culture.dateRecolte ? culture.dateRecolte|date('d/m/Y') : '-' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Surface:</span>
+                <span class="detail-value">{{ culture.surface }} m²</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Parcelle ID:</span>
+                <span class="detail-value">{{ culture.parcelle.id }}</span>
+            </div>
+            {% if parcelle %}
+            <div class="detail-row">
+                <span class="detail-label">Nom Parcelle:</span>
+                <span class="detail-value">
+                    <a href="{{ path('parcelle_index') }}" style="color:var(--green-600);text-decoration:none;">
+                        {{ parcelle.nom }}
+                    </a>
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+    </div>{# end .content-wrapper #}
+    </main>
+</div>{# end .layout #}
+{% endblock %}
