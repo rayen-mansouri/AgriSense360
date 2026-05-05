@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 
 class FrontController extends AbstractController
@@ -29,11 +30,12 @@ class FrontController extends AbstractController
         $recommendations = $recoService->recommendGeneral(4);
         $categories = $produitRepo->findAllCategories();
 
+        // ✅ CORRECTION: Remplacer findAll() par count optimisé
         return $this->render('front/home.html.twig', [
             'produits'        => $produits,
             'recommendations' => $recommendations,
-            'totalProduits'   => count($produitRepo->findAll()),
-            'totalStocks'     => count($stockRepo->findAll()),
+            'totalProduits'   => $produitRepo->countProducts(),     // ✅ COUNT optimisé
+            'totalStocks'     => $stockRepo->countStocks(),         // ✅ COUNT optimisé
             'totalCategories' => count($categories),
         ]);
     }
@@ -46,8 +48,9 @@ class FrontController extends AbstractController
         $search      = $request->query->get('q', '');
         $selectedCat = $request->query->get('cat', '');
 
+        // ✅ Déjà bon car findFiltered a une limite
         $produits   = $produitRepo->findFiltered($search, $selectedCat, 'nom', 'asc');
-        $categories = $produitRepo->findAllCategories();
+        $categories = $produitRepo->findAllCategories(50); // ✅ Avec limite
 
         return $this->render('front/catalogue.html.twig', [
             'produits'    => $produits,
@@ -104,16 +107,13 @@ class FrontController extends AbstractController
         ]);
     }
 
-   
     #[Route('/supprimer-produit/{id}', name: 'front_produit_delete', methods: ['POST'])]
     public function deleteProduit(
         Produit $produit,
         Request $request,
         EntityManagerInterface $em
     ): Response {
-        // Vérification du token CSRF
         if ($this->isCsrfTokenValid('delete_produit_' . $produit->getId(), $request->request->get('_token'))) {
-            // Supprimer la photo si elle existe
             if ($produit->getPhotoUrl()) {
                 $photoPath = $this->getParameter('kernel.project_dir') . '/public/' . $produit->getPhotoUrl();
                 if (file_exists($photoPath)) {
@@ -167,10 +167,6 @@ class FrontController extends AbstractController
         ]);
     }
 
-    // src/Controller/Front/ProduitController.php
-
-// Dans src/Controller/Front/ProduitController.php
-
     #[Route('/modifier-produit/{id}', name: 'front_produit_edit', methods: ['GET', 'POST'])]
     public function editProduit(
         Produit $produit,
@@ -198,7 +194,6 @@ class FrontController extends AbstractController
                 $produit->setPhotoUrl('uploads/photos/' . $newFilename);
             }
 
-            // Gestion du stock
             $stockQuantite = $request->request->get('stock_quantite');
             $stockUnite = $request->request->get('stock_unite');
             
@@ -248,66 +243,33 @@ class FrontController extends AbstractController
     }
 
     #[Route('/modifier-stock/{id}', name: 'front_stock_edit', methods: ['GET', 'POST'])]
-public function editStock(
-    Stock $stock,
-    Request $request,
-    EntityManagerInterface $em
-): Response {
-    $produit = $stock->getProduit();
-    
-    $form = $this->createForm(StockType::class, $stock, [
-        'show_produit' => false,
-    ]);
-    $form->handleRequest($request);
+    public function editStock(
+        Stock $stock,
+        Request $request,
+        EntityManagerInterface $em
+    ): Response {
+        $produit = $stock->getProduit();
+        
+        $form = $this->createForm(StockType::class, $stock, [
+            'show_produit' => false,
+        ]);
+        $form->handleRequest($request);
 
-    if ($form->isSubmitted() && $form->isValid()) {
-        $em->flush();
-        $this->addFlash('success', '✅ Stock modifié avec succès !');
-        return $this->redirectToRoute('front_stock_list');
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em->flush();
+            $this->addFlash('success', '✅ Stock modifié avec succès !');
+            return $this->redirectToRoute('front_stock_list');
+        }
+
+        return $this->render('front/stock/form.html.twig', [
+            'form'     => $form->createView(),
+            'produit'  => $produit,
+            'title'    => '✏️ Modifier le stock',
+            'subtitle' => 'Pour le produit : ' . $produit->getNom(),
+            'btnLabel' => 'Enregistrer les modifications',
+        ]);
     }
 
-    return $this->render('front/stock/form.html.twig', [
-        'form'     => $form->createView(),
-        'produit'  => $produit,
-        'title'    => '✏️ Modifier le stock',
-        'subtitle' => 'Pour le produit : ' . $produit->getNom(),
-        'btnLabel' => 'Enregistrer les modifications',
-    ]);
-}
-/*private function handleStockData(Request $request, Produit $produit, EntityManagerInterface $em): void
-{
-    $stockQuantite = $request->request->get('stock_quantite');
-    $stockUnite = $request->request->get('stock_unite');
-    
-    if ($stockQuantite && $stockQuantite > 0 && $stockUnite) {
-        $stock = $produit->getStock() ?? new Stock();
-        $stock->setProduit($produit);
-        $stock->setQuantite((float) $stockQuantite);
-        $stock->setUnite($stockUnite);
-        
-        if ($seuil = $request->request->get('stock_seuil')) {
-            $stock->setSeuilAlerte((float) $seuil);
-        }
-        
-        if ($emplacement = $request->request->get('stock_emplacement')) {
-            $stock->setEmplacement($emplacement);
-        }
-        
-        if ($dateReception = $request->request->get('stock_date_reception')) {
-            try {
-                $stock->setDateReception(new \DateTime($dateReception));
-            } catch (\Exception $e) {}
-        }
-        
-        if ($dateExpiration = $request->request->get('stock_date_expiration')) {
-            try {
-                $stock->setDateExpiration(new \DateTime($dateExpiration));
-            } catch (\Exception $e) {}
-        }
-        
-        $em->persist($stock);
-    }
-}*/
     #[Route('/stock/supprimer/{id}', name: 'front_stock_delete', methods: ['POST'])]
     public function deleteStock(
         Stock $stock,
@@ -329,74 +291,78 @@ public function editStock(
     }
 
     #[Route('/mes-stocks', name: 'front_stock_list', methods: ['GET'])]
-public function listStocks(
-    StockRepository $stockRepo,
-    ProduitRepository $produitRepo
-): Response {
-    $stocks = $stockRepo->findAll();
-    
-    // Récupérer tous les produits
-    $tousLesProduits = $produitRepo->findAll();
-    
-    // Garder uniquement les produits qui n'ont PAS de stock
-    $produitsSansStock = [];
-    foreach ($tousLesProduits as $produit) {
-        if ($produit->getStockActuel() === null) {
-            $produitsSansStock[] = $produit;
+    public function listStocks(
+        StockRepository $stockRepo,
+        ProduitRepository $produitRepo
+    ): Response {
+        // ✅ CORRECTION: Ajouter une limite pour éviter trop de données
+        $stocks = $stockRepo->findBy([], ['id' => 'DESC'], 100);  // ✅ LIMIT 100
+        
+        // ✅ CORRECTION: Récupérer uniquement les produits sans stock (avec limite)
+        $produitsSansStock = $produitRepo->createQueryBuilder('p')
+            ->leftJoin('p.stocks', 's')
+            ->where('s.id IS NULL')
+            ->setMaxResults(50)  // ✅ LIMIT 50
+            ->getQuery()
+            ->getResult();
+
+        return $this->render('front/stock/list.html.twig', [
+            'stocks'           => $stocks,
+            'produitsSansStock'=> $produitsSansStock,
+        ]);
+    }
+
+    #[Route('/scanner', name: 'front_scanner')]
+    public function scanner(): Response
+    {
+        return $this->render('front/scanner.html.twig');
+    }
+
+    #[Route('/api/produit/recherche', name: 'api_produit_search')]
+    public function searchByBarcode(Request $request, ProduitRepository $produitRepo): JsonResponse
+    {
+        $code = $request->query->get('code');
+        
+        $produit = $produitRepo->findOneBy(['sku' => $code]);
+        
+        if (!$produit && is_numeric($code)) {
+            $produit = $produitRepo->find($code);
         }
+        
+        if (!$produit) {
+            return $this->json(['error' => 'Produit non trouvé'], 404);
+        }
+        
+        return $this->json([
+            'id' => $produit->getId(),
+            'nom' => $produit->getNom(),
+            'url' => $this->generateUrl('front_produit_show', ['id' => $produit->getId()])
+        ]);
     }
 
-    return $this->render('front/stock/list.html.twig', [
-        'stocks'           => $stocks,
-        'produitsSansStock'=> $produitsSansStock,
-    ]);
-}
-#[Route('/scanner', name: 'front_scanner')]
-public function scanner(): Response
-{
-    return $this->render('front/scanner.html.twig');
-}
-
-#[Route('/api/produit/recherche', name: 'api_produit_search')]
-public function searchByBarcode(Request $request, ProduitRepository $produitRepo): JsonResponse
-{
-    $code = $request->query->get('code');
-    
-    // Recherche par SKU (code-barres généré)
-    $produit = $produitRepo->findOneBy(['sku' => $code]);
-    
-    // Si non trouvé, recherche par ID
-    if (!$produit && is_numeric($code)) {
-        $produit = $produitRepo->find($code);
+    #[Route('/exchange', name: 'front_exchange')]
+    public function exchange(ProduitRepository $produitRepo): Response
+    {
+        // ✅ CORRECTION: Ajouter une limite
+        $produits = $produitRepo->findBy([], ['id' => 'DESC'], 100);  // ✅ LIMIT 100
+        
+        return $this->render('front/exchange.html.twig', [
+            'produits' => $produits
+        ]);
     }
-    
-    if (!$produit) {
-        return $this->json(['error' => 'Produit non trouvé'], 404);
-    }
-    
-    return $this->json([
-        'id' => $produit->getId(),
-        'nom' => $produit->getNom(),
-        'url' => $this->generateUrl('front_produit_show', ['id' => $produit->getId()])
-    ]);
-}
-#[Route('/exchange', name: 'front_exchange')]
-public function exchange(ProduitRepository $produitRepo): Response
-{
-    return $this->render('front/exchange.html.twig', [
-        'produits' => $produitRepo->findAll()
-    ]);
-}
 
-#[Route('/commodity', name: 'front_commodity')]
-public function commodity(ProduitRepository $produitRepo): Response
-{
-    $categoriesComparables = ['Semences', 'Engrais', 'Alimentation animale'];
-    $produitsCompatibles = $produitRepo->findBy(['categorie' => $categoriesComparables]);
-    
-    return $this->render('front/commodity.html.twig', [
-        'produits' => $produitRepo->findAll(),
-        'produitsCompatibles' => $produitsCompatibles
-    ]);
-}
+    #[Route('/commodity', name: 'front_commodity')]
+    public function commodity(ProduitRepository $produitRepo): Response
+    {
+        $categoriesComparables = ['Semences', 'Engrais', 'Alimentation animale'];
+        
+        // ✅ CORRECTION: Ajouter des limites
+        $produitsCompatibles = $produitRepo->findBy(['categorie' => $categoriesComparables], ['id' => 'DESC'], 100);
+        $tousLesProduits = $produitRepo->findBy([], ['id' => 'DESC'], 100);
+        
+        return $this->render('front/commodity.html.twig', [
+            'produits' => $tousLesProduits,
+            'produitsCompatibles' => $produitsCompatibles
+        ]);
+    }
 }

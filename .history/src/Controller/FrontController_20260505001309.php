@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 
 class FrontController extends AbstractController
@@ -384,7 +385,10 @@ public function searchByBarcode(Request $request, ProduitRepository $produitRepo
 public function exchange(ProduitRepository $produitRepo): Response
 {
     return $this->render('front/exchange.html.twig', [
-        'produits' => $produitRepo->findAll()
+        $produits = $this->produitRepo->createQueryBuilder('p')
+    ->setMaxResults(100)  // Limite à 100 produits
+    ->getQuery()
+    ->getResult();
     ]);
 }
 

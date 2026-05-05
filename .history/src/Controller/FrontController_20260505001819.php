@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 
 class FrontController extends AbstractController
@@ -32,8 +33,8 @@ class FrontController extends AbstractController
         return $this->render('front/home.html.twig', [
             'produits'        => $produits,
             'recommendations' => $recommendations,
-            'totalProduits'   => count($produitRepo->findAll()),
-            'totalStocks'     => count($stockRepo->findAll()),
+            'totalProduits'   => $produitRepo->countProducts(),     // ✅ COUNT optimisé
+            'totalStocks'     => $stockRepo->countStocks(),         // ✅ COUNT optimisé
             'totalCategories' => count($categories),
         ]);
     }
@@ -333,23 +334,20 @@ public function listStocks(
     StockRepository $stockRepo,
     ProduitRepository $produitRepo
 ): Response {
-    $stocks = $stockRepo->findAll();
-    
-    // Récupérer tous les produits
-    $tousLesProduits = $produitRepo->findAll();
-    
-    // Garder uniquement les produits qui n'ont PAS de stock
-    $produitsSansStock = [];
-    foreach ($tousLesProduits as $produit) {
-        if ($produit->getStockActuel() === null) {
-            $produitsSansStock[] = $produit;
-        }
-    }
+    $stocks = $stockRepo->findBy([], ['id' => 'DESC'], 100);  // ✅ LIMIT 100
+        
+        // ✅ CORRECTION: Récupérer uniquement les produits sans stock (avec limite)
+        $produitsSansStock = $produitRepo->createQueryBuilder('p')
+            ->leftJoin('p.stocks', 's')
+            ->where('s.id IS NULL')
+            ->setMaxResults(50)  // ✅ LIMIT 50
+            ->getQuery()
+            ->getResult();
 
-    return $this->render('front/stock/list.html.twig', [
-        'stocks'           => $stocks,
-        'produitsSansStock'=> $produitsSansStock,
-    ]);
+        return $this->render('front/stock/list.html.twig', [
+            'stocks'           => $stocks,
+            'produitsSansStock'=> $produitsSansStock,
+        ]);
 }
 #[Route('/scanner', name: 'front_scanner')]
 public function scanner(): Response
@@ -383,20 +381,24 @@ public function searchByBarcode(Request $request, ProduitRepository $produitRepo
 #[Route('/exchange', name: 'front_exchange')]
 public function exchange(ProduitRepository $produitRepo): Response
 {
-    return $this->render('front/exchange.html.twig', [
-        'produits' => $produitRepo->findAll()
-    ]);
+    $produits = $produitRepo->findBy([], ['id' => 'DESC'], 100);  // ✅ LIMIT 100
+        
+        return $this->render('front/exchange.html.twig', [
+            'produits' => $produits
+        ]);
 }
+
 
 #[Route('/commodity', name: 'front_commodity')]
 public function commodity(ProduitRepository $produitRepo): Response
 {
     $categoriesComparables = ['Semences', 'Engrais', 'Alimentation animale'];
-    $produitsCompatibles = $produitRepo->findBy(['categorie' => $categoriesComparables]);
-    
-    return $this->render('front/commodity.html.twig', [
-        'produits' => $produitRepo->findAll(),
-        'produitsCompatibles' => $produitsCompatibles
-    ]);
-}
+    $produitsCompatibles = $produitRepo->findBy(['categorie' => $categoriesComparables], ['id' => 'DESC'], 100);
+        $tousLesProduits = $produitRepo->findBy([], ['id' => 'DESC'], 100);
+        
+        return $this->render('front/commodity.html.twig', [
+            'produits' => $tousLesProduits,
+            'produitsCompatibles' => $produitsCompatibles
+        ]);
+    }
 }

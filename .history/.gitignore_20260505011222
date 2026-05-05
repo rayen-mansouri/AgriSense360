@@ -13,4 +13,5 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+.history
 

@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 
 class FrontController extends AbstractController
@@ -392,11 +393,12 @@ public function exchange(ProduitRepository $produitRepo): Response
 public function commodity(ProduitRepository $produitRepo): Response
 {
     $categoriesComparables = ['Semences', 'Engrais', 'Alimentation animale'];
-    $produitsCompatibles = $produitRepo->findBy(['categorie' => $categoriesComparables]);
-    
-    return $this->render('front/commodity.html.twig', [
-        'produits' => $produitRepo->findAll(),
-        'produitsCompatibles' => $produitsCompatibles
-    ]);
-}
+    $produitsCompatibles = $produitRepo->findBy(['categorie' => $categoriesComparables], ['id' => 'DESC'], 100);
+        $tousLesProduits = $produitRepo->findBy([], ['id' => 'DESC'], 100);
+        
+        return $this->render('front/commodity.html.twig', [
+            'produits' => $tousLesProduits,
+            'produitsCompatibles' => $produitsCompatibles
+        ]);
+    }
 }
