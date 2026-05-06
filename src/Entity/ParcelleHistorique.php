@@ -3,7 +3,6 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\DBAL\Types\Types;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'parcelle_historique')]
@@ -14,174 +13,109 @@ class ParcelleHistorique
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: false)]
-    private ?int $parcelle_id = null;
+    #[ORM\Column(name: 'parcelle_id')]
+    private int $parcelleId;
 
-    #[ORM\Column(type: Types::STRING, nullable: false)]
-    private ?string $type_action = null;
+    #[ORM\Column(name: 'type_action', length: 50)]
+    private string $typeAction;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $culture_id = null;
+    #[ORM\Column(name: 'culture_id', nullable: true)]
+    private ?int $cultureId = null;
 
-    #[ORM\Column(type: Types::STRING, nullable: false)]
-    private ?string $culture_nom = null;
+    #[ORM\Column(name: 'culture_nom', length: 100, nullable: true)]
+    private ?string $cultureNom = null;
 
-    #[ORM\Column(type: Types::STRING, nullable: true)]
-    private ?string $type_culture = null;
+    #[ORM\Column(name: 'type_culture', length: 50, nullable: true)]
+    private ?string $typeCulture = null;
 
-    #[ORM\Column(type: Types::FLOAT, nullable: true)]
+    #[ORM\Column(type: 'float', nullable: true)]
     private ?float $surface = null;
 
-    #[ORM\Column(type: Types::STRING, nullable: true)]
-    private ?string $etat_avant = null;
+    #[ORM\Column(name: 'etat_avant', length: 50, nullable: true)]
+    private ?string $etatAvant = null;
 
-    #[ORM\Column(type: Types::STRING, nullable: true)]
-    private ?string $etat_apres = null;
+    #[ORM\Column(name: 'etat_apres', length: 50, nullable: true)]
+    private ?string $etatApres = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: false)]
-    private ?\DateTimeInterface $date_action = null;
+    #[ORM\Column(name: 'date_action', type: 'datetime')]
+    private \DateTimeInterface $dateAction;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::FLOAT, nullable: true)]
-    private ?float $quantite_recolte = null;
+    #[ORM\Column(name: 'quantite_recolte', type: 'float', nullable: true)]
+    private ?float $quantiteRecolte = null;
 
-    public function getId(): ?int
+    public function __construct()
     {
-        return $this->id;
+        $this->dateAction = new \DateTime();
     }
 
-    public function getParcelleId(): ?int
+    public function getId(): ?int { return $this->id; }
+
+    public function getParcelleId(): int { return $this->parcelleId; }
+    public function setParcelleId(int $v): self { $this->parcelleId = $v; return $this; }
+
+    public function getTypeAction(): string { return $this->typeAction; }
+    public function setTypeAction(string $v): self { $this->typeAction = $v; return $this; }
+
+    public function getCultureId(): ?int { return $this->cultureId; }
+    public function setCultureId(?int $v): self { $this->cultureId = $v; return $this; }
+
+    public function getCultureNom(): ?string { return $this->cultureNom; }
+    public function setCultureNom(?string $v): self { $this->cultureNom = $v; return $this; }
+
+    public function getTypeCulture(): ?string { return $this->typeCulture; }
+    public function setTypeCulture(?string $v): self { $this->typeCulture = $v; return $this; }
+
+    public function getSurface(): ?float { return $this->surface; }
+    public function setSurface(?float $v): self { $this->surface = $v; return $this; }
+
+    public function getEtatAvant(): ?string { return $this->etatAvant; }
+    public function setEtatAvant(?string $v): self { $this->etatAvant = $v; return $this; }
+
+    public function getEtatApres(): ?string { return $this->etatApres; }
+    public function setEtatApres(?string $v): self { $this->etatApres = $v; return $this; }
+
+    public function getDateAction(): \DateTimeInterface { return $this->dateAction; }
+    public function setDateAction(\DateTimeInterface $v): self { $this->dateAction = $v; return $this; }
+
+    public function getDescription(): ?string { return $this->description; }
+    public function setDescription(?string $v): self { $this->description = $v; return $this; }
+
+    public function getQuantiteRecolte(): ?float { return $this->quantiteRecolte; }
+    public function setQuantiteRecolte(?float $v): self { $this->quantiteRecolte = $v; return $this; }
+
+    public function getTypeIcon(): string
     {
-        return $this->parcelle_id;
+        return match($this->typeAction) {
+            'CULTURE_AJOUTEE'   => '🌱',
+            'CULTURE_MODIFIEE'  => '✏️',
+            'CULTURE_SUPPRIMEE' => '🗑',
+            'RECOLTE'           => '🌾',
+            default             => '📋',
+        };
     }
 
-    public function setParcelleId(int $parcelle_id): static
+    public function getTypeLabelFr(): string
     {
-        $this->parcelle_id = $parcelle_id;
-
-        return $this;
+        return match($this->typeAction) {
+            'CULTURE_AJOUTEE'   => 'Culture ajoutée',
+            'CULTURE_MODIFIEE'  => 'Culture modifiée',
+            'CULTURE_SUPPRIMEE' => 'Culture supprimée',
+            'RECOLTE'           => 'Récolte effectuée',
+            default             => $this->typeAction,
+        };
     }
 
-    public function getTypeAction(): ?string
+    public function getActionCssClass(): string
     {
-        return $this->type_action;
+        return match($this->typeAction) {
+            'CULTURE_AJOUTEE'   => 'hist-green',
+            'CULTURE_MODIFIEE'  => 'hist-amber',
+            'CULTURE_SUPPRIMEE' => 'hist-red',
+            'RECOLTE'           => 'hist-teal',
+            default             => 'hist-blue',
+        };
     }
-
-    public function setTypeAction(string $type_action): static
-    {
-        $this->type_action = $type_action;
-
-        return $this;
-    }
-
-    public function getCultureId(): ?int
-    {
-        return $this->culture_id;
-    }
-
-    public function setCultureId(?int $culture_id): static
-    {
-        $this->culture_id = $culture_id;
-
-        return $this;
-    }
-
-    public function getCultureNom(): ?string
-    {
-        return $this->culture_nom;
-    }
-
-    public function setCultureNom(string $culture_nom): static
-    {
-        $this->culture_nom = $culture_nom;
-
-        return $this;
-    }
-
-    public function getTypeCulture(): ?string
-    {
-        return $this->type_culture;
-    }
-
-    public function setTypeCulture(?string $type_culture): static
-    {
-        $this->type_culture = $type_culture;
-
-        return $this;
-    }
-
-    public function getSurface(): ?float
-    {
-        return $this->surface;
-    }
-
-    public function setSurface(?float $surface): static
-    {
-        $this->surface = $surface;
-
-        return $this;
-    }
-
-    public function getEtatAvant(): ?string
-    {
-        return $this->etat_avant;
-    }
-
-    public function setEtatAvant(?string $etat_avant): static
-    {
-        $this->etat_avant = $etat_avant;
-
-        return $this;
-    }
-
-    public function getEtatApres(): ?string
-    {
-        return $this->etat_apres;
-    }
-
-    public function setEtatApres(?string $etat_apres): static
-    {
-        $this->etat_apres = $etat_apres;
-
-        return $this;
-    }
-
-    public function getDateAction(): ?\DateTime
-    {
-        return $this->date_action;
-    }
-
-    public function setDateAction(\DateTime $date_action): static
-    {
-        $this->date_action = $date_action;
-
-        return $this;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): static
-    {
-        $this->description = $description;
-
-        return $this;
-    }
-
-    public function getQuantiteRecolte(): ?float
-    {
-        return $this->quantite_recolte;
-    }
-
-    public function setQuantiteRecolte(?float $quantite_recolte): static
-    {
-        $this->quantite_recolte = $quantite_recolte;
-
-        return $this;
-    }
-
 }

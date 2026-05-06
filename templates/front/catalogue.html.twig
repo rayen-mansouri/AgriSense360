@@ -1,218 +1,471 @@
 {# templates/front/catalogue.html.twig #}
-{% extends 'layout/front_base.html.twig' %}
+{% extends 'base.html.twig' %}
+{% set activePage = 'catalogue' %}
 {% block title %}Catalogue — Agrisens 360{% endblock %}
+{% block navbar %}{% endblock %}
 
-{% block content %}
-<div class="container-catalogue">
-    <div class="catalogue-header">
-        <div>
-            <h1 class="page-title">🛒 Catalogue Produits</h1>
-            <p class="page-subtitle">
-                {{ produits|length }} produit(s)
-                {% if search %} pour « {{ search }} »{% endif %}
-                {% if selectedCat %} dans « {{ selectedCat }} »{% endif %}
-            </p>
-        </div>
-        <a href="{{ path('front_produit_new') }}" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> Nouveau Produit
-        </a>
-    </div>
+{% block styles %}
+{% include 'partials/home_nav_styles.html.twig' %}
+<style>
+    /* ── BASE LAYOUT ── */
+    body {
+        background-color: var(--pg) !important;
+        font-family: 'Inter', sans-serif !important;
+        overflow-x: hidden;
+    }
 
-    <!-- FILTRES -->
-    <div class="filter-bar">
-        <a href="{{ path('front_catalogue') }}" class="filter-chip {{ search=='' and selectedCat=='' ? 'active':'' }}">
-            <i class="fa-solid fa-th-large"></i> Tous
-        </a>
-        {% for cat in categories %}
-            <a href="{{ path('front_catalogue', {cat: cat}) }}" class="filter-chip {{ selectedCat==cat ? 'active':'' }}">{{ cat }}</a>
-        {% endfor %}
-        <div style="flex:1"></div>
-        <form action="{{ path('front_catalogue') }}" method="GET" class="filter-search">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" name="q" value="{{ search }}" placeholder="Rechercher un produit...">
-        </form>
-    </div>
+    .front-main {
+        padding-top: 70px;
+        width: 100%;
+    }
+    .front-main-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 40px 60px;
+    }
 
-    <!-- Flashes -->
-    {% for message in app.flashes('success') %}
-    <div style="background:#dcfce7;color:#16a34a;padding:14px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #16a34a;font-weight:600;">
-        {{ message }}
-    </div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-    <div style="background:#fee2e2;color:#dc2626;padding:14px 20px;border-radius:10px;margin-bottom:20px;border-left:4px solid #dc2626;font-weight:600;">
-        {{ message }}
-    </div>
-    {% endfor %}
+    /* ── CATALOGUE HEADER ── */
+    .catalogue-header-area {
+        margin-bottom: 40px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .page-title {
+        font-size: 2.8rem !important;
+        font-weight: 900 !important;
+        color: var(--ch3) !important;
+        letter-spacing: -0.04em;
+        margin-bottom: 4px;
+    }
+    .page-subtitle {
+        color: var(--cp) !important;
+        font-size: 1.1rem;
+    }
 
-    <!-- LISTE -->
-    {% if produits is empty %}
-        <div class="empty-state-catalogue">
-            <i class="fa-solid fa-box-open"></i>
-            <p>Aucun produit trouvé.</p>
-            <a href="{{ path('front_catalogue') }}" class="btn btn-primary btn-sm">Réinitialiser</a>
-        </div>
-    {% else %}
-    <div class="catalogue-grid">
-        {% for produit in produits %}
-        {% set stock = produit.stockActuel %}
-        <div class="product-card-front">
-            
-            {# Lien vers la fiche #}
-            <a href="{{ path('front_produit_show', {id: produit.id}) }}" style="text-decoration:none; color:inherit; display:block;">
-                <div class="product-card-img">
-                    {% if produit.photoUrl %}
-                        <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}">
-                    {% else %}
-                        <div class="product-img-placeholder"><i class="fa-solid fa-seedling"></i></div>
-                    {% endif %}
-                    <span class="product-card-badge">{{ produit.categorie ?: 'Autre' }}</span>
+    /* ── FILTERS ── */
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 40px;
+        align-items: center;
+        background: var(--cb);
+        padding: 16px 24px;
+        border-radius: 20px;
+        border: 1px solid var(--cbr);
+    }
+    .filter-chip {
+        background: var(--fi);
+        padding: 8px 20px;
+        border-radius: 50px;
+        text-decoration: none;
+        color: var(--cp);
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        border: 1px solid var(--cbr);
+    }
+    .filter-chip.active {
+        background: var(--g);
+        color: white;
+        border-color: var(--g);
+        box-shadow: 0 4px 12px rgba(90,181,90,0.3);
+    }
+    .filter-chip:hover:not(.active) {
+        background: var(--fb);
+        color: var(--ch3);
+    }
+    .filter-search {
+        display: flex;
+        align-items: center;
+        background: var(--fi);
+        border: 1px solid var(--cbr);
+        border-radius: 50px;
+        padding: 4px 16px;
+        width: 300px;
+    }
+    .filter-search i { color: var(--cp); margin-right: 10px; }
+    .filter-search input {
+        background: none;
+        border: none;
+        padding: 8px 0;
+        outline: none;
+        color: var(--ch3);
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    /* ── PRODUCT GRID ── */
+    .catalogue-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 32px;
+    }
+    .product-card-front {
+        background: var(--cb) !important;
+        border: 1px solid var(--cbr) !important;
+        border-radius: 24px !important;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+    }
+    .product-card-front::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, var(--g), #a8d060);
+        z-index: 2;
+    }
+    .product-card-front:hover {
+        transform: translateY(-8px) !important;
+        border-color: var(--g) !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
+        background: var(--fb) !important;
+    }
+    .product-card-img {
+        position: relative;
+        height: 200px;
+        overflow: hidden;
+        background: var(--surface2);
+    }
+    .product-card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    .product-card-front:hover .product-card-img img { transform: scale(1.05); }
+    .product-img-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        color: var(--g);
+        opacity: 0.5;
+    }
+    .product-card-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(5px);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        z-index: 2;
+    }
+    .product-card-body {
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .product-card-name {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: var(--ch3);
+        margin-bottom: 10px;
+        letter-spacing: -0.02em;
+    }
+    .product-card-desc {
+        font-size: 0.9rem;
+        color: var(--cp);
+        margin-bottom: 20px;
+        line-height: 1.5;
+        flex-grow: 1;
+    }
+    .product-card-price {
+        font-weight: 900;
+        color: var(--g);
+        font-size: 1.6rem;
+    }
+    .product-card-price span {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--cp);
+        margin-left: 4px;
+    }
+
+    .product-card-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--cbr);
+        background: var(--surface2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stock-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--cp);
+    }
+    .stock-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .stock-dot.ok { background: #4caf50; box-shadow: 0 0 10px rgba(76,175,80,0.5); }
+    .stock-dot.low { background: #ff9800; box-shadow: 0 0 10px rgba(255,152,0,0.5); }
+    .stock-dot.rupture { background: #f44336; box-shadow: 0 0 10px rgba(244,67,54,0.5); }
+
+    /* ── ACTIONS ── */
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-view { background: rgba(90,181,90,0.1); color: var(--g); }
+    .btn-view:hover { background: var(--g); color: white; }
+    .btn-edit { background: rgba(33,150,243,0.1); color: #2196f3; }
+    .btn-edit:hover { background: #2196f3; color: white; }
+    .btn-delete { background: rgba(244,67,54,0.1); color: #f44336; }
+    .btn-delete:hover { background: #f44336; color: white; }
+
+    .empty-state-catalogue {
+        text-align: center;
+        padding: 100px 40px;
+        background: var(--cb);
+        border: 1px solid var(--cbr);
+        border-radius: 32px;
+    }
+    .empty-state-catalogue i { font-size: 64px; color: var(--cbr); margin-bottom: 24px; }
+    .empty-state-catalogue p { color: var(--cp); font-size: 1.2rem; margin-bottom: 30px; }
+
+    /* ── MODAL ── */
+    #modalSupprimer {
+        backdrop-filter: blur(10px);
+    }
+    .modal-content {
+        background: var(--ns) !important;
+        border: 1px solid var(--cbr) !important;
+        border-radius: 24px !important;
+        padding: 40px !important;
+        max-width: 450px !important;
+        box-shadow: 0 30px 70px rgba(0,0,0,0.5) !important;
+        color: var(--ch3) !important;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- HEADER GLOBAL -->
+{% include 'partials/home_nav.html.twig' %}
+
+<main class="front-main">
+    <div class="front-main-container">
+        
+        <!-- HEADER PAGE -->
+        <div class="catalogue-header-area">
+            <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                     <i class="fa-solid fa-store" style="color:var(--g); font-size:1.2rem;"></i>
+                     <span style="color:var(--g); font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em;">Catalogue Officiel</span>
                 </div>
-                <div class="product-card-body">
-                    <div class="product-card-name">{{ produit.nom }}</div>
-                    {% if produit.description %}
-                        <div class="product-card-desc">{{ produit.description|slice(0,90) }}{% if produit.description|length>90 %}…{% endif %}</div>
-                    {% endif %}
-                    <div class="product-card-price">{{ produit.prixUnitaire }} DT <span>/ unité</span></div>
-                </div>
-            </a>
-
-            <div class="product-card-footer">
-                {# Stock status #}
-                {% if stock %}
-                    {% if stock.quantiteActuelle == 0 %}
-                        <div class="stock-indicator"><div class="stock-dot rupture"></div><span>Rupture</span></div>
-                    {% elseif stock.isEnAlerte %}
-                        <div class="stock-indicator"><div class="stock-dot low"></div><span>{{ stock.quantiteActuelle }} {{ stock.uniteMesure }} — limité</span></div>
-                    {% else %}
-                        <div class="stock-indicator"><div class="stock-dot ok"></div><span>{{ stock.quantiteActuelle }} {{ stock.uniteMesure }}</span></div>
-                    {% endif %}
-                {% else %}
-                    <div class="stock-indicator"><div class="stock-dot rupture"></div><span>Aucun stock</span></div>
-                {% endif %}
-
-                {# Actions #}
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <a href="{{ path('front_produit_show', {id: produit.id}) }}" style="padding:5px 10px; background:#e8f5e9; color:#5a9814; border-radius:20px; text-decoration:none; font-size:11px; font-weight:600;">
-                        <i class="fa-solid fa-eye"></i>
-                    </a>
-                    <a href="{{ path('front_produit_edit', {id: produit.id}) }}" style="padding:5px 10px; background:#e3f2fd; color:#2196f3; border-radius:20px; text-decoration:none; font-size:11px; font-weight:600;">
-                        <i class="fa-solid fa-pen"></i>
-                    </a>
-                    <button type="button"
-                        onclick="confirmerSuppression('{{ produit.id }}', '{{ produit.nom|e('js') }}')"
-                        style="padding:5px 10px; background:#fee2e2; color:#dc2626; border:none; border-radius:20px; font-size:11px; font-weight:600; cursor:pointer;">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
+                <h1 class="page-title">Nos Produits Agricoles</h1>
+                <p class="page-subtitle">
+                    {{ produits|length }} produit(s) disponibles
+                    {% if search %} pour « {{ search }} »{% endif %}
+                    {% if selectedCat %} dans « {{ selectedCat }} »{% endif %}
+                </p>
             </div>
+            <a href="{{ path('front_produit_new') }}" class="hn-btn hn-btn--solid">
+                <i class="fa-solid fa-plus" style="margin-right:8px;"></i> Nouveau Produit
+            </a>
+        </div>
 
-            {# Formulaire suppression caché #}
-            <form id="form-delete-{{ produit.id }}"
-                  action="{{ path('front_produit_delete', {id: produit.id}) }}"
-                  method="POST"
-                  style="display:none;">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete_produit_' ~ produit.id) }}">
+        <!-- FILTRES -->
+        <div class="filter-bar">
+            <a href="{{ path('front_catalogue') }}" class="filter-chip {{ search=='' and selectedCat=='' ? 'active':'' }}">
+                <i class="fa-solid fa-th-large"></i> Tous
+            </a>
+            {% for cat in categories %}
+                <a href="{{ path('front_catalogue', {cat: cat}) }}" class="filter-chip {{ selectedCat==cat ? 'active':'' }}">{{ cat }}</a>
+            {% endfor %}
+            <div style="flex:1"></div>
+            <form action="{{ path('front_catalogue') }}" method="GET" class="filter-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="q" value="{{ search }}" placeholder="Rechercher un produit...">
             </form>
         </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-</div>
 
-{# Modal de confirmation #}
-<div id="modalSupprimer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:16px; padding:32px; max-width:420px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-        <div style="width:60px; height:60px; background:#fee2e2; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:28px; color:#dc2626;">
-            <i class="fa-solid fa-trash"></i>
+        <!-- FLASHES -->
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div style="background:rgba(255,255,255,0.03); color:{{ label == 'success' ? 'var(--g)' : '#f44336' }}; padding:16px 24px; border-radius:16px; margin-bottom:24px; border-left:4px solid {{ label == 'success' ? 'var(--g)' : '#f44336' }}; font-weight:600; display:flex; align-items:center; gap:12px;">
+                    <i class="fa-solid {{ label == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <!-- LISTE -->
+        {% if produits is empty %}
+            <div class="empty-state-catalogue">
+                <i class="fa-solid fa-box-open"></i>
+                <p>Aucun produit ne correspond à votre recherche.</p>
+                <a href="{{ path('front_catalogue') }}" class="hn-btn hn-btn--outline">Réinitialiser les filtres</a>
+            </div>
+        {% else %}
+        <div class="catalogue-grid">
+            {% for produit in produits %}
+            {% set stock = produit.stockActuel %}
+            <div class="product-card-front">
+                
+                <a href="{{ path('front_produit_show', {id: produit.id}) }}" style="text-decoration:none; color:inherit; display:block; flex-grow:1;">
+                    <div class="product-card-img">
+                        {% if produit.photoUrl %}
+                            <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}">
+                        {% else %}
+                            <div class="product-img-placeholder"><i class="fa-solid fa-seedling"></i></div>
+                        {% endif %}
+                        <span class="product-card-badge">{{ produit.categorie ?: 'Autre' }}</span>
+                    </div>
+                    <div class="product-card-body">
+                        <div class="product-card-name">{{ produit.nom }}</div>
+                        {% if produit.description %}
+                            <div class="product-card-desc">{{ produit.description|slice(0,100) }}{% if produit.description|length>100 %}…{% endif %}</div>
+                        {% endif %}
+                        <div class="product-card-price">{{ produit.prixUnitaire }} DT <span>/ unité</span></div>
+                    </div>
+                </a>
+
+                <div class="product-card-footer">
+                    {% if stock %}
+                        {% if stock.quantiteActuelle == 0 %}
+                            <div class="stock-indicator"><div class="stock-dot rupture"></div><span>Rupture</span></div>
+                        {% elseif stock.isEnAlerte %}
+                            <div class="stock-indicator"><div class="stock-dot low"></div><span>Limité: {{ stock.quantiteActuelle }}</span></div>
+                        {% else %}
+                            <div class="stock-indicator"><div class="stock-dot ok"></div><span>En stock: {{ stock.quantiteActuelle }}</span></div>
+                        {% endif %}
+                    {% else %}
+                        <div class="stock-indicator"><div class="stock-dot rupture"></div><span>Aucun stock</span></div>
+                    {% endif %}
+
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <a href="{{ path('front_produit_show', {id: produit.id}) }}" class="btn-action btn-view" title="Voir la fiche">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <a href="{{ path('front_produit_edit', {id: produit.id}) }}" class="btn-action btn-edit" title="Modifier">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <button type="button"
+                            class="btn-action btn-delete"
+                            title="Supprimer"
+                            onclick="confirmerSuppression('{{ produit.id }}', '{{ produit.nom|e('js') }}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <form id="form-delete-{{ produit.id }}"
+                      action="{{ path('front_produit_delete', {id: produit.id}) }}"
+                      method="POST"
+                      style="display:none;">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete_produit_' ~ produit.id) }}">
+                </form>
+            </div>
+            {% endfor %}
         </div>
-        <h3 style="margin:0 0 8px; font-size:20px;">Supprimer le produit ?</h3>
-        <p id="modalProduitNom" style="color:#666; margin-bottom:24px; font-size:14px;"></p>
-        <p style="background:#fff3cd; color:#d97706; padding:10px; border-radius:8px; font-size:13px; margin-bottom:24px;">
-            ⚠️ Cette action est irréversible. Le stock associé sera également supprimé.
-        </p>
-        <div style="display:flex; gap:12px; justify-content:center;">
-            <button onclick="fermerModal()" style="padding:10px 24px; background:#f0f2f5; border:none; border-radius:30px; font-weight:600; cursor:pointer; color:#4a5568;">
+        {% endif %}
+
+    </div>
+</main>
+
+{# MODAL DE SUPPRESSION #}
+<div id="modalSupprimer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+    <div class="modal-content" style="text-align:center;">
+        <div style="width:70px; height:70px; background:rgba(244,67,54,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:32px; color:#f44336;">
+            <i class="fa-solid fa-trash-can"></i>
+        </div>
+        <h3 style="margin:0 0 12px; font-size:24px; font-weight:800; letter-spacing:-0.02em;">Supprimer le produit ?</h3>
+        <p id="modalProduitNom" style="color:var(--cp); margin-bottom:24px; font-size:1.1rem;"></p>
+        <div style="background:rgba(255,152,0,0.1); color:#ff9800; padding:12px; border-radius:12px; font-size:0.9rem; font-weight:600; margin-bottom:32px; display:flex; align-items:center; gap:10px; justify-content:center;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Action irréversible (Stock inclus).
+        </div>
+        <div style="display:flex; gap:16px; justify-content:center;">
+            <button onclick="fermerModal()" class="hn-btn hn-btn--outline" style="border-radius:12px; padding:12px 30px;">
                 Annuler
             </button>
-            <button id="btnConfirmerSuppr" style="padding:10px 24px; background:#dc2626; color:white; border:none; border-radius:30px; font-weight:600; cursor:pointer;">
+            <button id="btnConfirmerSuppr" class="hn-btn hn-btn--solid" style="background:#f44336; border-radius:12px; padding:12px 30px;">
                 Oui, supprimer
             </button>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block javascripts %}
 {{ parent() }}
-<script type="text/javascript">
-var idASupprimer = null;
 
-function confirmerSuppression(id, nom) {
-    idASupprimer = id;
-    var modal = document.getElementById('modalSupprimer');
-    var nomEl = document.getElementById('modalProduitNom');
-    if (nomEl) nomEl.innerHTML = 'Produit : <strong>' + nom + '</strong>';
-    modal.style.display = 'flex';
-}
+<script>
+    var idASupprimer = null;
 
-function fermerModal() {
-    document.getElementById('modalSupprimer').style.display = 'none';
-    idASupprimer = null;
-}
+    function confirmerSuppression(id, nom) {
+        idASupprimer = id;
+        var modal = document.getElementById('modalSupprimer');
+        var nomEl = document.getElementById('modalProduitNom');
+        if (nomEl) nomEl.innerHTML = 'Produit : <strong>' + nom + '</strong>';
+        modal.style.display = 'flex';
+    }
 
-var btnConfirmer = document.getElementById('btnConfirmerSuppr');
-if (btnConfirmer) {
-    btnConfirmer.onclick = function() {
-        if (idASupprimer) {
-            var form = document.getElementById('form-delete-' + idASupprimer);
-            if (form) form.submit();
+    function fermerModal() {
+        document.getElementById('modalSupprimer').style.display = 'none';
+        idASupprimer = null;
+    }
+
+    var btnConfirmer = document.getElementById('btnConfirmerSuppr');
+    if (btnConfirmer) {
+        btnConfirmer.onclick = function() {
+            if (idASupprimer) {
+                var form = document.getElementById('form-delete-' + idASupprimer);
+                if (form) form.submit();
+            }
+        };
+    }
+
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+
+    // Dropdown profile
+    window.onclick = function(event) {
+        if (event.target.closest('.gerant-profile')) {
+             // Let the onclick handle it
+        } else {
+            const dropdown = document.getElementById('gerant-dropdown-nav');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
         }
-    };
-}
-
-// Fermer en cliquant en dehors
-var modal = document.getElementById('modalSupprimer');
-if (modal) {
-    modal.onclick = function(e) {
-        if (e.target === modal) fermerModal();
-    };
-}
+    }
 </script>
-{% endblock %}
-
-{% block stylesheets %}
-{{ parent() }}
-<style>
-.container-catalogue { max-width: 1280px; margin: 0 auto; padding: 20px; }
-.catalogue-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
-.page-title { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
-.page-subtitle { color: #666; margin-bottom: 0; }
-.filter-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; align-items: center; }
-.filter-chip { background: white; padding: 8px 16px; border-radius: 30px; text-decoration: none; color: #333; font-size: 14px; transition: all 0.2s; border: 1px solid #ddd; }
-.filter-chip.active { background: #5a9814; color: white; border-color: #5a9814; }
-.filter-chip:hover:not(.active) { background: #f0f0f0; }
-.filter-search { display: flex; align-items: center; background: white; border: 1px solid #ddd; border-radius: 30px; padding: 5px 15px; }
-.filter-search input { border: none; padding: 8px; outline: none; width: 200px; }
-.empty-state-catalogue { text-align: center; padding: 60px; background: white; border-radius: 16px; }
-.empty-state-catalogue i { font-size: 48px; color: #ccc; margin-bottom: 16px; }
-.catalogue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-.product-card-front { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; color: inherit; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-.product-card-front:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-.product-card-img { position: relative; height: 180px; overflow: hidden; }
-.product-card-img img { width: 100%; height: 100%; object-fit: cover; }
-.product-img-placeholder { width: 100%; height: 100%; background: #e8f5e9; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #5a9814; }
-.product-card-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
-.product-card-body { padding: 15px; }
-.product-card-name { font-weight: bold; font-size: 16px; margin-bottom: 8px; }
-.product-card-desc { font-size: 12px; color: #666; margin-bottom: 10px; line-height: 1.4; }
-.product-card-price { font-weight: bold; color: #5a9814; font-size: 18px; }
-.product-card-price span { font-size: 12px; font-weight: normal; color: #999; }
-.product-card-footer { padding: 12px 15px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-.stock-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.stock-dot { width: 10px; height: 10px; border-radius: 50%; }
-.stock-dot.ok { background: #4caf50; }
-.stock-dot.low { background: #ff9800; }
-.stock-dot.rupture { background: #f44336; }
-</style>
 {% endblock %}

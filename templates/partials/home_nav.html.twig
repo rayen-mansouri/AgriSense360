@@ -1,0 +1,81 @@
+<nav class="home-nav" id="homeNav">
+  <div class="home-nav__inner">
+    <a class="home-nav__logo" href="{{ path('app_index') }}">
+      <img src="{{ asset('images/logo.png') }}" alt="Logo AgriSense 360" class="home-nav__logo-img">
+      <span>AgriSense <strong>360</strong></span>
+    </a>
+    <ul class="home-nav__links">
+      {% if is_granted('ROLE_GERANT') %}
+        <li><a href="{{ path('app_home') }}">Accueil</a></li>
+        <li><a href="{{ path('gerant_ouvriers') }}">Travailleurs</a></li>
+        <li><a href="{{ path('culture_index') }}">Cultures</a></li>
+        
+        <!-- GESTION STOCK DROPDOWN -->
+        <li class="nav-dropdown">
+          <a href="{{ path('gerant_stockes') }}" class="nav-dropdown-toggle">
+            Gestion Stock <i class="fa-solid fa-chevron-down" style="font-size:0.7rem; margin-left:4px;"></i>
+          </a>
+          <ul class="nav-dropdown-menu">
+            <li><a href="{{ path('gerant_stockes') }}"><i class="fa-solid fa-gauge-high"></i> Vue d'ensemble</a></li>
+            <li><a href="{{ path('front_stock_list') }}"><i class="fa-solid fa-warehouse"></i> Inventaire</a></li>
+            <li><a href="{{ path('front_catalogue') }}"><i class="fa-solid fa-leaf"></i> Catalogue</a></li>
+            <li class="nav-dropdown-divider"></li>
+            <li><a href="{{ path('front_scanner') }}"><i class="fa-solid fa-barcode"></i> Scanner</a></li>
+            <li><a href="{{ path('front_exchange') }}"><i class="fa-solid fa-money-bill-wave"></i> Taux de change</a></li>
+            <li><a href="{{ path('front_commodity') }}"><i class="fa-solid fa-chart-line"></i> Marché</a></li>
+          </ul>
+        </li>
+
+        <li><a href="{{ path('gerant_equipements') }}">Équipements</a></li>
+        <li><a href="{{ path('gerant_affectations') }}">Affectations</a></li>
+        <li><a href="{{ path('gerant_animaux') }}">Animaux</a></li>
+      {% else %}
+        <li><a href="{{ path('app_index') }}#hero">Accueil</a></li>
+        <li><a href="{{ path('app_index') }}#features">À propos</a></li>
+        <li><a href="{{ path('app_index') }}#how">Comment ça marche</a></li>
+        <li><a href="{{ path('app_index') }}#who">Pour qui</a></li>
+        <li><a href="{{ path('app_index') }}#contact">Contact</a></li>
+      {% endif %}
+    </ul>
+    <div class="home-nav__right">
+      <button class="nav-theme-btn" id="themeToggleNav" aria-label="Thème">
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      </button>
+      <div class="home-nav__actions">
+        {% if app.user %}
+          {% if is_granted('ROLE_GERANT') %}
+            <div class="gerant-profile-wrapper" style="position:relative;">
+                <div class="gerant-profile" style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('gerant-dropdown-nav').classList.toggle('show')">
+                    <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;background:var(--g);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:0.8rem;">
+                        {% if app.user.profilePicture %}
+                            <img src="{{ asset('uploads/profiles/' ~ app.user.profilePicture) }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">
+                        {% else %}
+                            {{ app.user.name|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-size:0.75rem; font-weight:700; color:var(--ch3); line-height:1.2;">{{ app.user.name }}</span>
+                        <span style="font-size:0.6rem; color:var(--cp);">Gérant</span>
+                    </div>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div id="gerant-dropdown-nav" class="profile-dropdown">
+                    <a href="{{ path('profile_show') }}"><i class="fa-solid fa-user"></i> Mon Profil</a>
+                    <a href="{{ path('app_logout') }}" style="color:#f87171;"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
+                </div>
+            </div>
+          {% else %}
+            <a href="{{ path('app_logout') }}" class="hn-btn hn-btn--outline">Déconnexion</a>
+          {% endif %}
+        {% else %}
+          <a href="{{ path('app_login') }}" class="hn-btn hn-btn--outline">Se connecter</a>
+          <a href="{{ path('app_register') }}" class="hn-btn hn-btn--solid">S'inscrire</a>
+        {% endif %}
+      </div>
+      <button class="home-nav__burger" id="navBurger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>

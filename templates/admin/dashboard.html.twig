@@ -1,0 +1,150 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion des utilisateurs — AgriSense 360{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    .panel { margin-top: 20px; }
+    .filters { display:flex; align-items:center; gap:12px; padding:18px 24px; background: var(--surface2); border-bottom:1px solid var(--cbr); flex-wrap:wrap; }
+    .search-wrap { position:relative; flex:1; min-width:220px; }
+    .search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); color: var(--cp); pointer-events:none; }
+    .search-inp { width:100%; padding:10px 15px 10px 40px; border:1px solid var(--cbr); border-radius:12px; background: var(--cb); color: var(--ch3); outline:none; transition: all .2s; }
+    .search-inp:focus { border-color: var(--g); box-shadow: 0 0 0 3px rgba(76,175,80,0.1); }
+    .filter-sel { padding:10px 15px; border:1px solid var(--cbr); border-radius:12px; background: var(--cb); color: var(--ch3); outline:none; cursor:pointer; min-width: 150px; }
+    
+    .count-bar { padding:10px 24px; font-size:.85rem; color: var(--cp); border-bottom:1px solid var(--cbr); font-weight: 500; }
+    .users-list { padding: 20px; display: grid; gap: 12px; }
+    .user-card { display:flex; align-items:center; gap:18px; padding:18px 24px; border-radius:16px; background: var(--cb); border:1px solid var(--cbr); transition: all .2s; }
+    .user-card:hover { border-color: var(--g); transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    
+    .av { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem; color:#fff; flex-shrink:0; overflow:hidden; }
+    .av img { width:100%; height:100%; object-fit:cover; }
+    .av-0{background:linear-gradient(135deg,#1a4a2a,#4caf50)} .av-1{background:linear-gradient(135deg,#0d2e4a,#2196f3)} .av-2{background:linear-gradient(135deg,#4a1a3a,#9c27b0)} .av-3{background:linear-gradient(135deg,#4a3a1a,#ff9800)} .av-4{background:linear-gradient(135deg,#1a3a4a,#00897b)} .av-5{background:linear-gradient(135deg,#3a1a4a,#673ab7)} .av-6{background:linear-gradient(135deg,#4a1a1a,#f44336)} .av-7{background:linear-gradient(135deg,#1a3a2a,#8bc34a)}
+    
+    .u-name { font-weight:700; font-size:1rem; color: var(--ch3); display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+    .u-meta { font-size:.8rem; color: var(--cp); display:flex; gap:16px; }
+    .actions { display:flex; align-items:center; gap:10px; flex-shrink:0; margin-left: auto; }
+    
+    .st-active  { padding:4px 12px; border-radius:50px; font-size:.75rem; font-weight:700; background:rgba(76,175,80,0.1); color:#4caf50; }
+    .st-blocked { padding:4px 12px; border-radius:50px; font-size:.75rem; font-weight:700; background:rgba(244,67,54,0.1); color:#f44336; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="content-wrapper">
+            <div class="page-header" style="margin-bottom: 30px;">
+                <div class="page-header-left">
+                    <h1 class="page-title">Gestion des utilisateurs</h1>
+                    <p class="page-subtitle">{{ users|length }} utilisateur(s) enregistré(s) dans le système.</p>
+                </div>
+                <div class="page-header-right">
+                    <a href="{{ path('admin_user_add') }}" class="btn btn-primary">➕ Ajouter</a>
+                </div>
+            </div>
+
+            {% for msg in app.flashes('success') %}<div style="padding:15px 20px;background:rgba(76,175,80,0.1);border-left:4px solid #4caf50;color:#4caf50;border-radius:8px;margin-bottom:20px;font-weight:600;">✓ {{ msg }}</div>{% endfor %}
+            {% for msg in app.flashes('error') %}<div style="padding:15px 20px;background:rgba(244,67,54,0.1);border-left:4px solid #f44336;color:#f44336;border-radius:8px;margin-bottom:20px;font-weight:600;">⚠ {{ msg }}</div>{% endfor %}
+
+            <div class="card panel" style="overflow: hidden;">
+                <div class="filters">
+                    <div class="search-wrap">
+                        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="searchInput" class="search-inp" placeholder="Rechercher par nom, email, téléphone...">
+                    </div>
+                    <select id="roleFilter" class="filter-sel">
+                        <option value="">Tous les rôles</option>
+                        <option value="ROLE_ADMIN">Administrateur</option>
+                        <option value="ROLE_GERANT">Gérant</option>
+                        <option value="ROLE_OUVRIER">Ouvrier</option>
+                    </select>
+                    <select id="statusFilter" class="filter-sel">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actif</option>
+                        <option value="blocked">Bloqué</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="resetFilters()">✕ Reset</button>
+                </div>
+                <div class="count-bar" id="countBar">{{ users|length }} utilisateur(s) trouvé(s)</div>
+                <div class="users-list" id="usersList">
+                    {% for user in users %}
+                    <div class="user-card"
+                         data-name="{{ user.name|lower }}"
+                         data-email="{{ user.email|lower }}"
+                         data-phone="{{ user.phone ? user.phone|lower : '' }}"
+                         data-status="{{ user.status }}"
+                         data-role="{{ user.getRoles()[0] }}">
+                        <div class="av av-{{ loop.index0 % 8 }}">
+                            {% if user.profilePicture %}<img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="">{% else %}{{ user.name|first|upper }}{% endif %}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="u-name">
+                                {{ user.name }}
+                                {% set r = user.getRoles() %}
+                                {% if 'ROLE_ADMIN' in r %}<span class="badge badge-blue">Administrateur</span>
+                                {% elseif 'ROLE_GERANT' in r %}<span class="badge badge-green">Gérant</span>
+                                {% else %}<span class="badge badge-orange">Ouvrier</span>{% endif %}
+                            </div>
+                            <div class="u-meta">
+                                <span>✉ {{ user.email }}</span>
+                                {% if user.phone %}<span>📞 {{ user.phone }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <span class="{{ user.status == 'active' ? 'st-active' : 'st-blocked' }}">
+                            {{ user.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                        </span>
+                        <div class="actions">
+                            <a href="{{ path('admin_user_show', {id: user.id}) }}" class="btn btn-secondary btn-sm">👁 Voir</a>
+                            {% if app.user.id != user.id %}
+                            <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}"
+                                  onsubmit="return confirm('Supprimer « {{ user.name }} » ? Action irréversible.');" style="display:inline;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                                <button type="submit" class="btn btn-danger btn-sm">🗑 Supprimer</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="text-align:center;padding:80px;color:var(--cp);">
+                        <div style="font-size: 3rem; margin-bottom: 15px;">👥</div>
+                        <p style="font-weight: 600;">Aucun utilisateur trouvé.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function filterUsers() {
+    const s = document.getElementById('searchInput').value.toLowerCase();
+    const role = document.getElementById('roleFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    let n = 0;
+    document.querySelectorAll('.user-card').forEach(c => {
+        const ok = (!s || c.dataset.name.includes(s) || c.dataset.email.includes(s) || c.dataset.phone.includes(s))
+                && (!role || c.dataset.role === role)
+                && (!status || c.dataset.status === status);
+        c.style.display = ok ? '' : 'none';
+        if (ok) n++;
+    });
+    document.getElementById('countBar').textContent = n + ' utilisateur(s) trouvé(s)';
+}
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('roleFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    filterUsers();
+}
+document.getElementById('searchInput').addEventListener('input', filterUsers);
+document.getElementById('roleFilter').addEventListener('change', filterUsers);
+document.getElementById('statusFilter').addEventListener('change', filterUsers);
+</script>
+{% endblock %}

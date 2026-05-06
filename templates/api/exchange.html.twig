@@ -1,255 +1,254 @@
-{# templates/api/exchange.html.twig #}
-{% extends 'layout/base.html.twig' %}
+{% extends 'base.html.twig' %}
+{% set activePage = 'stockes' %}
+{% set activeSection = 'main' %}
 
-{% block title %}Taux de Change & Prix - Agrisens 360{% endblock %}
+{% block title %}Taux de Change — Agrisens 360{% endblock %}
 
-{% block content %}
-<div class="page-header">
-    <div>
-        <h1 class="page-title">💱 Taux de Change & Prix des produits</h1>
-        <p class="page-subtitle">Convertissez tous les prix dans la devise de votre choix</p>
-    </div>
-</div>
+{% block navbar %}{% endblock %}
 
-<!-- SECTION 1 : CONVERSION LIBRE -->
-<div class="card" style="margin-bottom: 24px;">
-    <div class="form-card-header">
-        <div class="form-card-icon" style="background:#2196f3;color:white">
-            <i class="fa-solid fa-calculator"></i>
-        </div>
-        <div>
-            <h2 class="form-card-title">🔄 Convertir un montant</h2>
-            <p class="form-card-subtitle">Convertissez n'importe quel montant de TND vers une autre devise</p>
-        </div>
-    </div>
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    /* ── CUSTOM OVERRIDES ── */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px; }
+    .page-title { font-size: 1.75rem; font-weight: 800; color: var(--ch3); margin-bottom: 4px; }
+    .page-subtitle { color: var(--cp); font-size: 0.9rem; }
+
+    .card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: var(--sh); }
+    .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--cbr); }
+    .card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .card-title { font-size: 1.1rem; font-weight: 800; color: var(--ch3); margin: 0; }
+
+    .input-field { background: rgba(0,0,0,0.1); border: 1px solid var(--cbr); border-radius: 12px; padding: 12px 16px; color: var(--ch3); font-family: inherit; font-size: 0.95rem; outline: none; transition: all 0.2s; }
+    [data-theme="light"] .input-field { background: #fff; }
+    .input-field:focus { border-color: var(--g); background: rgba(0,0,0,0.2); }
+
+    .rate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+    .rate-card { background: rgba(255,255,255,0.03); border: 1px solid var(--cbr); border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 12px; transition: all 0.2s; }
+    .rate-card:hover { border-color: var(--g); transform: translateY(-2px); }
+    .rate-flag { font-size: 1.5rem; }
+    .rate-code { font-weight: 800; color: var(--ch3); }
+    .rate-value { font-size: 0.8rem; color: var(--cp); }
+
+    .result-box { background: rgba(90,181,90,0.15); border: 1px solid rgba(90,181,90,0.2); border-radius: 16px; padding: 24px; text-align: center; margin-top: 20px; animation: slideDown 0.3s ease; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Action Buttons in Table */
+    .btn-tool { background: var(--cb); border: 1px solid var(--cbr); color: var(--ch3); padding: 6px 10px; border-radius: 10px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none; cursor: pointer; }
+    .btn-tool:hover { background: rgba(90,181,90,0.1); border-color: var(--g); color: var(--g); }
     
-    <div style="padding: 20px;">
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; justify-content: center;">
-            <div>
-                <label style="display: block; margin-bottom: 5px;">💰 Montant (TND)</label>
-                <input type="number" id="freeAmount" class="form-control" value="100" step="10" style="width: 180px; padding: 12px;">
-            </div>
-            <div>
-                <label style="display: block; margin-bottom: 5px;">🎯 Devise cible</label>
-                <select id="freeCurrency" class="form-control" style="width: 200px; padding: 12px;">
-                    <option value="EUR">🇪🇺 EUR - Euro</option>
-                    <option value="USD">🇺🇸 USD - Dollar US</option>
-                    <option value="GBP">🇬🇧 GBP - Livre Sterling</option>
-                    <option value="CAD">🇨🇦 CAD - Dollar Canadien</option>
-                    <option value="JPY">🇯🇵 JPY - Yen Japonais</option>
-                    <option value="CHF">🇨🇭 CHF - Franc Suisse</option>
-                    <option value="CNY">🇨🇳 CNY - Yuan Chinois</option>
-                </select>
-            </div>
-            <div>
-                <button id="convertFreeBtn" class="btn btn-primary">
-                    <i class="fa-solid fa-arrow-right-arrow-left"></i> Convertir
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .data-table th { text-align: left; padding: 12px 16px; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase; border-bottom: 1px solid var(--cbr); }
+    .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--cbr); color: var(--pc); font-size: 0.9rem; vertical-align: middle; }
+    .data-table tr:hover { background: rgba(255,255,255,0.02); }
+
+    /* Fix spacing */
+    .content-wrapper { padding-top: 20px !important; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <a href="{{ path('homestock') }}" class="btn btn-pale btn-sm" style="border-radius: 50px; padding: 6px 16px;"><i class="fas fa-arrow-left"></i> Retour</a>
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
                 </button>
             </div>
-        </div>
-        
-        <div id="freeResult" style="margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 12px; text-align: center; display: none;">
-            <h2 id="convertedAmount" style="font-size: 28px; margin: 0;">-</h2>
-            <p id="conversionDetail" style="margin-top: 5px; color: #666;"></p>
-        </div>
-    </div>
-</div>
+        </header>
 
-<!-- SECTION 2 : SÉLECTEUR DE DEVISES POUR PRODUITS -->
-<div class="card" style="margin-bottom: 24px;">
-    <div class="form-card-header">
-        <div class="form-card-icon" style="background:#5a9814;color:white">
-            <i class="fa-solid fa-tags"></i>
-        </div>
-        <div>
-            <h2 class="form-card-title">🏷️ Convertir tous les prix des produits</h2>
-            <p class="form-card-subtitle">Choisissez une devise pour afficher les prix des produits</p>
-        </div>
-    </div>
-    
-    <div style="padding: 20px;">
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; justify-content: center;">
-            <div>
-                <label style="display: block; margin-bottom: 5px;">💰 Devise d'affichage</label>
-                <select id="currencySelector" class="form-control" style="width: 250px; padding: 12px;">
-                    <option value="TND">🇹🇳 TND - Dinar Tunisien (prix originaux)</option>
-                    <option value="EUR">🇪🇺 EUR - Euro</option>
-                    <option value="USD">🇺🇸 USD - Dollar US</option>
-                    <option value="GBP">🇬🇧 GBP - Livre Sterling</option>
-                    <option value="CAD">🇨🇦 CAD - Dollar Canadien</option>
-                    <option value="JPY">🇯🇵 JPY - Yen Japonais</option>
-                    <option value="CHF">🇨🇭 CHF - Franc Suisse</option>
-                </select>
+        <div class="content-wrapper">
+            
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">💱 Taux de Change & Devises</h1>
+                    <p class="page-subtitle">Monitoring en temps réel des taux de change internationaux</p>
+                </div>
             </div>
-            <div>
-                <button id="applyCurrencyBtn" class="btn btn-primary">
-                    <i class="fa-solid fa-rotate-right"></i> Appliquer la conversion
-                </button>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <!-- Conversion Card -->
+                <div class="card" style="margin-bottom: 0;">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: rgba(59,130,246,0.1); color: #3b82f6;"><i class="fas fa-calculator"></i></div>
+                        <h2 class="card-title">Calculatrice Rapide</h2>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; gap: 12px; align-items: flex-end;">
+                            <div style="flex: 1;">
+                                <label class="input-label" style="display:block; margin-bottom:6px; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase;">Montant (TND)</label>
+                                <input type="number" id="freeAmount" class="input-field" value="100" style="width:100%;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label class="input-label" style="display:block; margin-bottom:6px; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase;">Devise cible</label>
+                                <select id="freeCurrency" class="input-field" style="width:100%;">
+                                    <option value="EUR">🇪🇺 EUR - Euro</option>
+                                    <option value="USD">🇺🇸 USD - Dollar US</option>
+                                    <option value="GBP">🇬🇧 GBP - Livre Sterling</option>
+                                    <option value="CAD">🇨🇦 CAD - Dollar Canadien</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="convertFreeBtn" class="btn btn-save" style="width: 100%; height:46px; border-radius:12px; background:#3b82f6; font-weight: 800;"><i class="fas fa-sync-alt"></i> Convertir Maintenant</button>
+                    </div>
+                    <div id="freeResult" class="result-box" style="display:none;">
+                        <div style="font-size: 0.7rem; font-weight: 800; color: var(--g); text-transform: uppercase; margin-bottom: 4px;">Résultat estimé</div>
+                        <h2 id="convertedAmount" style="font-size: 2.2rem; font-weight: 900; color: var(--ch3); margin: 0;">-</h2>
+                        <p id="conversionDetail" style="margin-top: 8px; font-size: 0.85rem; color: var(--cp);"></p>
+                    </div>
+                </div>
+
+                <!-- Current Rates -->
+                <div class="card" style="margin-bottom: 0;">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b;"><i class="fas fa-chart-line"></i></div>
+                        <h2 class="card-title">Cours du Marché (1 TND =)</h2>
+                    </div>
+                    <div id="ratesList" class="rate-grid">
+                        <div style="color:var(--cp); padding: 20px; text-align: center; width: 100%;">
+                            <i class="fas fa-spinner fa-spin"></i> Mise à jour des taux...
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div id="conversionInfo" style="margin-top: 15px; text-align: center; padding: 10px; background: #e8f5e9; border-radius: 8px; display: none;">
-            <span id="conversionMessage"></span>
-        </div>
-    </div>
-</div>
 
-<!-- SECTION 3 : TAUX DE CHANGE -->
-<div class="card" style="margin-bottom: 24px;">
-    <div class="form-card-header">
-        <div class="form-card-icon" style="background:#ff9800;color:white">
-            <i class="fa-solid fa-chart-line"></i>
-        </div>
-        <div>
-            <h2 class="form-card-title">📊 Taux de change du jour</h2>
-            <p class="form-card-subtitle">1 TND = ?</p>
-        </div>
-    </div>
-    
-    <div style="padding: 20px;">
-        <div id="ratesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
-            <div class="text-muted">Chargement des taux...</div>
-        </div>
-    </div>
-</div>
+            <!-- Products Conversion -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(16,185,129,0.1); color: #10b981;"><i class="fas fa-tags"></i></div>
+                    <h2 class="card-title">Inventaire & Devises</h2>
+                    <div style="margin-left: auto; display: flex; gap: 12px; align-items: center;">
+                        <span style="font-size: 0.8rem; color: var(--cp); font-weight: 600;">Afficher en :</span>
+                        <select id="currencySelector" class="input-field" style="padding: 6px 12px; border-radius: 8px;">
+                            <option value="TND">🇹🇳 TND</option>
+                            <option value="EUR">🇪🇺 EUR</option>
+                            <option value="USD">🇺🇸 USD</option>
+                        </select>
+                        <button id="applyCurrencyBtn" class="btn btn-save btn-sm" style="padding: 6px 14px; border-radius: 8px;"><i class="fas fa-check"></i></button>
+                    </div>
+                </div>
 
-<!-- SECTION 4 : PRIX DES PRODUITS -->
-<div class="card">
-    <div class="form-card-header">
-        <div class="form-card-icon" style="background:#5a9814;color:white">
-            <i class="fa-solid fa-table-list"></i>
+                <div class="table-responsive">
+                    <table class="data-table" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>Produit</th>
+                                <th>Catégorie</th>
+                                <th id="priceHeader">Prix (TND)</th>
+                                <th>Stock</th>
+                                <th style="text-align:right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for produit in produits %}
+                            <tr data-price="{{ produit.prixUnitaire }}">
+                                <td><strong style="color:var(--ch3);">{{ produit.nom }}</strong></td>
+                                <td><span class="badge-green" style="font-size:0.7rem;">{{ produit.categorie ?: 'Autre' }}</span></td>
+                                <td class="product-price" style="font-weight:900; color:var(--g); font-size: 1.1rem;">{{ produit.prixUnitaire }} DT</td>
+                                <td>
+                                    {% if produit.stockActuel %}
+                                        <span style="font-weight: 700; color: {{ produit.stockActuel.isEnAlerte ? 'var(--danger)' : 'var(--pc)' }}">
+                                            {{ produit.stockActuel.quantiteActuelle }} {{ produit.stockActuel.uniteMesure }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color:var(--cp); font-size: 0.8rem;">Non stocké</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align:right">
+                                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+                                        <a href="{{ path('produit_show', {id: produit.id}) }}" class="btn-tool" title="Voir"><i class="fas fa-eye"></i></a>
+                                        <a href="{{ path('produit_edit', {id: produit.id}) }}" class="btn-tool" title="Modifier"><i class="fas fa-pen"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
-        <div>
-            <h2 class="form-card-title">📋 Liste des produits</h2>
-            <p class="form-card-subtitle">Prix convertis selon la devise choisie</p>
-        </div>
-    </div>
-    
-    <div class="table-responsive">
-        <table class="data-table" id="productsTable">
-            <thead>
-                <tr>
-                    <th>Produit</th>
-                    <th>Catégorie</th>
-                    <th id="priceHeader">Prix (TND)</th>
-                    <th>Stock</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for produit in produits %}
-                <tr data-price="{{ produit.prixUnitaire }}">
-                    <td><strong>{{ produit.nom }}</strong></td>
-                    <td>{{ produit.categorie }}</td>
-                    <td class="product-price">{{ produit.prixUnitaire }} DT</td>
-                    <td>
-                        {% set stock = produit.stockActuel %}
-                        {% if stock %}
-                            {{ stock.quantiteActuelle }} {{ stock.uniteMesure }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    </main>
 </div>
 
 <script>
-const flags = {
-    'EUR': '🇪🇺', 'USD': '🇺🇸', 'GBP': '🇬🇧', 'CAD': '🇨🇦', 'JPY': '🇯🇵',
-    'CHF': '🇨🇭', 'CNY': '🇨🇳', 'TND': '🇹🇳'
-};
-
-let currentRates = {};
-
-function fetchRates() {
-    return fetch('/api/exchange/rates')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                currentRates = data.rates;
-                
-                let html = '';
-                const currencies = ['EUR', 'USD', 'GBP', 'CAD', 'JPY', 'CHF', 'CNY'];
-                
-                for (const currency of currencies) {
-                    const rate = currentRates[currency];
-                    if (rate) {
-                        html += `
-                            <div style="background: #f5f5f5; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 28px;">${flags[currency] || '🌍'}</span>
-                                <div style="flex: 1;">
-                                    <strong>${currency}</strong>
-                                    <div style="font-size: 12px; color: #666;">1 TND = ${rate.toFixed(4)} ${currency}</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-                document.getElementById('ratesList').innerHTML = html;
-                return true;
-            }
-            return false;
-        })
-        .catch(() => false);
-}
-
-// Conversion libre
-document.getElementById('convertFreeBtn').addEventListener('click', function() {
-    const amount = parseFloat(document.getElementById('freeAmount').value);
-    const currency = document.getElementById('freeCurrency').value;
-    const rate = currentRates[currency];
-    const flag = flags[currency] || '🌍';
-    
-    if (rate) {
-        const converted = (amount / rate).toFixed(2);
-        document.getElementById('convertedAmount').innerHTML = `${flag} ${converted} ${currency}`;
-        document.getElementById('conversionDetail').innerHTML = `${amount} TND = ${converted} ${currency} (taux: 1 TND = ${rate.toFixed(4)} ${currency})`;
-        document.getElementById('freeResult').style.display = 'block';
-    } else {
-        document.getElementById('convertedAmount').innerHTML = 'Taux non disponible';
-        document.getElementById('freeResult').style.display = 'block';
-    }
-});
-
-// Conversion des prix des produits
-function convertAllPrices(currency) {
-    if (currency === 'TND') {
-        document.querySelectorAll('#productsTable tbody tr').forEach(row => {
-            const originalPrice = row.getAttribute('data-price');
-            row.querySelector('.product-price').innerHTML = `${originalPrice} DT`;
-        });
-        document.getElementById('priceHeader').innerHTML = 'Prix (TND)';
-        document.getElementById('conversionMessage').innerHTML = 'Affichage des prix en Dinars Tunisiens (TND)';
-        document.getElementById('conversionInfo').style.display = 'block';
-        return;
-    }
-    
-    const rate = currentRates[currency];
-    if (!rate) {
-        document.getElementById('conversionMessage').innerHTML = `Taux non disponible pour ${currency}`;
-        document.getElementById('conversionInfo').style.display = 'block';
-        return;
-    }
-    
-    document.querySelectorAll('#productsTable tbody tr').forEach(row => {
-        const originalPrice = parseFloat(row.getAttribute('data-price'));
-        const convertedPrice = (originalPrice / rate).toFixed(2);
-        row.querySelector('.product-price').innerHTML = `${convertedPrice} ${currency}`;
+    // Sidebar & Theme
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    toggleBtn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) sidebar.classList.toggle('open');
+        else { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded'); }
     });
-    
-    document.getElementById('priceHeader').innerHTML = `Prix (${currency})`;
-    document.getElementById('conversionMessage').innerHTML = `Prix convertis en ${flags[currency]} ${currency} (1 TND = ${rate.toFixed(4)} ${currency})`;
-    document.getElementById('conversionInfo').style.display = 'block';
-}
+    const html = document.documentElement;
+    const saved = localStorage.getItem('agri-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('agri-theme', next);
+    });
 
-document.getElementById('applyCurrencyBtn').addEventListener('click', function() {
-    const selectedCurrency = document.getElementById('currencySelector').value;
-    convertAllPrices(selectedCurrency);
-});
+    const flags = { 'EUR': '🇪🇺', 'USD': '🇺🇸', 'GBP': '🇬🇧', 'CAD': '🇨🇦', 'TND': '🇹🇳' };
+    let currentRates = {};
 
-fetchRates();
+    function fetchRates() {
+        fetch('/api/exchange/rates')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentRates = data.rates;
+                    let html = '';
+                    ['EUR', 'USD', 'GBP', 'CAD'].forEach(currency => {
+                        const rate = currentRates[currency];
+                        if (rate) {
+                            html += `<div class="rate-card">
+                                <span class="rate-flag">${flags[currency]}</span>
+                                <div>
+                                    <div class="rate-code">${currency}</div>
+                                    <div class="rate-value">1 TND = ${rate.toFixed(4)}</div>
+                                </div>
+                            </div>`;
+                        }
+                    });
+                    document.getElementById('ratesList').innerHTML = html;
+                }
+            });
+    }
+
+    document.getElementById('convertFreeBtn').addEventListener('click', function() {
+        const amount = parseFloat(document.getElementById('freeAmount').value);
+        const currency = document.getElementById('freeCurrency').value;
+        const rate = currentRates[currency];
+        if (rate) {
+            const converted = (amount * rate).toFixed(2);
+            document.getElementById('convertedAmount').innerHTML = `${flags[currency]} ${converted} ${currency}`;
+            document.getElementById('conversionDetail').innerHTML = `${amount} TND = ${converted} ${currency}`;
+            document.getElementById('freeResult').style.display = 'block';
+        }
+    });
+
+    document.getElementById('applyCurrencyBtn').addEventListener('click', function() {
+        const currency = document.getElementById('currencySelector').value;
+        const rate = currency === 'TND' ? 1 : currentRates[currency];
+        const symbol = currency === 'TND' ? 'DT' : currency;
+        
+        document.querySelectorAll('#productsTable tbody tr').forEach(row => {
+            const original = parseFloat(row.getAttribute('data-price'));
+            const converted = (original * rate).toFixed(2);
+            row.querySelector('.product-price').innerHTML = `${converted} ${symbol}`;
+        });
+        document.getElementById('priceHeader').innerHTML = `Prix (${currency})`;
+    });
+
+    fetchRates();
 </script>
 {% endblock %}

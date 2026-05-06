@@ -1,96 +1,178 @@
-{# templates/produit/scanner.html.twig #}
-{% extends 'layout/base.html.twig' %}
+{% extends 'base.html.twig' %}
+{% set activePage = 'scanner_internal' %}
+{% set activeSection = 'main' %}
 
-{% block content %}
-<div class="card">
-    <div class="form-card-header">
-        <div class="form-card-icon" style="background:#4caf50;color:white">
-            <i class="fa-solid fa-camera"></i>
-        </div>
-        <div>
-            <h2 class="form-card-title">📷 Scanner un code-barres</h2>
-            <p class="form-card-subtitle">Utilisez la caméra pour scanner un produit</p>
-        </div>
-    </div>
+{% block title %}Scanner de Code-barres — Agrisens 360{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    /* ── CUSTOM OVERRIDES ── */
+    .scanner-card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; padding: 32px; text-align: center; max-width: 600px; margin: 0 auto; }
+    .scanner-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--cbr); text-align: left; }
+    .scanner-icon { width: 44px; height: 44px; background: rgba(90,181,90,0.1); color: var(--g); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .scanner-title { font-size: 1.1rem; font-weight: 800; color: var(--ch3); margin: 0; }
+    .scanner-subtitle { font-size: 0.85rem; color: var(--cp); margin: 4px 0 0; }
+
+    #scanner-container { width: 100%; border-radius: 20px; overflow: hidden; border: 4px solid var(--cbr); background: #000; position: relative; aspect-ratio: 4/3; }
+    #scanner-container video { width: 100%; height: 100%; object-fit: cover; }
     
-    <div style="text-align: center; padding: 20px;">
-        <div id="scanner-container" style="width: 100%; max-width: 500px; margin: 0 auto;">
-            <video id="scanner-video" style="width: 100%; border-radius: 12px;"></video>
-        </div>
-        
-        <div style="margin-top: 20px;">
-            <button id="start-scanner" class="btn btn-primary">
-                <i class="fa-solid fa-play"></i> Démarrer le scan
+    .scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
+    .scanner-laser { position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: var(--g); box-shadow: 0 0 10px var(--g); animation: laser 2s infinite ease-in-out; }
+
+    @keyframes laser {
+        0%, 100% { transform: translateY(-100px); opacity: 0.2; }
+        50% { transform: translateY(100px); opacity: 1; }
+    }
+
+    .result-box { margin-top: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--cbr); border-radius: 16px; display: none; }
+    .result-box.active { display: block; animation: slideIn 0.3s ease; }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Fix spacing */
+    .content-wrapper { padding-top: 20px !important; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
             </button>
-            <button id="stop-scanner" class="btn btn-secondary" style="display:none;">
-                <i class="fa-solid fa-stop"></i> Arrêter
-            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <a href="{{ path('homestock') }}" class="btn btn-pale btn-sm" style="border-radius: 50px; padding: 6px 16px;"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            <div class="scanner-card">
+                <div class="scanner-header">
+                    <div class="scanner-icon"><i class="fa-solid fa-camera"></i></div>
+                    <div>
+                        <h2 class="scanner-title">Scanner un Produit</h2>
+                        <p class="scanner-subtitle">Utilisez la caméra pour identifier un article</p>
+                    </div>
+                </div>
+
+                <div id="scanner-container">
+                    <div class="scanner-overlay"></div>
+                    <div class="scanner-laser"></div>
+                </div>
+
+                <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: center;">
+                    <button id="start-scanner" class="btn btn-save" style="padding: 12px 32px; border-radius: 50px;">
+                        <i class="fa-solid fa-play"></i> Démarrer le Scan
+                    </button>
+                    <button id="stop-scanner" class="btn btn-danger" style="display:none; padding: 12px 32px; border-radius: 50px;">
+                        <i class="fa-solid fa-stop"></i> Arrêter
+                    </button>
+                </div>
+
+                <div id="scan-result" class="result-box">
+                    <div style="font-size: 0.7rem; font-weight: 700; color: var(--g); text-transform: uppercase; margin-bottom: 8px;">Produit Identifié</div>
+                    <div id="scanned-product" style="font-size: 1.1rem; font-weight: 800; color: var(--ch3);">Recherche en cours...</div>
+                </div>
+            </div>
         </div>
-        
-        <div id="scan-result" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; display: none;">
-            <strong>✅ Produit scanné :</strong>
-            <span id="scanned-product"></span>
-        </div>
-    </div>
+    </main>
 </div>
 
 <script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
 <script>
-const startBtn = document.getElementById('start-scanner');
-const stopBtn = document.getElementById('stop-scanner');
-const scanResult = document.getElementById('scan-result');
-const scannedProduct = document.getElementById('scanned-product');
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
 
-startBtn.addEventListener('click', function() {
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: document.querySelector('#scanner-container'),
-            constraints: {
-                width: 640,
-                height: 480,
-                facingMode: "environment"
-            }
-        },
-        decoder: {
-            readers: ["code_128_reader", "ean_reader", "ean_8_reader"]
+    toggleBtn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('open');
+        } else {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
         }
-    }, function(err) {
-        if (err) {
-            console.error(err);
-            alert("Erreur d'accès à la caméra");
-            return;
-        }
-        Quagga.start();
-        startBtn.style.display = 'none';
-        stopBtn.style.display = 'inline-block';
     });
-    
-    Quagga.onDetected(function(data) {
-        var code = data.codeResult.code;
-        scannedProduct.innerHTML = code + ' - Recherche en cours...';
-        scanResult.style.display = 'block';
-        
-        fetch('/api/produit/recherche?code=' + encodeURIComponent(code))
-            .then(response => response.json())
-            .then(product => {
-                if (product.id) {
-                    scannedProduct.innerHTML = `<a href="/produit/${product.id}">${product.nom}</a> - ${product.sku}`;
-                } else {
-                    scannedProduct.innerHTML = 'Produit non trouvé (Code: ' + code + ')';
+
+    // Theme toggle
+    const html = document.documentElement;
+    const saved = localStorage.getItem('agri-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+
+    document.getElementById('themeToggle').addEventListener('click', function () {
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('agri-theme', next);
+    });
+
+    // ── SCANNER LOGIC ──
+    const startBtn = document.getElementById('start-scanner');
+    const stopBtn = document.getElementById('stop-scanner');
+    const scanResult = document.getElementById('scan-result');
+    const scannedProduct = document.getElementById('scanned-product');
+
+    startBtn.addEventListener('click', function() {
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner-container'),
+                constraints: {
+                    width: 640,
+                    height: 480,
+                    facingMode: "environment"
                 }
-            })
-            .catch(error => {
-                scannedProduct.innerHTML = 'Erreur de recherche';
-            });
+            },
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "ean_8_reader"]
+            }
+        }, function(err) {
+            if (err) {
+                console.error(err);
+                alert("Erreur d'accès à la caméra");
+                return;
+            }
+            Quagga.start();
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+        });
+        
+        Quagga.onDetected(function(data) {
+            var code = data.codeResult.code;
+            scanResult.classList.add('active');
+            scannedProduct.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Recherche du code ' + code + '...';
+            
+            fetch('/api/produit/recherche?code=' + encodeURIComponent(code))
+                .then(response => response.json())
+                .then(product => {
+                    if (product.id) {
+                        scannedProduct.innerHTML = `<a href="/produit/${product.id}" style="color:var(--g); text-decoration:none;">${product.nom}</a> <span style="font-size:0.8rem; color:var(--cp);">(${product.sku})</span>`;
+                    } else {
+                        scannedProduct.innerHTML = '<span style="color:var(--danger);">Produit non trouvé</span> <br> <span style="font-size:0.8rem;">Code: ' + code + '</span>';
+                    }
+                })
+                .catch(error => {
+                    scannedProduct.innerHTML = '<span style="color:var(--danger);">Erreur de connexion</span>';
+                });
+        });
     });
-});
 
-stopBtn.addEventListener('click', function() {
-    Quagga.stop();
-    startBtn.style.display = 'inline-block';
-    stopBtn.style.display = 'none';
-});
+    stopBtn.addEventListener('click', function() {
+        Quagga.stop();
+        startBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+        scanResult.classList.remove('active');
+    });
 </script>
 {% endblock %}

@@ -2,75 +2,12 @@
 {% block title %}AgriSense 360 — Gestion Agricole Intelligente{% endblock %}
 
 {% block navbar %}
-<nav class="home-nav" id="homeNav">
-  <div class="home-nav__inner">
-    <a class="home-nav__logo" href="#hero">
-      <img src="{{ asset('images/logo.png') }}" alt="Logo AgriSense 360" class="home-nav__logo-img">
-      <span>AgriSense <strong>360</strong></span>
-    </a>
-    <ul class="home-nav__links">
-      {% if is_granted('ROLE_GERANT') %}
-        <li><a href="{{ path('gerant_home') }}">Accueil</a></li>
-        <li><a href="{{ path('gerant_ouvriers') }}">Travailleurs</a></li>
-        <li><a href="#">Cultures</a></li>
-        <li><a href="#">Stockés</a></li>
-        <li><a href="#">Équipements</a></li>
-        <li><a href="#">Affectations</a></li>
-        <li><a href="#">Animaux</a></li>
-      {% else %}
-        <li><a href="#hero">Accueil</a></li>
-        <li><a href="#features">À propos</a></li>
-        <li><a href="#how">Comment ça marche</a></li>
-        <li><a href="#who">Pour qui</a></li>
-        <li><a href="#contact">Contact</a></li>
-      {% endif %}
-    </ul>
-    <div class="home-nav__right">
-      <button class="nav-theme-btn" id="themeToggle" aria-label="Thème">
-        <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
-      </button>
-      <div class="home-nav__actions">
-        {% if app.user %}
-          {% if is_granted('ROLE_GERANT') %}
-            <div class="gerant-profile-wrapper" style="position:relative;">
-                <div class="gerant-profile" style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="document.getElementById('gerant-dropdown').classList.toggle('show')">
-                    <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:var(--g);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;">
-                        {% if app.user.profilePicture %}
-                            <img src="{{ asset('uploads/profiles/' ~ app.user.profilePicture) }}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">
-                        {% else %}
-                            {{ app.user.name|first|upper }}
-                        {% endif %}
-                    </div>
-                    <div style="display:flex; flex-direction:column;">
-                        <span style="font-size:0.85rem; font-weight:700; color:var(--ch3); line-height:1.2;">{{ app.user.name }}</span>
-                        <span style="font-size:0.7rem; color:var(--cp);">Gérant</span>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--cp)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </div>
-                <div id="gerant-dropdown" class="profile-dropdown" style="display:none; position:absolute; right:0; top:45px; background:var(--ns); border:1px solid var(--cbr); border-radius:12px; padding:8px; min-width:150px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
-                    <a href="{{ path('profile_show') }}" style="display:block; padding:8px 12px; color:var(--ch3); text-decoration:none; font-size:0.85rem; border-radius:6px; margin-bottom:4px;">Mon Profil</a>
-                    <a href="{{ path('app_logout') }}" style="display:block; padding:8px 12px; color:#f87171; text-decoration:none; font-size:0.85rem; border-radius:6px;">Déconnexion</a>
-                </div>
-            </div>
-          {% else %}
-            <a href="{{ path('app_logout') }}" class="hn-btn hn-btn--outline">Déconnexion</a>
-          {% endif %}
-        {% else %}
-          <a href="{{ path('app_login') }}" class="hn-btn hn-btn--outline">Se connecter</a>
-          <a href="{{ path('app_register') }}" class="hn-btn hn-btn--solid">S'inscrire</a>
-        {% endif %}
-      </div>
-      <button class="home-nav__burger" id="navBurger" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </div>
-</nav>
+{% include 'partials/home_nav.html.twig' %}
 {% endblock %}
 
 {% block styles %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+{% include 'partials/home_nav_styles.html.twig' %}
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -453,7 +390,7 @@ burger.addEventListener('click', () => links.classList.toggle('open'));
 document.querySelectorAll('.home-nav__links a').forEach(a => {
   a.addEventListener('click', () => links.classList.remove('open'));
 });
-document.getElementById('themeToggle').addEventListener('click', function(){
+document.getElementById('themeToggleNav').addEventListener('click', function(){
   var h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';
   h.setAttribute('data-theme',n);localStorage.setItem('agri-theme',n);
 });

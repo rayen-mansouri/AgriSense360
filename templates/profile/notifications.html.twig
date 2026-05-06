@@ -1,0 +1,126 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'notifications' %}
+{% set activeSection = 'profile' %}
+{% block title %}Notifications — AgriSense 360{% endblock %}
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/home_nav_styles.html.twig' %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    body { font-family: 'Inter', sans-serif; background: var(--pg); color: var(--pc); transition: background .3s, color .3s; margin: 0; min-height: 100vh; overflow-x: hidden; }
+
+    /* Main wrapper to use full width and match front layout */
+    .front-main {
+        padding-top: 70px;
+        width: 100%;
+    }
+    .front-main-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px 60px;
+    }
+
+    .notif-item { display: flex; gap: 18px; align-items: flex-start; padding: 24px 0; border-bottom: 1px solid var(--cbr); transition: all 0.2s; }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item.unread { background: rgba(90,181,90,0.05); border-radius: 16px; padding: 20px; margin: 0 -10px 10px; border-bottom: none; }
+    .notif-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(90,181,90,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .notif-icon.red { background: rgba(220,50,50,0.1); }
+    .notif-icon.blue { background: rgba(66,133,244,0.1); }
+    .notif-body { flex: 1; }
+    .notif-title { font-size: 1rem; font-weight: 800; color: var(--ch3); margin-bottom: 4px; }
+    .notif-desc  { font-size: 0.9rem; color: var(--cp); line-height: 1.5; }
+    .notif-time  { font-size: 0.75rem; color: var(--cp); margin-top: 8px; font-weight: 600; }
+    .unread-dot  { width: 10px; height: 10px; background: var(--g); border-radius: 50%; margin-top: 8px; flex-shrink: 0; box-shadow: 0 0 10px var(--g); }
+    
+    .card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; box-shadow: var(--sh-lg); overflow: hidden; }
+    .card-head { padding: 24px 30px; border-bottom: 1px solid var(--cbr); display: flex; justify-content: space-between; align-items: center; }
+    .card-title { font-size: 1.25rem; font-weight: 800; color: var(--ch3); display: flex; align-items: center; gap: 12px; }
+    .card-body { padding: 30px; }
+
+    .mark-all { font-size: .85rem; color: var(--g); cursor: pointer; font-weight: 700; background: rgba(90,181,90,0.1); border: 1px solid rgba(90,181,90,0.2); padding: 8px 16px; border-radius: 50px; transition: all 0.2s; }
+    .mark-all:hover { background: var(--g); color: #fff; transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block body %}
+{% include 'partials/home_nav.html.twig' %}
+
+<main class="front-main">
+    <div class="front-main-container">
+        <div class="card">
+            <div class="card-head">
+                <span class="card-title"><i class="fa-solid fa-bell" style="color:var(--g)"></i> Mes notifications</span>
+                <button class="mark-all">Tout marquer comme lu</button>
+            </div>
+            <div class="card-body">
+                <div class="notif-item unread">
+                    <div class="notif-icon red">🌡️</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Alerte température — Serre B2</div>
+                        <div class="notif-desc">La température a dépassé 34°C. Vérifiez le système de ventilation.</div>
+                        <div class="notif-time">Il y a 1h</div>
+                    </div>
+                    <div class="unread-dot"></div>
+                </div>
+                <div class="notif-item unread">
+                    <div class="notif-icon">💧</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Irrigation automatique déclenchée</div>
+                        <div class="notif-desc">L'irrigation de la parcelle A3 a été déclenchée automatiquement.</div>
+                        <div class="notif-time">Il y a 2h</div>
+                    </div>
+                    <div class="unread-dot"></div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon blue">📦</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Stock mis à jour</div>
+                        <div class="notif-desc">50 kg de semences ont été ajoutés au stock principal.</div>
+                        <div class="notif-time">Il y a 3h</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon">✅</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Tâche complétée</div>
+                        <div class="notif-desc">La tâche de désherbage parcelle C1 a été marquée comme terminée.</div>
+                        <div class="notif-time">Hier, 16h30</div>
+                    </div>
+                </div>
+                <div class="notif-item">
+                    <div class="notif-icon">👤</div>
+                    <div class="notif-body">
+                        <div class="notif-title">Nouveau compte créé</div>
+                        <div class="notif-desc">Un nouveau compte ouvrier a été ajouté à votre équipe.</div>
+                        <div class="notif-time">Il y a 2 jours</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+
+    // Dropdown profile
+    window.onclick = function(event) {
+        if (!event.target.closest('.gerant-profile')) {
+            const dropdown = document.getElementById('gerant-dropdown-nav');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    }
+</script>
+{% endblock %}

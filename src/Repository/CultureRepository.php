@@ -13,5 +13,39 @@ class CultureRepository extends ServiceEntityRepository
         parent::__construct($registry, Culture::class);
     }
 
-    // Add custom methods as needed
+    /**
+     * Find cultures by parcelle ID
+     */
+    public function findByParcelle(int $parcelleId): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.parcelle = :pid')
+            ->setParameter('pid', $parcelleId)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Search cultures by name
+     */
+    public function search(string $term): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.nom LIKE :term OR c.typeCulture LIKE :term')
+            ->setParameter('term', '%' . $term . '%')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find cultures with état "Récolte en Retard"
+     */
+    public function findRetard(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.etat = :etat')
+            ->setParameter('etat', 'Récolte en Retard')
+            ->getQuery()
+            ->getResult();
+    }
 }

@@ -1,0 +1,347 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'stockes' %}
+
+{% block title %}Gestion Stock — AgriSense 360{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% include 'partials/home_nav_styles.html.twig' %}
+<style>
+    /* ── BASE LAYOUT ── */
+    body {
+        background-color: var(--pg) !important;
+        font-family: 'Inter', sans-serif !important;
+        overflow-x: hidden;
+    }
+
+    /* Main wrapper to use full width and match front layout */
+    .front-main {
+        padding-top: 70px;
+        width: 100%;
+    }
+    .front-main-container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 40px 60px;
+    }
+
+    /* ── HERO SECTION (At the top, clean and premium) ── */
+    .hero {
+        background: linear-gradient(135deg, rgba(8, 20, 8, 0.9) 0%, rgba(10, 30, 10, 0.6) 100%), 
+                    url('https://images.unsplash.com/photo-1592982537447-6f2a6a0c3c1b?auto=format&fit=crop&w=1600&q=80') !important;
+        background-size: cover !important;
+        background-position: center !important;
+        border: 1px solid var(--cbr) !important;
+        border-radius: 32px !important;
+        padding: 80px 40px !important;
+        margin: 0 0 40px !important; /* Space before content below */
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-title {
+        font-size: 3.2rem !important;
+        font-weight: 900 !important;
+        color: #fff !important;
+        margin-bottom: 16px !important;
+        letter-spacing: -0.04em;
+    }
+    .hero-subtitle {
+        color: rgba(255,255,255,0.7) !important;
+        font-size: 1.15rem !important;
+        margin-bottom: 30px !important;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .hero-stats {
+        display: flex;
+        justify-content: center;
+        gap: 50px;
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .hero-stat-val {
+        display: block;
+        font-size: 2.4rem !important;
+        font-weight: 900 !important;
+        color: var(--g) !important;
+        margin-bottom: 5px;
+    }
+    .hero-stat-lbl {
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.5) !important;
+        letter-spacing: 0.1em;
+    }
+
+    /* ── WELL-ORDERED CARDS (Exact match with /stock-accueil content) ── */
+    .reco-grid, .catalogue-grid {
+        display: grid !important;
+        gap: 24px !important;
+        margin-bottom: 40px;
+    }
+    .reco-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important; }
+    .catalogue-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; }
+
+    .reco-card, .product-card-front {
+        background: var(--cb) !important;
+        border: 1px solid var(--cbr) !important;
+        border-radius: 20px !important;
+        padding: 24px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        text-decoration: none !important;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    /* Top line like front office */
+    .reco-card::before, .product-card-front::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, var(--g), #a8d060) !important;
+    }
+
+    .reco-card:hover, .product-card-front:hover {
+        transform: translateY(-5px) !important;
+        border-color: var(--g) !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4) !important;
+        background: var(--fb) !important;
+    }
+
+    /* Internal Card Elements Alignment */
+    .reco-card-name, .product-card-name {
+        font-size: 1.2rem !important;
+        font-weight: 800 !important;
+        color: var(--ch3) !important;
+        margin-bottom: 6px !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 3rem;
+    }
+    .reco-card-cat, .product-card-badge {
+        font-size: 0.8rem !important;
+        color: var(--cp) !important;
+        margin-bottom: 12px !important;
+        font-weight: 600;
+    }
+    .reco-card-price, .product-card-price {
+        font-size: 1.5rem !important;
+        font-weight: 900 !important;
+        color: var(--g) !important;
+        margin-bottom: 16px !important;
+    }
+    .reco-reason {
+        background: rgba(90, 181, 90, 0.05) !important;
+        border: 1px solid var(--cbr) !important;
+        padding: 14px !important;
+        border-radius: 12px !important;
+        font-size: 0.88rem !important;
+        color: var(--pc) !important;
+        margin-bottom: 20px !important;
+        flex-grow: 1; /* Aligns footers */
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    [data-theme="light"] .reco-reason {
+        background: #f0fdf4 !important;
+        color: #166534 !important;
+    }
+    .reco-reason i { color: var(--g); margin-top: 2px; }
+
+    .reco-card-footer, .product-card-footer {
+        margin-top: auto !important;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid var(--cbr);
+    }
+
+    /* Section Titles */
+    .section-title {
+        font-size: 1.6rem !important;
+        font-weight: 900 !important;
+        color: var(--ch3) !important;
+        margin-bottom: 24px !important;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .section-title::before {
+        content: ''; width: 4px; height: 24px; background: var(--g); border-radius: 4px;
+    }
+    
+    .card {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-bottom: 60px !important;
+    }
+
+    /* Icon visibility fixes */
+    .reco-card-img, .product-card-img {
+        background: var(--surface2) !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    [data-theme="light"] .reco-card-img, [data-theme="light"] .product-card-img {
+        background: #f8fafc !important;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .reco-card-img i, .product-card-img i {
+        font-size: 1.4rem;
+        color: var(--g);
+        opacity: 1 !important;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- HEADER -->
+<link rel="stylesheet" href="/css/agrisens.css">
+{% include 'partials/home_nav.html.twig' %}
+
+<main class="front-main">
+    <div class="front-main-container">
+
+        <!-- HERO SECTION (AT THE TOP) -->
+        <div class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">🌱 Bienvenue sur Agrisens 360</h1>
+                <p class="hero-subtitle">Votre plateforme de gestion et de commande de produits agricoles — intelligente, rapide, fiable.</p>
+                <div class="hero-actions">
+                    <a href="{{ path('front_catalogue') }}" class="btn btn-primary btn-lg">
+                        <i class="fa-solid fa-store"></i> Voir le Catalogue
+                    </a>
+                    
+                </div>
+                <div class="hero-stats">
+                    <div><span class="hero-stat-val">{{ totalProduits }}</span><span class="hero-stat-lbl">Produits</span></div>
+                    <div><span class="hero-stat-val">{{ totalCategories }}</span><span class="hero-stat-lbl">Catégories</span></div>
+                    <div><span class="hero-stat-val">{{ totalStocks }}</span><span class="hero-stat-lbl">Références en stock</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REST OF CONTENT (JUST BELOW) -->
+        
+        <!-- RECOMMANDATIONS IA -->
+        {% if recommendations is not empty %}
+        <div class="card">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--g)"></i>
+                    Recommandations pour vous
+                </h2>
+                <a href="{{ path('front_catalogue') }}" class="btn btn-ghost btn-sm" style="color:var(--g)">Tout voir →</a>
+            </div>
+            <div class="reco-grid">
+                {% for item in recommendations %}
+                {% set p = item.produit %}{% set s = item.stock %}
+                <a href="{{ path('front_produit_show', {id: p.id}) }}" class="reco-card">
+                    <div class="reco-card-header">
+                        <div class="reco-card-img" style="width:50px; height:50px; border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.05);">
+                            {% if p.photoUrl %}<img src="{{ asset(p.photoUrl) }}" alt="{{ p.nom }}" style="width:100%; height:100%; object-fit:cover;">
+                            {% else %}<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--g);"><i class="fa-solid fa-leaf"></i></div>{% endif %}
+                        </div>
+                        <span class="reco-score">★ Recommandé</span>
+                    </div>
+                    <div class="reco-card-name">{{ p.nom }}</div>
+                    <div class="reco-card-cat"><i class="fa-solid fa-tag"></i> {{ p.categorie }}</div>
+                    <div class="reco-card-price">{{ p.prixUnitaire }} DT</div>
+                    <div class="reco-reason"><i class="fa-solid fa-lightbulb"></i> {{ item.reason }}</div>
+                    <div class="reco-card-footer">
+                        {% if s and s.quantiteActuelle > 0 %}
+                            <span class="item-qty {{ s.isEnAlerte ? 'qty-danger' : 'qty-ok' }}" style="font-size:0.8rem; font-weight:700;">{{ s.quantiteActuelle }} {{ s.uniteMesure }}</span>
+                        {% else %}
+                            <span class="item-qty qty-danger" style="font-size:0.8rem; font-weight:700;">Non disponible</span>
+                        {% endif %}
+                        <span class="btn btn-primary btn-sm">Voir →</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- CATALOGUE APERÇU -->
+        <div class="card">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fa-solid fa-box"></i> Nos Produits</h2>
+                <a href="{{ path('front_catalogue') }}" class="btn btn-ghost btn-sm" style="color:var(--g)">Voir tout →</a>
+            </div>
+            {% if produits is empty %}
+                <div class="empty-state"><i class="fa-solid fa-box-open"></i><p>Aucun produit disponible.</p></div>
+            {% else %}
+            <div class="catalogue-grid">
+                {% for produit in produits|slice(0,6) %}
+                {% set stock = produit.stockActuel %}
+                <a href="{{ path('front_produit_show', {id: produit.id}) }}" class="product-card-front">
+                    <div class="product-card-img" style="height:180px; width:100%; overflow:hidden; border-radius:12px; margin-bottom:15px;">
+                        {% if produit.photoUrl %}<img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}" style="width:100%; height:100%; object-fit:cover;">
+                        {% else %}<div style="display:flex; align-items:center; justify-content:center; height:100%; background:rgba(255,255,255,0.05); color:var(--g);"><i class="fa-solid fa-seedling"></i></div>{% endif %}
+                    </div>
+                    <div class="product-card-body" style="padding:0;">
+                        <span class="product-card-badge">{{ produit.categorie }}</span>
+                        <div class="product-card-name">{{ produit.nom }}</div>
+                        <div class="product-card-price">{{ produit.prixUnitaire }} DT <span>/ unité</span></div>
+                    </div>
+                    <div class="product-card-footer">
+                        {% if stock %}
+                            {% if stock.quantiteActuelle == 0 %}
+                                <div class="stock-indicator"><span style="color:#f44336; font-size:0.75rem; font-weight:700;">● Rupture</span></div>
+                            {% elseif stock.isEnAlerte %}
+                                <div class="stock-indicator"><span style="color:#ff9800; font-size:0.75rem; font-weight:700;">● Stock limité</span></div>
+                            {% else %}
+                                <div class="stock-indicator"><span style="color:#2e7d32; font-size:0.75rem; font-weight:700;">● En stock</span></div>
+                            {% endif %}
+                        {% else %}
+                            <div class="stock-indicator"><span style="color:#9aaa8a; font-size:0.75rem; font-weight:700;">● Non disponible</span></div>
+                        {% endif %}
+                        <span class="btn btn-primary btn-sm">Voir →</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // Theme toggle matching base.html.twig
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+
+    // Dropdown profile
+    window.onclick = function(event) {
+        if (!event.target.closest('.gerant-profile')) {
+            const dropdown = document.getElementById('gerant-dropdown-nav');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    }
+</script>
+{% endblock %}

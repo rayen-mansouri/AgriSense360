@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda des Cultures</title>
+    {# Load the original AgendaCulture.html styles inline via iframe trick.
+       We include the page via iframe so all its CSS/JS loads normally,
+       then we call loadFromJava() once it's ready. #}
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+    </style>
+</head>
+<body>
+    {# The iframe loads the static file from public/agenda/AgendaCulture.html #}
+    <iframe id="agenda-frame" src="{{ asset('agenda/AgendaCulture.html') }}" onload="injectData()"></iframe>
+
+    <script>
+        // The cultures JSON built by PHP from the real DB
+        var CULTURES_FROM_DB = {{ culturesJson|raw }};
+
+        function injectData() {
+            var frame = document.getElementById('agenda-frame');
+            try {
+                var win = frame.contentWindow;
+                // loadFromJava() is the exact same function AgendaController.java called
+                if (win && typeof win.loadFromJava === 'function') {
+                    win.loadFromJava(CULTURES_FROM_DB);
+                } else {
+                    // Try again in 300ms if the page's JS isn't ready yet
+                    setTimeout(function() {
+                        if (typeof win.loadFromJava === 'function') {
+                            win.loadFromJava(CULTURES_FROM_DB);
+                        }
+                    }, 300);
+                }
+            } catch(e) {
+                // Cross-origin won't happen since same host, but just in case
+                console.warn('Agenda inject error:', e);
+            }
+        }
+    </script>
+</body>
+</html>

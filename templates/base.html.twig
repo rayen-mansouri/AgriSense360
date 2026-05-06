@@ -116,6 +116,7 @@
     </style>
 
     {% block styles %}{% endblock %}
+    {% block importmap %}{{ importmap('app') }}{% endblock %}
 </head>
 
 <body>
@@ -136,5 +137,6 @@
 
 {% block body %}{% endblock %}
 
+{% block javascripts %}{% endblock %}
 </body>
-</html>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AgriSense 360{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --g9: #1a4a2a; --g7: #2e7d32; --g5: #4caf50; --g1: #e8f5e9;
+            --cream: #f4f9f1; --white: #fff;
+            --td: #172417; --tm: #4a6741; --tmu: #8fa887;
+            --bdr: #dde8d8; --rad: 14px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--cream);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .split {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Visual Side */
+        .visual-side {
+            flex: 1;
+            background: var(--g9);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .visual-leaves { position: absolute; inset: 0; pointer-events: none; }
+        .leaf { position: absolute; opacity: 0.12; }
+        .leaf svg { fill: #4caf50; }
+
+        .visual-content { position: relative; z-index: 2; text-align: center; width: 100%; max-width: 400px; }
+
+        /* Form Side */
+        .form-side {
+            width: 440px;
+            min-width: 440px;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 52px 48px;
+            overflow-y: auto;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Animations communes */
+        .split.switched { flex-direction: row-reverse; }
+
+        .visual-side, .form-side {
+            transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s;
+        }
+
+        .split.switching .visual-side { transform: translateX(100%); opacity: 0; }
+        .split.switching .form-side   { transform: translateX(-100%); opacity: 0; }
+
+        /* Styles communs du formulaire */
+        .inp {
+            width: 100%; padding: 13px 16px;
+            border: 1.5px solid var(--bdr); border-radius: 50px;
+            font-size: 0.9rem; background: #fafcf8;
+            transition: all 0.18s;
+        }
+        .inp:focus {
+            border-color: var(--g5);
+            box-shadow: 0 0 0 3px rgba(76,175,80,0.12);
+            outline: none;
+        }
+
+        .btn-main {
+            width: 100%; padding: 14px;
+            background: var(--g7); color: white;
+            border: none; border-radius: 50px;
+            font-weight: 700; font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+        .btn-main:hover {
+            background: var(--g9);
+            transform: translateY(-1px);
+        }
+
+        .back-link, .link-row a {
+            color: var(--tmu);
+            text-decoration: none;
+        }
+        .back-link:hover, .link-row a:hover { color: var(--g7); }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+
+<div class="split" id="split">
+
+    <!-- Visual Side -->
+    <div class="visual-side" id="visualSide">
+        {% block visual_content %}
+            <!-- Contenu par défaut (peut être surchargé) -->
+        {% endblock %}
+    </div>
+
+    <!-- Form Side -->
+    <div class="form-side" id="formSide">
+        {% block form_content %}{% endblock %}
+    </div>
+
+</div>
+
+<script>
+function switchSides() {
+    const split = document.getElementById('split');
+    if (split.classList.contains('switching')) return;
+    
+    split.classList.add('switching');
+    
+    setTimeout(() => {
+        split.classList.toggle('switched');
+        split.classList.remove('switching');
+    }, 650);
+}
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

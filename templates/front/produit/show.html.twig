@@ -1,110 +1,206 @@
-{# templates/front/produit/show.html.twig #}
-{% extends 'layout/front_base.html.twig' %}
+{% extends 'base.html.twig' %}
+{% set activePage = 'catalogue' %}
 {% block title %}{{ produit.nom }} — Agrisens 360{% endblock %}
+{% block navbar %}{% endblock %}
 
-{% block content %}
-<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% include 'partials/home_nav_styles.html.twig' %}
+<style>
+    /* ── BASE LAYOUT ── */
+    body { background-color: var(--pg) !important; font-family: 'Inter', sans-serif !important; }
+    .front-main { padding-top: 70px; width: 100%; }
+    .front-main-container { max-width: 1100px; margin: 0 auto; padding: 60px 24px; }
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <a href="{{ path('front_catalogue') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Catalogue</a>
-        <div style="display: flex; gap: 10px;">
-            <a href="{{ path('front_produit_edit', {id: produit.id}) }}" style="padding: 8px 16px; background: #e3f2fd; color: #2196f3; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                <i class="fa-solid fa-pen"></i> Modifier
+    /* ── SHOW LAYOUT ── */
+    .show-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; align-items: start; }
+    
+    .product-visual {
+        background: var(--cb);
+        border: 1px solid var(--cbr);
+        border-radius: 32px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        position: relative;
+    }
+    .product-visual::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, var(--gd), var(--g));
+    }
+    .product-visual img { width: 100%; height: 450px; object-fit: cover; }
+    .img-ph { width: 100%; height: 450px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 100px; color: var(--g); opacity: 0.3; }
+
+    .product-details {
+        background: var(--cb);
+        border: 1px solid var(--cbr);
+        border-radius: 32px;
+        padding: 40px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+
+    .detail-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 6px 16px; background: rgba(90,181,90,0.1); border: 1px solid rgba(90,181,90,0.2);
+        color: var(--g); border-radius: 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+    .product-name { font-size: 3rem; font-weight: 900; color: var(--ch3); margin-bottom: 16px; letter-spacing: -0.04em; }
+    .product-desc { color: var(--cp); font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px; }
+    .product-price { font-size: 3.5rem; font-weight: 900; color: var(--g); margin-bottom: 40px; line-height: 1; }
+    .product-price span { font-size: 1.2rem; color: var(--cp); font-weight: 600; margin-left: 8px; }
+
+    /* ── BARCODE BLOCK ── */
+    .barcode-block {
+        background: var(--surface2); border: 1px solid var(--cbr); border-radius: 20px;
+        padding: 24px; text-align: center; margin-bottom: 40px;
+    }
+    .barcode-img { max-width: 250px; filter: invert(0.1); border-radius: 8px; margin-bottom: 10px; }
+
+    /* ── STOCK PANEL ── */
+    .stock-panel {
+        background: var(--surface2); 
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--cbr); border-radius: 24px; padding: 24px;
+    }
+    .stock-panel-title { font-size: 1rem; font-weight: 800; color: var(--ch3); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .stock-info-item { display: flex; flex-direction: column; gap: 4px; }
+    .stock-info-item span { font-size: 0.75rem; color: var(--cp); font-weight: 700; text-transform: uppercase; }
+    .stock-info-item strong { font-size: 1.3rem; font-weight: 900; color: var(--ch3); }
+
+    .stock-status-badge {
+        margin-top: 20px; padding: 10px 20px; border-radius: 50px; font-size: 0.85rem; font-weight: 800;
+        text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- GLOBAL HEADER -->
+{% include 'partials/home_nav.html.twig' %}
+
+<main class="front-main">
+    <div class="front-main-container">
+
+        <!-- ACTIONS BAR -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+            <a href="{{ path('front_catalogue') }}" class="hn-btn hn-btn--outline">
+                <i class="fa-solid fa-arrow-left" style="margin-right:8px;"></i> Retour au Catalogue
             </a>
-            {% if stock %}
-            <a href="{{ path('front_stock_edit', {id: stock.id}) }}" style="padding: 8px 16px; background: #e8f5e9; color: #5a9814; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                <i class="fa-solid fa-warehouse"></i> Modifier le stock
-            </a>
-            {% else %}
-            <a href="{{ path('front_stock_new', {id: produit.id}) }}" style="padding: 8px 16px; background: #5a9814; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                <i class="fa-solid fa-plus"></i> Ajouter un stock
-            </a>
-            {% endif %}
-        </div>
-    </div>
-
-    {% for message in app.flashes('success') %}
-    <div style="background: #dcfce7; color: #16a34a; padding: 14px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #16a34a; font-weight: 600;">
-        {{ message }}
-    </div>
-    {% endfor %}
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-
-        {# Image #}
-        <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            {% if produit.photoUrl %}
-            <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}" style="width: 100%; height: 300px; object-fit: cover;">
-            {% else %}
-            <div style="width: 100%; height: 300px; background: #e8f5e9; display: flex; align-items: center; justify-content: center; font-size: 80px; color: #5a9814;">
-                <i class="fa-solid fa-seedling"></i>
-            </div>
-            {% endif %}
-        </div>
-
-        {# Infos produit #}
-        <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <span style="background: #e8f5e9; color: #5a9814; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">{{ produit.categorie }}</span>
-            <h1 style="font-size: 24px; margin: 12px 0 8px;">{{ produit.nom }}</h1>
-            {% if produit.description %}
-            <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">{{ produit.description }}</p>
-            {% endif %}
-            <div style="font-size: 28px; font-weight: 700; color: #5a9814; margin-bottom: 20px;">{{ produit.prixUnitaire }} DT <span style="font-size: 14px; font-weight: normal; color: #999;">/ unité</span></div>
-            {% if produit.barcodeUrl %}
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <img src="{{ produit.barcodeUrl }}" alt="Code-barres" style="background: white; padding: 10px; border-radius: 8px; max-width: 200px;">
-                    <div style="font-size: 11px; color: #999; margin-top: 5px;">SKU: {{ produit.sku }}</div>
-                </div>
-                {% else %}
-                <p style="color: #999; text-align: center;">Aucun code-barres généré</p>
-                {% endif %}
-
-            {# Stock info #}
-            <div style="background: #f8fafc; border-radius: 12px; padding: 16px;">
-                <div style="font-weight: 600; margin-bottom: 10px; font-size: 14px; color: #333;">📦 Informations de stock</div>
+            <div style="display: flex; gap: 12px;">
+                <a href="{{ path('front_produit_edit', {id: produit.id}) }}" class="hn-btn hn-btn--outline" style="border-color: #2196f3; color: #2196f3;">
+                    <i class="fa-solid fa-pen-to-square" style="margin-right:8px;"></i> Modifier le Produit
+                </a>
                 {% if stock %}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
-                    <div>
-                        <span style="color: #999;">Quantité :</span>
-                        <strong style="display: block; font-size: 18px; color: #333;">{{ stock.quantiteActuelle }} {{ stock.uniteMesure }}</strong>
-                    </div>
-                    <div>
-                        <span style="color: #999;">Seuil d'alerte :</span>
-                        <strong style="display: block; font-size: 18px; color: #333;">{{ stock.seuilAlerte ?: '—' }}</strong>
-                    </div>
-                    {% if stock.emplacement %}
-                    <div>
-                        <span style="color: #999;">Emplacement :</span>
-                        <strong style="display: block;">{{ stock.emplacement }}</strong>
-                    </div>
-                    {% endif %}
-                    {% if stock.dateExpiration %}
-                    <div>
-                        <span style="color: #999;">Expiration :</span>
-                        <strong style="display: block; color: #f44336;">{{ stock.dateExpiration|date('d/m/Y') }}</strong>
-                    </div>
-                    {% endif %}
-                </div>
-                <div style="margin-top: 12px;">
-                    {% if stock.quantiteActuelle == 0 %}
-                        <span style="background: #fee2e2; color: #dc2626; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">🔴 Rupture de stock</span>
-                    {% elseif stock.isEnAlerte %}
-                        <span style="background: #fff3cd; color: #d97706; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">⚠️ Stock limité</span>
-                    {% else %}
-                        <span style="background: #dcfce7; color: #16a34a; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">✅ En stock</span>
-                    {% endif %}
-                </div>
+                <a href="{{ path('front_stock_edit', {id: stock.id}) }}" class="hn-btn hn-btn--outline" style="border-color: var(--g); color: var(--g);">
+                    <i class="fa-solid fa-warehouse" style="margin-right:8px;"></i> Gérer le Stock
+                </a>
                 {% else %}
-                <div style="text-align: center; padding: 20px; color: #999;">
-                    <i class="fa-solid fa-box-open" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
-                    <p style="margin: 0 0 12px;">Aucun stock enregistré</p>
-                    <a href="{{ path('front_stock_new', {id: produit.id}) }}" style="padding: 8px 20px; background: #5a9814; color: white; border-radius: 20px; text-decoration: none; font-size: 13px; font-weight: 600;">
-                        <i class="fa-solid fa-plus"></i> Ajouter un stock
-                    </a>
-                </div>
+                <a href="{{ path('front_stock_new', {id: produit.id}) }}" class="hn-btn hn-btn--solid">
+                    <i class="fa-solid fa-plus" style="margin-right:8px;"></i> Créer un Stock
+                </a>
                 {% endif %}
             </div>
         </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="show-grid">
+            
+            <!-- LEFT: VISUAL -->
+            <div class="product-visual">
+                {% if produit.photoUrl %}
+                <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}">
+                {% else %}
+                <div class="img-ph"><i class="fa-solid fa-seedling"></i></div>
+                {% endif %}
+            </div>
+
+            <!-- RIGHT: DETAILS -->
+            <div class="product-details">
+                <span class="detail-badge"><i class="fa-solid fa-tag"></i> {{ produit.categorie }}</span>
+                <h1 class="product-name">{{ produit.nom }}</h1>
+                
+                {% if produit.description %}
+                <p class="product-desc">{{ produit.description }}</p>
+                {% endif %}
+
+                <div class="product-price">{{ produit.prixUnitaire }}<span>DT / unité</span></div>
+
+                {% if produit.barcodeUrl %}
+                <div class="barcode-block">
+                    <img src="{{ produit.barcodeUrl }}" alt="Code-barres" class="barcode-img">
+                    <div style="font-family: 'Courier New', monospace; font-weight: 700; color: var(--cp); font-size: 0.9rem;">SKU: {{ produit.sku }}</div>
+                </div>
+                {% endif %}
+
+                <!-- STOCK PANEL -->
+                <div class="stock-panel">
+                    <h3 class="stock-panel-title"><i class="fa-solid fa-box-open" style="color:var(--g);"></i> État des Stocks</h3>
+                    {% if stock %}
+                    <div class="stock-grid">
+                        <div class="stock-info-item">
+                            <span>Quantité Actuelle</span>
+                            <strong>{{ stock.quantiteActuelle }} {{ stock.uniteMesure }}</strong>
+                        </div>
+                        <div class="stock-info-item">
+                            <span>Seuil d'Alerte</span>
+                            <strong>{{ stock.seuilAlerte ?: 'Non défini' }}</strong>
+                        </div>
+                        {% if stock.emplacement %}
+                        <div class="stock-info-item">
+                            <span>Emplacement</span>
+                            <strong>{{ stock.emplacement }}</strong>
+                        </div>
+                        {% endif %}
+                        {% if stock.dateExpiration %}
+                        <div class="stock-info-item">
+                            <span>Expiration</span>
+                            <strong style="color: #f44336;">{{ stock.dateExpiration|date('d/m/Y') }}</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="stock-status-badge {{ stock.quantiteActuelle == 0 ? 'status-rupture' : (stock.isEnAlerte ? 'status-alerte' : 'status-ok') }}" 
+                         style="background: {{ stock.quantiteActuelle == 0 ? 'rgba(244,67,54,0.1)' : (stock.isEnAlerte ? 'rgba(255,152,0,0.1)' : 'rgba(76,175,80,0.1)') }}; 
+                                color: {{ stock.quantiteActuelle == 0 ? '#f44336' : (stock.isEnAlerte ? '#ff9800' : '#4caf50') }};">
+                         <i class="fa-solid {{ stock.quantiteActuelle == 0 ? 'fa-circle-xmark' : (stock.isEnAlerte ? 'fa-triangle-exclamation' : 'fa-circle-check') }}"></i>
+                         {{ stock.quantiteActuelle == 0 ? 'Rupture Totale' : (stock.isEnAlerte ? 'Niveau Critique' : 'Niveau Optimal') }}
+                    </div>
+                    {% else %}
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="color: var(--cp); margin-bottom: 20px; font-weight: 600;">Aucun stock n'est configuré pour ce produit.</p>
+                        <a href="{{ path('front_stock_new', {id: produit.id}) }}" class="hn-btn hn-btn--solid" style="padding: 10px 30px;">
+                            <i class="fa-solid fa-plus" style="margin-right:8px;"></i> Configurer maintenant
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
     </div>
-</div>
+</main>
+
+<script>
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+
+    // Dropdown profile
+    window.onclick = function(event) {
+        if (!event.target.closest('.gerant-profile')) {
+            const dropdown = document.getElementById('gerant-dropdown-nav');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    }
+</script>
 {% endblock %}

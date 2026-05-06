@@ -19,7 +19,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 
 class FrontController extends AbstractController
 {
-    #[Route('/', name: 'front_accueil')]
+    #[Route('/stock-accueil', name: 'front_accueil')]
     public function home(
         ProduitRepository $produitRepo,
         StockRepository $stockRepo,

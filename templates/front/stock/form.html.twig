@@ -1,274 +1,210 @@
 {# templates/front/stock/form.html.twig #}
-{% extends 'layout/front_base.html.twig' %}
+{% extends 'base.html.twig' %}
+{% set activePage = 'stock_list' %}
 {% block title %}{{ title }} — Agrisens 360{% endblock %}
+{% block navbar %}{% endblock %}
 
 {# Surcharge thème Symfony - supprimer toutes les erreurs Symfony #}
 {% block form_errors %}{% endblock %}
 {% block form_help %}{% endblock %}
 
-{% block content %}
-<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% include 'partials/home_nav_styles.html.twig' %}
+<style>
+    /* ── BASE LAYOUT ── */
+    body { background-color: var(--pg) !important; font-family: 'Inter', sans-serif !important; }
+    .front-main { padding-top: 70px; width: 100%; }
+    .front-main-container { max-width: 900px; margin: 0 auto; padding: 60px 24px; }
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <h1 style="font-size: 24px; margin: 0;">{{ title }}</h1>
-            <p style="color: #666; margin: 5px 0 0;">{{ subtitle }}</p>
-        </div>
-        <a href="{{ path('front_produit_show', {id: produit.id}) }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour au produit</a>
-    </div>
+    /* ── FORM CARD ── */
+    .stock-form-card {
+        background: var(--cb);
+        border: 1px solid var(--cbr);
+        border-radius: 32px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .stock-form-header {
+        background: linear-gradient(135deg, var(--gd), var(--g));
+        padding: 50px 40px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+    }
+    .stock-form-header::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, var(--g), #a8d060);
+    }
+    .stock-form-header h1 { font-size: 2.5rem; font-weight: 900; color: #fff; letter-spacing: -0.04em; margin-bottom: 10px; }
+    .stock-form-header p { color: rgba(255,255,255,0.8); font-size: 1.1rem; }
 
-    {# Info produit #}
-    <div style="background: white; border-radius: 16px; padding: 16px 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6; display: flex; align-items: center; gap: 16px;">
-        {% if produit.photoUrl %}
-        <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 2px solid #5a9814;">
-        {% else %}
-        <div style="width: 60px; height: 60px; background: #e8f5e9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #5a9814;">
-            <i class="fa-solid fa-leaf"></i>
-        </div>
-        {% endif %}
-        <div>
-            <div style="font-weight: 700; font-size: 16px;">{{ produit.nom }}</div>
-            <div style="font-size: 13px; color: #666;">{{ produit.categorie }} — {{ produit.prixUnitaire }} DT</div>
-        </div>
-        <div style="margin-left: auto; text-align: right;">
-            {% set stockActuel = produit.stockActuel %}
-            {% if stockActuel %}
-                {% if stockActuel.quantiteActuelle == 0 %}
-                    <span style="background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Rupture de stock</span>
-                {% elseif stockActuel.isEnAlerte %}
-                    <span style="background: #fff3cd; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">⚠️ Stock limité : {{ stockActuel.quantiteActuelle }} {{ stockActuel.uniteMesure }}</span>
-                {% else %}
-                    <span style="background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">✓ En stock : {{ stockActuel.quantiteActuelle }} {{ stockActuel.uniteMesure }}</span>
-                {% endif %}
-            {% else %}
-                <span style="background: #f3f4f6; color: #6b7280; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Aucun stock</span>
-            {% endif %}
-        </div>
-    </div>
+    /* ── PRODUCT PREVIEW ── */
+    .product-preview {
+        background: var(--surface2);
+        backdrop-filter: blur(10px);
+        padding: 24px 32px;
+        border-bottom: 1px solid var(--cbr);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .preview-img { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 2px solid var(--cbr); }
+    .preview-info { flex: 1; }
+    .preview-name { font-weight: 800; font-size: 1.1rem; color: var(--ch3); }
+    .preview-cat { font-size: 0.85rem; color: var(--cp); }
 
-    <form method="post" id="stockFrontForm" novalidate>
-        {{ form_widget(form._token) }}
+    .stock-form-body { padding: 40px; }
+    .form-group { margin-bottom: 24px; }
+    .form-label { display: block; font-weight: 700; margin-bottom: 10px; color: var(--cp); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-control {
+        width: 100%; padding: 14px 20px; background: var(--fi);
+        border: 1px solid var(--cbr); border-radius: 14px; color: var(--ch3);
+        font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .form-control:focus { border-color: var(--g); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
-        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
-                <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 20px;">
-                    <i class="fa-solid fa-warehouse"></i>
-                </div>
-                <div>
-                    <h2 style="font-size: 18px; margin: 0;">📊 Informations du Stock</h2>
-                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">{{ subtitle }}</p>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Quantité actuelle *</label>
-                    {{ form_widget(form.quantiteActuelle, {'attr': {'class': 'field-quantite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-quantite" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Unité de mesure *</label>
-                    {{ form_widget(form.uniteMesure, {'attr': {'class': 'field-unite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-unite" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Seuil d'alerte</label>
-                    {{ form_widget(form.seuilAlerte, {'attr': {'class': 'field-seuil', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-seuil" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Emplacement</label>
-                    {{ form_widget(form.emplacement, {'attr': {'class': 'field-emplacement', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-emplacement" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date de réception</label>
-                    {{ form_widget(form.dateReception, {'attr': {'class': 'field-dateReception', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-dateReception" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date d'expiration</label>
-                    {{ form_widget(form.dateExpiration, {'attr': {'class': 'field-dateExpiration', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-dateExpiration" style="margin-top: 6px;"></div>
-                </div>
-
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-            <a href="{{ path('front_stock_list', {id: produit.id}) }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
-            <button type="submit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">{{ btnLabel }}</button>
-        </div>
-    </form>
-</div>
+    .form-actions {
+        display: flex; justify-content: flex-end; gap: 16px;
+        margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--cbr);
+    }
+</style>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
-<script type="text/javascript">
+{% block body %}
+<!-- GLOBAL HEADER -->
+{% include 'partials/home_nav.html.twig' %}
+
+<main class="front-main">
+    <div class="front-main-container">
+
+        <!-- CARD ACTIONS -->
+        <div style="margin-bottom: 30px;">
+            <a href="{{ path('front_produit_show', {id: produit.id}) }}" class="hn-btn hn-btn--outline" style="border-radius:12px;">
+                <i class="fa-solid fa-arrow-left" style="margin-right:8px;"></i> Retour au Produit
+            </a>
+        </div>
+
+        <div class="stock-form-card">
+            <div class="stock-form-header">
+                <h1>{{ title }}</h1>
+                <p>{{ subtitle }}</p>
+            </div>
+
+            <!-- PRODUCT PREVIEW -->
+            <div class="product-preview">
+                {% if produit.photoUrl %}<img src="{{ asset(produit.photoUrl) }}" class="preview-img">
+                {% else %}<div style="width:64px; height:64px; border-radius:14px; background:var(--fi); display:flex; align-items:center; justify-content:center; color:var(--g); font-size:1.5rem;"><i class="fa-solid fa-leaf"></i></div>{% endif %}
+                <div class="preview-info">
+                    <div class="preview-name">{{ produit.nom }}</div>
+                    <div class="preview-cat">{{ produit.categorie }} — {{ produit.prixUnitaire }} DT</div>
+                </div>
+                <div style="margin-left: auto;">
+                    {% set stockActuel = produit.stockActuel %}
+                    {% if stockActuel %}
+                         <span style="font-size:0.75rem; font-weight:800; color:var(--g); background:rgba(90,181,90,0.1); padding:6px 14px; border-radius:50px;">{{ stockActuel.quantiteActuelle }} {{ stockActuel.uniteMesure }} en Stock</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="post" id="stockFrontForm" novalidate class="stock-form-body">
+                {{ form_widget(form._token) }}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Quantité Actuelle *</label>
+                        {{ form_widget(form.quantiteActuelle, {'attr': {'class': 'form-control field-quantite'}}) }}
+                        <div class="error-quantite" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Unité de Mesure *</label>
+                        {{ form_widget(form.uniteMesure, {'attr': {'class': 'form-control field-unite'}}) }}
+                        <div class="error-unite" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Seuil d'Alerte</label>
+                        {{ form_widget(form.seuilAlerte, {'attr': {'class': 'form-control field-seuil'}}) }}
+                        <div class="error-seuil" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Emplacement Physique</label>
+                        {{ form_widget(form.emplacement, {'attr': {'class': 'form-control field-emplacement', 'placeholder': 'Ex: Hangar A, Rayon 3'}}) }}
+                        <div class="error-emplacement" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date de Réception</label>
+                        {{ form_widget(form.dateReception, {'attr': {'class': 'form-control field-dateReception'}}) }}
+                        <div class="error-dateReception" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Date d'Expiration</label>
+                        {{ form_widget(form.dateExpiration, {'attr': {'class': 'form-control field-dateExpiration'}}) }}
+                        <div class="error-dateExpiration" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ path('front_stock_list') }}" class="hn-btn hn-btn--outline" style="border-radius:12px;">Annuler</a>
+                    <button type="submit" class="hn-btn hn-btn--solid" style="border-radius:12px; padding:0 40px;">{{ btnLabel }}</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<script>
 (function() {
+    var form = document.getElementById('stockFrontForm');
+    if (!form) return;
 
-    var form = null;
-
-    function trouverChamp(c) {
-        var el = document.getElementsByClassName('field-' + c);
-        return (el && el.length > 0) ? el[0] : null;
-    }
-
-    function trouverErreur(c) {
-        var el = document.getElementsByClassName('error-' + c);
-        return (el && el.length > 0) ? el[0] : null;
-    }
+    function trouverChamp(c) { var el = document.getElementsByClassName('field-' + c); return (el && el.length > 0) ? el[0] : null; }
+    function trouverErreur(c) { var el = document.getElementsByClassName('error-' + c); return (el && el.length > 0) ? el[0] : null; }
 
     function afficherErreur(c, msg) {
         var d = trouverErreur(c);
-        if (d) {
-            d.innerHTML = '<div style="background:#fee2e2;color:#b91c1c;padding:8px 12px;border-radius:6px;font-size:13px;border-left:4px solid #dc2626;margin-top:4px;"><strong>⚠️ ' + msg + '</strong></div>';
-        }
+        if (d) d.innerHTML = '<div style="background:var(--fi); color:var(--danger-c); padding:10px 14px; border-radius:10px; font-size:12px; font-weight:700; border-left:4px solid var(--danger-c);">⚠️ ' + msg + '</div>';
         var ch = trouverChamp(c);
-        if (ch) { ch.style.borderColor = '#dc2626'; ch.style.backgroundColor = '#fef2f2'; }
+        if (ch) ch.style.borderColor = 'var(--danger-c)';
     }
 
     function masquerErreur(c) {
-        var d = trouverErreur(c);
-        if (d) d.innerHTML = '';
-        var ch = trouverChamp(c);
-        if (ch) { ch.style.borderColor = '#ddd'; ch.style.backgroundColor = ''; }
+        var d = trouverErreur(c); if (d) d.innerHTML = '';
+        var ch = trouverChamp(c); if (ch) ch.style.borderColor = '';
     }
 
-    function masquerTout() {
-        var liste = ['quantite','unite','seuil','emplacement','dateReception','dateExpiration'];
-        for (var i = 0; i < liste.length; i++) masquerErreur(liste[i]);
-    }
-
-    function getVal(c) {
-        var ch = trouverChamp(c);
-        return ch ? ch.value : '';
-    }
-
-    function trim(s) {
-        if (!s) return '';
-        while (s.charAt(0) === ' ') s = s.substring(1);
-        while (s.length > 0 && s.charAt(s.length - 1) === ' ') s = s.substring(0, s.length - 1);
-        return s;
-    }
-
-    function valider() {
+    form.onsubmit = function(e) {
         var ok = true;
-        var erreurs = [];
-        masquerTout();
-
-        // Quantité
-        var qteVal = getVal('quantite');
-        if (!qteVal || trim(qteVal) === '') {
-            afficherErreur('quantite', 'La quantité est obligatoire');
-            erreurs.push('quantite'); ok = false;
-        } else {
-            var qteNum = parseFloat(qteVal);
-            if (isNaN(qteNum)) {
-                afficherErreur('quantite', 'La quantité doit être un nombre valide');
-                erreurs.push('quantite'); ok = false;
-            } else if (qteNum < 0) {
-                afficherErreur('quantite', 'La quantité ne peut pas être négative');
-                erreurs.push('quantite'); ok = false;
-            }
-        }
-
-        // Unité
-        if (!getVal('unite') || trim(getVal('unite')) === '') {
-            afficherErreur('unite', 'L\'unité de mesure est obligatoire');
-            erreurs.push('unite'); ok = false;
-        }
-
-        // Seuil
-        var seuilVal = getVal('seuil');
-        if (seuilVal && trim(seuilVal) !== '') {
-            var seuilNum = parseFloat(seuilVal);
-            if (isNaN(seuilNum)) {
-                afficherErreur('seuil', 'Le seuil doit être un nombre valide');
-                erreurs.push('seuil'); ok = false;
-            } else if (seuilNum < 0) {
-                afficherErreur('seuil', 'Le seuil ne peut pas être négatif');
-                erreurs.push('seuil'); ok = false;
-            }
-        }
-
-        // Emplacement
-        var empVal = trim(getVal('emplacement'));
-        if (empVal && empVal.length > 255) {
-            afficherErreur('emplacement', 'Maximum 255 caractères');
-            erreurs.push('emplacement'); ok = false;
-        }
-
-        // Dates
-        var drVal = getVal('dateReception');
-        var deVal = getVal('dateExpiration');
-        if (drVal && trim(drVal) !== '' && deVal && trim(deVal) !== '') {
-            if (new Date(deVal).getTime() < new Date(drVal).getTime()) {
-                afficherErreur('dateExpiration', 'La date d\'expiration doit être après la date de réception');
-                erreurs.push('dateExpiration'); ok = false;
-            }
-        }
-
-        if (erreurs.length > 0) {
-            var el = trouverErreur(erreurs[0]);
-            if (el && el.scrollIntoView) el.scrollIntoView();
-        }
+        ['quantite','unite'].forEach(function(c) {
+            var val = (trouverChamp(c) ? trouverChamp(c).value : '').trim();
+            if (!val) { afficherErreur(c, 'Ce champ est obligatoire'); ok = false; }
+            else { masquerErreur(c); }
+        });
+        if (!ok) e.preventDefault();
         return ok;
+    };
+
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
     }
-
-    function initialiser() {
-        form = document.getElementById('stockFrontForm');
-        if (!form) return;
-
-        form.onsubmit = function(e) {
-            if (!valider()) {
-                if (e.preventDefault) e.preventDefault();
-                else e.returnValue = false;
-                return false;
-            }
-            return true;
-        };
-
-        var champs = ['quantite','unite','seuil'];
-        for (var i = 0; i < champs.length; i++) {
-            (function(c) {
-                var ch = trouverChamp(c);
-                if (ch) {
-                    ch.onfocus = function() { masquerErreur(c); };
-                    ch.onblur = function() {
-                        var val = trim(getVal(c));
-                        if (c === 'quantite') {
-                            if (!val) afficherErreur(c, 'La quantité est obligatoire');
-                            else if (isNaN(parseFloat(val))) afficherErreur(c, 'Nombre invalide');
-                            else if (parseFloat(val) < 0) afficherErreur(c, 'Quantité négative interdite');
-                        }
-                        if (c === 'unite' && !val) afficherErreur(c, 'L\'unité est obligatoire');
-                        if (c === 'seuil' && val) {
-                            if (isNaN(parseFloat(val))) afficherErreur(c, 'Nombre invalide');
-                            else if (parseFloat(val) < 0) afficherErreur(c, 'Seuil négatif interdit');
-                        }
-                    };
-                }
-            })(champs[i]);
-        }
-    }
-
-    var t = 0;
-    var iv = setInterval(function() {
-        t++;
-        if (document.getElementById('stockFrontForm') || t > 100) {
-            clearInterval(iv);
-            initialiser();
-        }
-    }, 50);
-
 })();
 </script>
 {% endblock %}

@@ -71,8 +71,8 @@ class GestionController extends AbstractController
     // TABLEAU DE BORD
     // ══════════════════════════════════════════════════════════════════════════
 
-    #[Route('/home', name: 'home')]
-    #[Route('/dashboard', name: 'admin')]
+    #[Route('/homes', name: 'homestock')]
+    #[Route('/dashboardstock', name: 'adminstock')]
     public function dashboard(Request $request): Response
     {
         $search    = $request->query->get('q', '');
@@ -121,6 +121,54 @@ class GestionController extends AbstractController
             'sDir'          => $sDir,
         ]);
     }
+
+    #[Route('/admin/stock', name: 'admin_stock_index')]
+    public function adminStockDashboard(Request $request): Response
+    {
+        $search    = $request->query->get('q', '');
+        $catFilter = $request->query->get('cat', '');
+        $pSort     = $request->query->get('psort', 'nom');
+        $pDir      = $request->query->get('pdir', 'asc');
+        $sSort     = $request->query->get('ssort', 'produit');
+        $sDir      = $request->query->get('sdir', 'asc');
+
+        $produits = $this->produitRepo->findFiltered($search, $catFilter, $pSort, $pDir);
+        $stocks   = $this->stockRepo->findFiltered($search, $sSort, $sDir);
+
+        $alertes    = $this->stockRepo->findAlertes();
+        $categories = $this->produitRepo->findAllCategories();
+
+        $valeurTotale  = 0.0;
+        $categorieData = [];
+
+        foreach ($produits as $p) {
+            $stockActuel = $p->getStockActuel();
+            if ($stockActuel) {
+                $valeurTotale += (float)$p->getPrixUnitaire() * (float)$stockActuel->getQuantiteActuelle();
+            }
+            $cat = $p->getCategorie() ?? 'Autre';
+            $categorieData[$cat] = ($categorieData[$cat] ?? 0) + 1;
+        }
+
+        return $this->render('admin/stock_dashboard.html.twig', [
+            'produits'      => $produits,
+            'stocks'        => $stocks,
+            'alertes'       => $alertes,
+            'categories'    => $categories,
+            'totalProduits' => count($this->produitRepo->findAll()),
+            'totalStocks'   => count($this->stockRepo->findAll()),
+            'totalAlertes'  => count($alertes),
+            'valeurTotale'  => number_format($valeurTotale, 2, ',', ' '),
+            'categorieData' => $categorieData,
+            'search'        => $search,
+            'catFilter'     => $catFilter,
+            'pSort'         => $pSort,
+            'pDir'          => $pDir,
+            'sSort'         => $sSort,
+            'sDir'          => $sDir,
+        ]);
+    }
+
 
     // ══════════════════════════════════════════════════════════════════════════
     // PRODUIT — CRUD
@@ -285,6 +333,12 @@ public function searchByBarcode(Request $request, ProduitRepository $produitRepo
 public function scanner(): Response
 {
     return $this->render('produit/scanner.html.twig');
+}
+
+#[Route('/scanner-off', name: 'produit_scanner_off', methods: ['GET'])]
+public function scannerOff(): Response
+{
+    return $this->render('produit/scanner_off.html.twig');
 }
 #[Route('/produit/{id}', name: 'produit_show', methods: ['GET'])]
 public function produitShow(int $id): Response

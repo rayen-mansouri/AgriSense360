@@ -1,371 +1,289 @@
-{# templates/produit/front_add.html.twig #}
-{% extends 'layout/front_base.html.twig' %}
+{# templates/front/produit/form.html.twig #}
+{% extends 'base.html.twig' %}
+{% set activePage = 'catalogue' %}
+{% block title %}Gestion Produit — Agrisens 360{% endblock %}
+{% block navbar %}{% endblock %}
 
-{% block title %}Ajouter un produit - Agrisens 360{% endblock %}
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% include 'partials/home_nav_styles.html.twig' %}
+<style>
+    /* ── BASE LAYOUT ── */
+    body { background-color: var(--pg) !important; font-family: 'Inter', sans-serif !important; }
+    .front-main { padding-top: 70px; width: 100%; }
+    .front-main-container { max-width: 900px; margin: 0 auto; padding: 60px 24px; }
 
-{% block content %}
-<div class="front-produit-container">
-    <div class="front-produit-header">
-        <h1><i class="fa-solid fa-leaf"></i> Nouveau produit agricole</h1>
-        <p>Ajoutez un produit à votre catalogue</p>
-    </div>
+    /* ── FORM CONTAINER ── */
+    .front-produit-card {
+        background: var(--cb);
+        border: 1px solid var(--cbr);
+        border-radius: 32px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .front-produit-header {
+        background: linear-gradient(135deg, var(--gd), var(--g));
+        padding: 50px 40px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+    }
+    .front-produit-header::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, var(--g), #a8d060);
+    }
+    .front-produit-header h1 { font-size: 2.5rem; font-weight: 900; color: #fff; letter-spacing: -0.04em; margin-bottom: 10px; }
+    .front-produit-header p { color: rgba(255,255,255,0.8); font-size: 1.1rem; }
 
-    <form method="post" id="produitForm" enctype="multipart/form-data" class="front-produit-form">
-        {{ form_widget(form._token) }}
+    .front-produit-form { padding: 40px; }
 
-        <!-- Section produit -->
-        <div class="form-section">
-            <div class="section-title">
-                <i class="fa-solid fa-box"></i>
-                <h2>Informations produit</h2>
-            </div>
+    /* ── SECTIONS ── */
+    .form-section { margin-bottom: 40px; }
+    .section-title {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 24px; padding-bottom: 12px;
+        border-bottom: 1px solid var(--cbr);
+    }
+    .section-title i { font-size: 1.5rem; color: var(--g); }
+    .section-title h2 { font-size: 1.25rem; font-weight: 800; color: var(--ch3); margin: 0; }
+    .badge-info { background: rgba(255,255,255,0.05); color: var(--cp); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 
-            <div class="form-group field-container">
-                <label class="form-label">Catégorie *</label>
-                {{ form_widget(form.categorie, {'attr': {'class': 'form-control field-categorie'}}) }}
-                <div class="error-container error-categorie" style="margin-top: 6px;"></div>
-            </div>
+    /* ── FIELDS ── */
+    .form-group { margin-bottom: 24px; }
+    .form-label { display: block; font-weight: 700; margin-bottom: 10px; color: var(--cp); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-control {
+        width: 100%; padding: 14px 20px; background: var(--fi);
+        border: 1px solid var(--cbr); border-radius: 14px; color: var(--ch3);
+        font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .form-control:focus { border-color: var(--g); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
-            <div class="form-group field-container">
-                <label class="form-label">Nom du produit *</label>
-                {{ form_widget(form.nom, {'attr': {'class': 'form-control field-nom'}}) }}
-                <div class="error-container error-nom" style="margin-top: 6px;"></div>
-            </div>
+    .upload-area {
+        border: 2px dashed var(--cbr); border-radius: 16px; padding: 40px;
+        text-align: center; cursor: pointer; background: rgba(255,255,255,0.02);
+        display: flex; flex-direction: column; align-items: center;
+        transition: all 0.2s;
+    }
+    .upload-area:hover { border-color: var(--g); background: rgba(90,181,90,0.05); }
+    .upload-area i { font-size: 40px; color: var(--cp); margin-bottom: 12px; }
+    .upload-hint { font-size: 11px; color: var(--cp); opacity: 0.6; }
 
-            <div class="form-group field-container">
-                <label class="form-label">Description</label>
-                {{ form_widget(form.description, {'attr': {'class': 'form-control field-description', 'rows': 4}}) }}
-                <div class="error-container error-description" style="margin-top: 6px;"></div>
-            </div>
+    .image-preview { flex-direction: column; align-items: center; gap: 16px; margin-top: 16px; }
+    .image-preview img { max-width: 100%; border-radius: 16px; border: 1px solid var(--cbr); }
+    .remove-image { background: rgba(244,67,54,0.1); border: none; color: #f44336; padding: 8px 20px; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 0.85rem; }
 
-            <div class="form-row">
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Prix unitaire (DT) *</label>
-                        {{ form_widget(form.prixUnitaire, {'attr': {'class': 'form-control field-prix'}}) }}
-                        <div class="error-container error-prix" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
+    .info-box {
+        background: rgba(33,150,243,0.05); border: 1px solid rgba(33,150,243,0.2);
+        border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 12px;
+        margin-top: 24px; font-size: 0.9rem; color: var(--ch3);
+    }
+    .info-box a { color: #2196f3; text-decoration: none; font-weight: 700; margin-left: auto; }
 
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Photo du produit *</label>
-                        <div class="upload-area" id="uploadZone">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                            <p>Cliquez pour choisir une image</p>
-                            <span class="upload-hint">JPG, PNG, WebP (max 5MB)</span>
-                        </div>
-                        <div style="width: 0; height: 0; overflow: hidden;">
-                            {{ form_widget(form.photoFile, {'attr': {'class': 'field-photo'}}) }}
-                        </div>
-                        <div id="previewZone" class="image-preview" style="display:none;">
-                            <img id="previewImage" src="" alt="Aperçu">
-                            <button type="button" id="btnSupprimer" class="remove-image">🗑️ Supprimer</button>
-                        </div>
-                        <div class="error-container error-photo" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    .form-actions {
+        display: flex; justify-content: flex-end; gap: 16px;
+        margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--cbr);
+    }
 
-        <!-- Section stock -->
-        <div class="form-section">
-            <div class="section-title">
-                <i class="fa-solid fa-warehouse"></i>
-                <h2>Stock initial</h2>
-                <span class="badge-info">Optionnel</span>
-            </div>
-
-            <!-- Quantité + Seuil -->
-            <div class="form-row">
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Quantité initiale</label>
-                        <input type="text" name="stock_quantite"
-                               class="form-control field-stockQuantite" value="0">
-                        <div class="error-container error-stockQuantite" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Seuil d'alerte</label>
-                        <input type="text" name="stock_seuil"
-                               class="form-control field-stockSeuil" value="0">
-                        <div class="error-container error-stockSeuil" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Unité + Emplacement -->
-            <div class="form-row">
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Unité de mesure</label>
-                        <select name="stock_unite" class="form-control field-stockUnite">
-                            <option value="">Sélectionner...</option>
-                            <option value="kg">kg</option>
-                            <option value="g">g</option>
-                            <option value="L">L</option>
-                            <option value="mL">mL</option>
-                            <option value="unité">unité</option>
-                            <option value="sac">sac</option>
-                        </select>
-                        <div class="error-container error-stockUnite" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Emplacement</label>
-                        <input type="text" name="stock_emplacement"
-                               class="form-control field-stockEmplacement"
-                               placeholder="Ex: Entrepôt A, Rayon 3">
-                        <div class="error-container error-stockEmplacement" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Date réception + Date expiration -->
-            <div class="form-row">
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Date de réception</label>
-                        <input type="date" name="stock_date_reception"
-                               class="form-control field-stockDateReception">
-                        <div class="error-container error-stockDateReception" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-                <div class="form-col">
-                    <div class="form-group field-container">
-                        <label class="form-label">Date d'expiration</label>
-                        <input type="date" name="stock_date_expiration"
-                               class="form-control field-stockDateExpiration">
-                        <div class="error-container error-stockDateExpiration" style="margin-top: 6px;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="info-box">
-                <i class="fa-solid fa-info-circle"></i>
-                <span>Vous pourrez gérer le stock plus tard dans l'espace d'administration.</span>
-                <a href="{{ path('admin') }}">Aller au backoffice →</a>
-            </div>
-        </div>
-
-        <!-- Boutons -->
-        <div class="form-actions">
-            <a href="{{ path('front_stock_list') }}" class="btn-secondary">Annuler</a>
-            <button type="submit" class="btn-primary">Publier le produit</button>
-        </div>
-    </form>
-</div>
+    @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+</style>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
-<script type="text/javascript">
-(function() {
+{% block body %}
+<!-- GLOBAL HEADER -->
+{% include 'partials/home_nav.html.twig' %}
 
-    var form = null;
-    var uploadZone = null;
-    var previewZone = null;
-    var previewImage = null;
-    var btnSupprimer = null;
-    var fileInput = null;
-    var imageSelectionnee = false;
+<main class="front-main">
+    <div class="front-main-container">
+
+        <div class="front-produit-card">
+            <div class="front-produit-header">
+                <h1><i class="fa-solid fa-leaf" style="color:var(--g);"></i> Nouveau Produit</h1>
+                <p>Propulsez votre exploitation avec des produits de haute qualité.</p>
+            </div>
+
+            <form method="post" id="produitForm" enctype="multipart/form-data" class="front-produit-form">
+                {{ form_widget(form._token) }}
+
+                <!-- Section produit -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fa-solid fa-box"></i>
+                        <h2>Informations Générales</h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Catégorie *</label>
+                        {{ form_widget(form.categorie, {'attr': {'class': 'form-control field-categorie'}}) }}
+                        <div class="error-container error-categorie" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nom du Produit *</label>
+                        {{ form_widget(form.nom, {'attr': {'class': 'form-control field-nom', 'placeholder': 'Ex: Engrais NPK 15-15-15'}}) }}
+                        <div class="error-container error-nom" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description Détaillée</label>
+                        {{ form_widget(form.description, {'attr': {'class': 'form-control field-description', 'rows': 4, 'placeholder': 'Décrivez les caractéristiques du produit...'}}) }}
+                        <div class="error-container error-description" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Prix Unitaire (DT) *</label>
+                            {{ form_widget(form.prixUnitaire, {'attr': {'class': 'form-control field-prix'}}) }}
+                            <div class="error-container error-prix" style="margin-top: 10px;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Visuel Produit *</label>
+                            <div class="upload-area" id="uploadZone">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <p style="font-weight:700; color:var(--ch3); margin-bottom:5px;">Téléverser une image</p>
+                                <span class="upload-hint">Format recommandé: 800x600 (Max 5MB)</span>
+                            </div>
+                            <div style="width: 0; height: 0; overflow: hidden;">
+                                {{ form_widget(form.photoFile, {'attr': {'class': 'field-photo'}}) }}
+                            </div>
+                            <div id="previewZone" class="image-preview" style="display:none;">
+                                <img id="previewImage" src="" alt="Aperçu">
+                                <button type="button" id="btnSupprimer" class="remove-image"><i class="fa-solid fa-trash"></i> Supprimer</button>
+                            </div>
+                            <div class="error-container error-photo" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section stock -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fa-solid fa-warehouse"></i>
+                        <h2>Configuration du Stock</h2>
+                        <span class="badge-info">Optionnel</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Quantité Initiale</label>
+                            <input type="text" name="stock_quantite" class="form-control field-stockQuantite" value="0">
+                            <div class="error-container error-stockQuantite" style="margin-top: 10px;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Seuil d'Alerte</label>
+                            <input type="text" name="stock_seuil" class="form-control field-stockSeuil" value="0">
+                            <div class="error-container error-stockSeuil" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Unité de Mesure</label>
+                            <select name="stock_unite" class="form-control field-stockUnite">
+                                <option value="">Choisir...</option>
+                                <option value="kg">Kilogrammes (kg)</option>
+                                <option value="g">Grammes (g)</option>
+                                <option value="L">Litres (L)</option>
+                                <option value="mL">Millilitres (mL)</option>
+                                <option value="unité">Unité(s)</option>
+                                <option value="sac">Sac(s)</option>
+                                <option value="tonne">Tonne(s)</option>
+                            </select>
+                            <div class="error-container error-stockUnite" style="margin-top: 10px;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Emplacement Physique</label>
+                            <input type="text" name="stock_emplacement" class="form-control field-stockEmplacement" placeholder="Ex: Hangar Sud, Rayon B">
+                            <div class="error-container error-stockEmplacement" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Date de Réception</label>
+                            <input type="date" name="stock_date_reception" class="form-control field-stockDateReception">
+                            <div class="error-container error-stockDateReception" style="margin-top: 10px;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Date d'Expiration</label>
+                            <input type="date" name="stock_date_expiration" class="form-control field-stockDateExpiration">
+                            <div class="error-container error-stockDateExpiration" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Vous pourrez affiner ces paramètres plus tard dans le Hub Intelligence.</span>
+                        <a href="{{ path('gerant_stockes') }}">Hub Stock →</a>
+                    </div>
+                </div>
+
+                <!-- Boutons -->
+                <div class="form-actions">
+                    <a href="{{ path('front_catalogue') }}" class="hn-btn hn-btn--outline" style="border-radius:12px;">Annuler</a>
+                    <button type="submit" class="hn-btn hn-btn--solid" style="border-radius:12px; padding:0 40px;">Publier le Produit</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<script>
+(function() {
+    var form = null, uploadZone = null, previewZone = null, previewImage = null, btnSupprimer = null, fileInput = null, imageSelectionnee = false;
 
     function trouverChamp(nomChamp) {
         var elements = document.getElementsByClassName('field-' + nomChamp);
-        if (elements && elements.length > 0) return elements[0];
-        return null;
+        return (elements && elements.length > 0) ? elements[0] : null;
     }
 
     function trouverErreurContainer(nomChamp) {
         var elements = document.getElementsByClassName('error-' + nomChamp);
-        if (elements && elements.length > 0) return elements[0];
-        return null;
+        return (elements && elements.length > 0) ? elements[0] : null;
     }
 
     function afficherErreur(nomChamp, message) {
         var errorDiv = trouverErreurContainer(nomChamp);
         if (errorDiv) {
-            var html = '<div style="background-color:#fee2e2;color:#b91c1c;padding:8px 12px;border-radius:6px;font-size:13px;border-left:4px solid #dc2626;">';
-            html += '<strong>⚠️ ' + message + '</strong></div>';
-            errorDiv.innerHTML = html;
+            errorDiv.innerHTML = '<div style="background:rgba(244,67,54,0.1); color:#f44336; padding:10px 14px; border-radius:10px; font-size:12px; font-weight:700; border-left:4px solid #f44336;">⚠️ ' + message + '</div>';
         }
         var champ = trouverChamp(nomChamp);
-        if (champ) {
-            champ.style.borderColor = '#dc2626';
-            champ.style.backgroundColor = '#fef2f2';
-        }
+        if (champ) champ.style.borderColor = '#f44336';
     }
 
     function masquerErreur(nomChamp) {
         var errorDiv = trouverErreurContainer(nomChamp);
         if (errorDiv) errorDiv.innerHTML = '';
         var champ = trouverChamp(nomChamp);
-        if (champ) {
-            champ.style.borderColor = '';
-            champ.style.backgroundColor = '';
-        }
+        if (champ) champ.style.borderColor = '';
     }
 
     function masquerToutesErreurs() {
-        var champs = [
-            'categorie', 'nom', 'description', 'prix', 'photo',
-            'stockQuantite', 'stockSeuil', 'stockUnite',
-            'stockEmplacement', 'stockDateReception', 'stockDateExpiration'
-        ];
+        var champs = ['categorie', 'nom', 'description', 'prix', 'photo', 'stockQuantite', 'stockSeuil', 'stockUnite', 'stockEmplacement', 'stockDateReception', 'stockDateExpiration'];
         for (var i = 0; i < champs.length; i++) masquerErreur(champs[i]);
     }
 
-    function getValeur(nomChamp) {
-        var champ = trouverChamp(nomChamp);
-        return champ ? champ.value : '';
-    }
-
-    function trim(str) {
-        if (!str) return '';
-        var result = str;
-        while (result.charAt(0) === ' ') result = result.substring(1);
-        while (result.length > 0 && result.charAt(result.length - 1) === ' ') result = result.substring(0, result.length - 1);
-        return result;
-    }
-
-    function estUneImage(nomFichier) {
-        if (!nomFichier) return false;
-        var extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-        var nomLower = nomFichier.toLowerCase();
-        for (var i = 0; i < extensions.length; i++) {
-            if (nomLower.indexOf(extensions[i]) !== -1) return true;
-        }
-        return false;
-    }
+    function getValeur(nomChamp) { var champ = trouverChamp(nomChamp); return champ ? champ.value : ''; }
+    function trim(str) { return str ? str.replace(/^\s+|\s+$/g, '') : ''; }
 
     function validerFormulaire() {
         var estValide = true;
         var erreurs = [];
         masquerToutesErreurs();
 
-        // ── Catégorie ──────────────────────────────────────────
-        var categorieVal = getValeur('categorie');
-        if (!categorieVal || categorieVal === '') {
-            afficherErreur('categorie', 'La catégorie est obligatoire');
-            erreurs.push('categorie'); estValide = false;
-        }
-
-        // ── Nom ────────────────────────────────────────────────
+        if (!getValeur('categorie')) { afficherErreur('categorie', 'La catégorie est obligatoire'); erreurs.push('categorie'); estValide = false; }
         var nomVal = trim(getValeur('nom'));
-        if (!nomVal || nomVal === '') {
-            afficherErreur('nom', 'Le nom du produit est obligatoire');
-            erreurs.push('nom'); estValide = false;
-        } else if (nomVal.length < 3) {
-            afficherErreur('nom', 'Le nom doit contenir au moins 3 caractères');
-            erreurs.push('nom'); estValide = false;
-        } else if (nomVal.length > 100) {
-            afficherErreur('nom', 'Le nom ne peut pas dépasser 100 caractères');
-            erreurs.push('nom'); estValide = false;
-        }
-
-        // ── Description ────────────────────────────────────────
-        var descVal = trim(getValeur('description'));
-        if (descVal && descVal.length > 1000) {
-            afficherErreur('description', 'La description ne peut pas dépasser 1000 caractères');
-            erreurs.push('description'); estValide = false;
-        }
-
-        // ── Prix ───────────────────────────────────────────────
+        if (!nomVal) { afficherErreur('nom', 'Le nom est obligatoire'); erreurs.push('nom'); estValide = false; }
         var prixVal = getValeur('prix');
-        if (!prixVal || prixVal === '') {
-            afficherErreur('prix', 'Le prix unitaire est obligatoire');
-            erreurs.push('prix'); estValide = false;
-        } else {
-            var prixNum = parseFloat(prixVal.replace(',', '.'));
-            if (isNaN(prixNum)) {
-                afficherErreur('prix', 'Le prix doit être un nombre valide');
-                erreurs.push('prix'); estValide = false;
-            } else if (prixNum <= 0) {
-                afficherErreur('prix', 'Le prix doit être supérieur à 0');
-                erreurs.push('prix'); estValide = false;
-            } else if (prixNum > 999999.99) {
-                afficherErreur('prix', 'Le prix est trop élevé (max: 999999.99)');
-                erreurs.push('prix'); estValide = false;
-            }
-        }
-
-        // ── Photo * ────────────────────────────────────────────
-        var photoValide = false;
-        if (imageSelectionnee) photoValide = true;
-        else if (fileInput && fileInput.files && fileInput.files.length > 0) photoValide = true;
-        else if (fileInput && fileInput.value && fileInput.value !== '') photoValide = true;
-        if (!photoValide) {
-            afficherErreur('photo', 'La photo du produit est obligatoire');
-            erreurs.push('photo'); estValide = false;
-        }
-
-        // ── Stock quantité (optionnel) ─────────────────────────
-        var stockQteVal = getValeur('stockQuantite');
-        var stockQteNum = 0;
-        if (stockQteVal && trim(stockQteVal) !== '') {
-            stockQteNum = parseFloat(stockQteVal);
-            if (isNaN(stockQteNum)) {
-                afficherErreur('stockQuantite', 'La quantité doit être un nombre valide');
-                erreurs.push('stockQuantite'); estValide = false;
-            } else if (stockQteNum < 0) {
-                afficherErreur('stockQuantite', 'La quantité ne peut pas être négative');
-                erreurs.push('stockQuantite'); estValide = false;
-            }
-        }
-
-        // ── Seuil (optionnel, mais si renseigné : valide + <= quantité) ──
-        var stockSeuilVal = getValeur('stockSeuil');
-        var stockSeuilNum = 0;
-        if (stockSeuilVal && trim(stockSeuilVal) !== '') {
-            stockSeuilNum = parseFloat(stockSeuilVal);
-            if (isNaN(stockSeuilNum)) {
-                afficherErreur('stockSeuil', 'Le seuil doit être un nombre valide');
-                erreurs.push('stockSeuil'); estValide = false;
-            } else if (stockSeuilNum < 0) {
-                afficherErreur('stockSeuil', 'Le seuil ne peut pas être négatif');
-                erreurs.push('stockSeuil'); estValide = false;
-            } else if (!isNaN(stockQteNum) && stockSeuilNum > stockQteNum) {
-                afficherErreur('stockSeuil', 'Le seuil ne peut pas dépasser la quantité (' + stockQteNum + ')');
-                erreurs.push('stockSeuil'); estValide = false;
-            }
-        }
-
-        // ── Unité (requise si quantité > 0) ───────────────────
-        var stockUniteVal = getValeur('stockUnite');
-        if (stockQteVal && trim(stockQteVal) !== '' && !isNaN(stockQteNum) && stockQteNum > 0) {
-            if (!stockUniteVal || stockUniteVal === '') {
-                afficherErreur('stockUnite', 'L\'unité est requise si la quantité est supérieure à 0');
-                erreurs.push('stockUnite'); estValide = false;
-            }
-        }
-
-        // ── Emplacement (optionnel, max 255) ───────────────────
-        var empVal = trim(getValeur('stockEmplacement'));
-        if (empVal && empVal.length > 255) {
-            afficherErreur('stockEmplacement', 'Maximum 255 caractères');
-            erreurs.push('stockEmplacement'); estValide = false;
-        }
-
-        // ── Dates ──────────────────────────────────────────────
-        var drVal = getValeur('stockDateReception');
-        var deVal = getValeur('stockDateExpiration');
-        if (drVal && trim(drVal) !== '' && deVal && trim(deVal) !== '') {
-            if (new Date(deVal).getTime() < new Date(drVal).getTime()) {
-                afficherErreur('stockDateExpiration', 'La date d\'expiration doit être après la date de réception');
-                erreurs.push('stockDateExpiration'); estValide = false;
-            }
-        }
+        if (!prixVal || isNaN(parseFloat(prixVal))) { afficherErreur('prix', 'Prix invalide'); erreurs.push('prix'); estValide = false; }
+        if (!imageSelectionnee) { afficherErreur('photo', 'Photo obligatoire'); erreurs.push('photo'); estValide = false; }
 
         if (erreurs.length > 0) {
-            var premiereErreur = trouverErreurContainer(erreurs[0]);
-            if (premiereErreur && premiereErreur.scrollIntoView) {
-                premiereErreur.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            var el = trouverErreurContainer(erreurs[0]);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-
         return estValide;
     }
 
@@ -375,198 +293,56 @@
         previewZone = document.getElementById('previewZone');
         previewImage = document.getElementById('previewImage');
         btnSupprimer = document.getElementById('btnSupprimer');
-
-        fileInput = trouverChamp('photo');
-        if (!fileInput) {
-            var allInputs = document.getElementsByTagName('input');
-            for (var i = 0; i < allInputs.length; i++) {
-                if (allInputs[i].type === 'file') { fileInput = allInputs[i]; break; }
-            }
-        }
+        fileInput = document.querySelector('input[type="file"]');
 
         if (!form) return;
 
         if (uploadZone && fileInput) {
-            uploadZone.onclick = function(e) {
-                if (e.preventDefault) e.preventDefault();
-                if (e.stopPropagation) e.stopPropagation();
-                fileInput.click();
-                return false;
-            };
+            uploadZone.onclick = function() { fileInput.click(); };
         }
 
         if (fileInput) {
             fileInput.onchange = function() {
-                var fichiers = this.files;
-                if (fichiers && fichiers.length > 0) {
-                    var fichier = fichiers[0];
-                    if (!estUneImage(fichier.name)) {
-                        afficherErreur('photo', 'Veuillez sélectionner une image (JPG, PNG, GIF, WebP)');
-                        this.value = ''; return;
-                    }
-                    if (fichier.size > 5 * 1024 * 1024) {
-                        afficherErreur('photo', 'L\'image ne doit pas dépasser 5 Mo');
-                        this.value = ''; return;
-                    }
-                    masquerErreur('photo');
-                    if (window.FileReader) {
-                        var reader = new FileReader();
-                        reader.onload = function(e) {
-                            previewImage.src = e.target.result;
-                            previewZone.style.display = 'flex';
-                            uploadZone.style.display = 'none';
-                            imageSelectionnee = true;
-                        };
-                        reader.readAsDataURL(fichier);
-                    } else {
+                var fichier = this.files[0];
+                if (fichier) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
                         previewZone.style.display = 'flex';
                         uploadZone.style.display = 'none';
                         imageSelectionnee = true;
-                    }
+                    };
+                    reader.readAsDataURL(fichier);
+                    masquerErreur('photo');
                 }
             };
         }
 
         if (btnSupprimer) {
-            btnSupprimer.onclick = function(e) {
-                if (e.preventDefault) e.preventDefault();
-                if (e.stopPropagation) e.stopPropagation();
-                if (fileInput) fileInput.value = '';
-                if (previewImage) previewImage.src = '';
+            btnSupprimer.onclick = function() {
+                fileInput.value = '';
                 previewZone.style.display = 'none';
                 uploadZone.style.display = 'flex';
                 imageSelectionnee = false;
-                return false;
             };
         }
 
-        form.onsubmit = function(e) {
-            if (!validerFormulaire()) {
-                if (e.preventDefault) e.preventDefault();
-                else e.returnValue = false;
-                return false;
-            }
-            return true;
-        };
-
-        // ── Validation temps réel ──────────────────────────────
-        var champsAValider = ['categorie', 'nom', 'prix', 'stockQuantite', 'stockSeuil', 'stockUnite'];
-        for (var i = 0; i < champsAValider.length; i++) {
-            (function(nomChamp) {
-                var champ = trouverChamp(nomChamp);
-                if (champ) {
-                    champ.onfocus = function() { masquerErreur(nomChamp); };
-                    champ.onblur = function() {
-                        var val = trim(getValeur(nomChamp));
-
-                        if (nomChamp === 'categorie' && !val) {
-                            afficherErreur(nomChamp, 'La catégorie est obligatoire');
-                        }
-                        if (nomChamp === 'nom') {
-                            if (!val) afficherErreur(nomChamp, 'Le nom est obligatoire');
-                            else if (val.length < 3) afficherErreur(nomChamp, 'Minimum 3 caractères');
-                            else if (val.length > 100) afficherErreur(nomChamp, 'Maximum 100 caractères');
-                        }
-                        if (nomChamp === 'prix') {
-                            if (!val) afficherErreur(nomChamp, 'Le prix est obligatoire');
-                            else {
-                                var n = parseFloat(val.replace(',', '.'));
-                                if (isNaN(n)) afficherErreur(nomChamp, 'Nombre invalide');
-                                else if (n <= 0) afficherErreur(nomChamp, 'Le prix doit être > 0');
-                                else if (n > 999999.99) afficherErreur(nomChamp, 'Prix trop élevé');
-                            }
-                        }
-                        if (nomChamp === 'stockQuantite' && val) {
-                            var qn = parseFloat(val);
-                            if (isNaN(qn)) afficherErreur(nomChamp, 'Nombre invalide');
-                            else if (qn < 0) afficherErreur(nomChamp, 'Quantité négative interdite');
-                        }
-                        if (nomChamp === 'stockSeuil' && val) {
-                            var sn = parseFloat(val);
-                            if (isNaN(sn)) {
-                                afficherErreur(nomChamp, 'Nombre invalide');
-                            } else if (sn < 0) {
-                                afficherErreur(nomChamp, 'Le seuil ne peut pas être négatif');
-                            } else {
-                                var qteActuelle = parseFloat(getValeur('stockQuantite'));
-                                if (!isNaN(qteActuelle) && sn > qteActuelle) {
-                                    afficherErreur(nomChamp, 'Le seuil ne peut pas dépasser la quantité (' + qteActuelle + ')');
-                                }
-                            }
-                        }
-                        if (nomChamp === 'stockUnite') {
-                            var qteVal2 = getValeur('stockQuantite');
-                            var qteNum2 = parseFloat(qteVal2);
-                            if (qteVal2 && !isNaN(qteNum2) && qteNum2 > 0 && !val) {
-                                afficherErreur(nomChamp, 'L\'unité est obligatoire si quantité > 0');
-                            }
-                        }
-                    };
-                }
-            })(champsAValider[i]);
-        }
+        form.onsubmit = function(e) { if (!validerFormulaire()) { e.preventDefault(); return false; } return true; };
     }
 
-    var tentatives = 0;
-    var interval = setInterval(function() {
-        tentatives++;
-        var formTest = document.getElementById('produitForm');
-        if (formTest || tentatives > 100) {
-            clearInterval(interval);
-            if (formTest) initialiser();
-        }
-    }, 50);
+    initialiser();
 
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
 })();
 </script>
-{% endblock %}
-
-{% block stylesheets %}
-{{ parent() }}
-<style>
-.front-produit-container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
-.front-produit-header {
-    background: linear-gradient(135deg, #5a9814 0%, #3a6b0a 100%);
-    border-radius: 20px 20px 0 0;
-    padding: 30px; color: white; text-align: center;
-}
-.front-produit-header h1 { font-size: 28px; margin-bottom: 8px; }
-.front-produit-form {
-    background: white; border-radius: 0 0 20px 20px;
-    padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-.form-section { margin-bottom: 30px; }
-.section-title {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 24px; padding-bottom: 12px;
-    border-bottom: 2px solid #e8f5e9;
-}
-.section-title i { font-size: 24px; color: #5a9814; }
-.section-title h2 { font-size: 20px; margin: 0; }
-.badge-info { background: #e8f5e9; color: #5a9814; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
-.form-group { margin-bottom: 20px; }
-.form-label { display: block; font-weight: 600; margin-bottom: 8px; color: #333; }
-.form-control { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 12px; font-size: 14px; box-sizing: border-box; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.upload-area {
-    border: 2px dashed #ddd; border-radius: 16px; padding: 30px;
-    text-align: center; cursor: pointer; background: #fafafa;
-    display: flex; flex-direction: column; align-items: center;
-}
-.upload-area i { font-size: 40px; color: #9aaa8a; margin-bottom: 12px; }
-.upload-hint { font-size: 11px; color: #999; }
-.image-preview { flex-direction: column; align-items: center; gap: 12px; margin-top: 16px; }
-.image-preview img { max-width: 200px; border-radius: 12px; }
-.remove-image { background: #fee; border: none; color: #dc3545; padding: 6px 16px; border-radius: 20px; cursor: pointer; }
-.info-box { background: #e3f2fd; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-.info-box a { color: #2196f3; text-decoration: none; margin-left: auto; }
-.form-actions { display: flex; justify-content: space-between; gap: 16px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
-.btn-primary, .btn-secondary { padding: 12px 28px; border-radius: 30px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
-.btn-primary { background: #5a9814; color: white; }
-.btn-secondary { background: #f0f2f5; color: #4a5568; }
-@media (max-width: 640px) {
-    .form-row { grid-template-columns: 1fr; }
-    .form-actions { flex-direction: column; }
-}
-</style>
 {% endblock %}

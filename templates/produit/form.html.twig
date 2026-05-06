@@ -1,465 +1,265 @@
-{# templates/produit/form.html.twig #}
-{% extends 'layout/base.html.twig' %}
+{% extends 'base.html.twig' %}
+{% set activePage = 'stockes' %}
+{% set activeSection = 'main' %}
+
 {% block title %}{{ title }} — Agrisens 360{% endblock %}
 
-{% block form_errors %}{% endblock %}
-{% block form_help %}{% endblock %}
+{% block navbar %}{% endblock %}
 
-{% block content %}
-<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <h1 style="font-size: 24px; margin: 0;">{{ title }}</h1>
-            <p style="color: #666; margin: 5px 0 0;">{{ subtitle }}</p>
-        </div>
-        <a href="{{ path('home') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour</a>
-    </div>
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    /* ── CUSTOM OVERRIDES ── */
+    .form-container { max-width: 1000px; margin: 0 auto; }
+    .form-card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; padding: 32px; margin-bottom: 32px; }
+    .form-card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--cbr); }
+    .form-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .form-card-title { font-size: 1.1rem; font-weight: 800; color: var(--ch3); margin: 0; }
+    .form-card-subtitle { font-size: 0.85rem; color: var(--cp); margin: 4px 0 0; }
 
-    <form method="post" id="produitForm" enctype="multipart/form-data" novalidate>
-        {{ form_widget(form._token) }}
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .form-full { grid-column: span 2; }
+    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .form-full { grid-column: span 1; } }
 
-        <!-- Carte Produit -->
-        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
-                <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px;">
-                    <i class="fa-solid fa-box"></i>
-                </div>
-                <div>
-                    <h2 style="font-size: 18px; margin: 0;">📦 Informations Produit</h2>
-                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Renseignez les détails du produit agricole</p>
-                </div>
-            </div>
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .input-label { font-size: 0.75rem; font-weight: 700; color: var(--cp); text-transform: uppercase; letter-spacing: 0.05em; }
+    .input-field { background: rgba(0,0,0,0.2); border: 1px solid var(--cbr); border-radius: 12px; padding: 12px 16px; color: var(--ch3); font-family: inherit; font-size: 0.95rem; outline: none; transition: all 0.2s; }
+    .input-field:focus { border-color: var(--g); background: rgba(0,0,0,0.3); }
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    .upload-zone { border: 2px dashed var(--cbr); border-radius: 16px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.02); }
+    .upload-zone:hover { border-color: var(--g); background: rgba(90,181,90,0.05); }
+    .upload-zone i { font-size: 2rem; color: var(--cp); margin-bottom: 12px; }
+    .upload-zone p { font-size: 0.85rem; color: var(--cp); margin: 0; }
 
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Catégorie *</label>
-                    {{ form_widget(form.produit.categorie, {'attr': {'class': 'field-categorie', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-categorie" style="margin-top: 6px;"></div>
-                </div>
+    .preview-zone { margin-top: 16px; text-align: center; }
+    .preview-img { max-width: 200px; max-height: 200px; border-radius: 12px; border: 2px solid var(--g); padding: 4px; background: white; }
 
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Nom du produit *</label>
-                    {{ form_widget(form.produit.nom, {'attr': {'class': 'field-nom', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-nom" style="margin-top: 6px;"></div>
-                </div>
+    .error-msg { background: rgba(239,68,68,0.1); color: #ef4444; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; margin-top: 4px; border-left: 3px solid #ef4444; }
 
-                <div style="grid-column: span 2;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Description</label>
-                    {{ form_widget(form.produit.description, {'attr': {'class': 'field-description', 'rows': 4, 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-description" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Prix unitaire (DT) *</label>
-                    {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'field-prix', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-prix" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Photo du produit *</label>
-                    <div id="uploadZone" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc;">
-                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px; display: block;"></i>
-                        <p style="margin: 0; font-size: 13px; color: #475569;">Cliquez pour choisir une image</p>
-                    </div>
-                    <div style="width: 0; height: 0; overflow: hidden;">
-                        {{ form_widget(form.produit.photoFile, {'attr': {'class': 'field-photo'}}) }}
-                    </div>
-                    <div id="previewZone" style="display: none; margin-top: 10px; text-align: center;">
-                        <img id="previewImage" src="" alt="Aperçu" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #5a9814;">
-                        <br>
-                        <button type="button" id="btnSupprimer" style="background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 20px; cursor: pointer; margin-top: 8px; font-size: 12px;">✖ Supprimer</button>
-                    </div>
-                    <div class="error-photo" style="margin-top: 6px;"></div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Carte Stock -->
-        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
-                <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 20px;">
-                    <i class="fa-solid fa-warehouse"></i>
-                </div>
-                <div>
-                    <h2 style="font-size: 18px; margin: 0;">📊 Stock Initial</h2>
-                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Optionnel</p>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Quantité actuelle</label>
-                    {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'field-quantite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-quantite" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Seuil d'alerte</label>
-                    {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'field-seuil', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-seuil" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Unité de mesure</label>
-                    {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'field-unite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-unite" style="margin-top: 6px;"></div>
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Emplacement</label>
-                    {{ form_widget(form.stock.emplacement, {'attr': {'class': 'field-emplacement', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date de réception</label>
-                    {{ form_widget(form.stock.dateReception, {'attr': {'class': 'field-dateReception', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                </div>
-
-                <div>
-                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date d'expiration</label>
-                    {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'field-dateExpiration', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box;'}}) }}
-                    <div class="error-dateExpiration" style="margin-top: 6px;"></div>
-                </div>
-
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-            <a href="{{ path('home') }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
-            <button type="submit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">{{ btnLabel }}</button>
-        </div>
-    </form>
-</div>
+    /* Fix spacing */
+    .content-wrapper { padding-top: 20px !important; }
+</style>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
-<script type="text/javascript">
-(function() {
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
 
-    var form = null;
-    var uploadZone = null;
-    var previewZone = null;
-    var previewImage = null;
-    var btnSupprimer = null;
-    var fileInput = null;
-    var imageSelectionnee = false;
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <a href="{{ path('homestock') }}" class="btn btn-pale btn-sm" style="border-radius: 50px; padding: 6px 16px;"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
 
-    function trouverChamp(c) {
-        var el = document.getElementsByClassName('field-' + c);
-        return (el && el.length > 0) ? el[0] : null;
-    }
+        <div class="content-wrapper">
+            <div class="form-container">
+                <div style="margin-bottom: 32px;">
+                    <h1 style="font-size: 2rem; font-weight: 900; color: var(--ch3); margin: 0;">{{ title }}</h1>
+                    <p style="color: var(--cp); font-size: 1rem; margin: 4px 0 0;">{{ subtitle }}</p>
+                </div>
 
-    function trouverErreur(c) {
-        var el = document.getElementsByClassName('error-' + c);
-        return (el && el.length > 0) ? el[0] : null;
-    }
+                <form method="post" id="produitForm" enctype="multipart/form-data" novalidate>
+                    {{ form_widget(form._token) }}
 
-    function afficherErreur(c, msg) {
-        var d = trouverErreur(c);
-        if (d) {
-            d.innerHTML = '<div style="background:#fee2e2;color:#b91c1c;padding:8px 12px;border-radius:6px;font-size:13px;border-left:4px solid #dc2626;margin-top:4px;"><strong>⚠️ ' + msg + '</strong></div>';
-        }
-        var ch = trouverChamp(c);
-        if (ch) { ch.style.borderColor = '#dc2626'; ch.style.backgroundColor = '#fef2f2'; }
-    }
+                    <!-- Section Produit -->
+                    <div class="form-card">
+                        <div class="form-card-header">
+                            <div class="form-card-icon" style="background: rgba(90,181,90,0.1); color: var(--g);"><i class="fa-solid fa-box"></i></div>
+                            <div>
+                                <h2 class="form-card-title">📦 Informations Produit</h2>
+                                <p class="form-card-subtitle">Détails de l'article agricole</p>
+                            </div>
+                        </div>
 
-    function masquerErreur(c) {
-        var d = trouverErreur(c);
-        if (d) d.innerHTML = '';
-        var ch = trouverChamp(c);
-        if (ch) { ch.style.borderColor = '#ddd'; ch.style.backgroundColor = ''; }
-    }
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label class="input-label">Catégorie *</label>
+                                {{ form_widget(form.produit.categorie, {'attr': {'class': 'input-field field-categorie'}}) }}
+                                <div class="error-categorie"></div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Nom du produit *</label>
+                                {{ form_widget(form.produit.nom, {'attr': {'class': 'input-field field-nom'}}) }}
+                                <div class="error-nom"></div>
+                            </div>
+                            <div class="input-group form-full">
+                                <label class="input-label">Description</label>
+                                {{ form_widget(form.produit.description, {'attr': {'class': 'input-field field-description', 'rows': 3}}) }}
+                                <div class="error-description"></div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Prix unitaire (DT) *</label>
+                                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'input-field field-prix'}}) }}
+                                <div class="error-prix"></div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Photo du produit *</label>
+                                <div id="uploadZone" class="upload-zone">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <p>Choisir une image</p>
+                                </div>
+                                <div style="display:none;">{{ form_widget(form.produit.photoFile, {'attr': {'class': 'field-photo'}}) }}</div>
+                                <div id="previewZone" class="preview-zone" style="display:none;">
+                                    <img id="previewImage" src="" class="preview-img">
+                                    <br>
+                                    <button type="button" id="btnSupprimer" class="btn btn-danger btn-sm" style="margin-top:12px; border-radius:50px;">✖ Supprimer</button>
+                                </div>
+                                <div class="error-photo"></div>
+                            </div>
+                        </div>
+                    </div>
 
-    function masquerTout() {
-        var liste = ['categorie','nom','description','prix','photo','quantite','seuil','unite','dateExpiration'];
-        for (var i = 0; i < liste.length; i++) masquerErreur(liste[i]);
-    }
+                    <!-- Section Stock -->
+                    <div class="form-card">
+                        <div class="form-card-header">
+                            <div class="form-card-icon" style="background: rgba(129,140,248,0.1); color: var(--indigo);"><i class="fa-solid fa-warehouse"></i></div>
+                            <div>
+                                <h2 class="form-card-title">📊 Stock Initial</h2>
+                                <p class="form-card-subtitle">Configuration optionnelle de l'inventaire</p>
+                            </div>
+                        </div>
 
-    function getVal(c) {
-        var ch = trouverChamp(c);
-        return ch ? ch.value : '';
-    }
+                        <div class="form-grid">
+                            <div class="input-group">
+                                <label class="input-label">Quantité actuelle</label>
+                                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'input-field field-quantite'}}) }}
+                                <div class="error-quantite"></div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Seuil d'alerte</label>
+                                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'input-field field-seuil'}}) }}
+                                <div class="error-seuil"></div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Unité de mesure</label>
+                                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'input-field field-unite'}}) }}
+                                <div class="error-unite"></div>
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Emplacement</label>
+                                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'input-field field-emplacement'}}) }}
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Date de réception</label>
+                                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'input-field field-dateReception'}}) }}
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Date d'expiration</label>
+                                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'input-field field-dateExpiration'}}) }}
+                                <div class="error-dateExpiration"></div>
+                            </div>
+                        </div>
+                    </div>
 
-    function trim(s) {
-        if (!s) return '';
-        while (s.charAt(0) === ' ') s = s.substring(1);
-        while (s.length > 0 && s.charAt(s.length - 1) === ' ') s = s.substring(0, s.length - 1);
-        return s;
-    }
+                    <div style="display: flex; justify-content: flex-end; gap: 16px; margin-bottom: 60px;">
+                        <a href="{{ path('homestock') }}" class="btn btn-pale" style="padding: 12px 32px; border-radius: 14px;">Annuler</a>
+                        <button type="submit" class="btn btn-save" style="padding: 12px 32px; border-radius: 14px; font-weight: 800;">{{ btnLabel }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
 
-    function estUneImage(nom) {
-        if (!nom) return false;
-        var ext = ['.jpg','.jpeg','.png','.gif','.webp','.bmp'];
-        var n = nom.toLowerCase();
-        for (var i = 0; i < ext.length; i++) {
-            if (n.indexOf(ext[i]) !== -1) return true;
-        }
-        return false;
-    }
+<script>
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
 
-    function valider() {
-        var ok = true;
-        var erreurs = [];
-        masquerTout();
-
-        // Catégorie
-        if (!getVal('categorie') || trim(getVal('categorie')) === '') {
-            afficherErreur('categorie', 'La catégorie est obligatoire');
-            erreurs.push('categorie'); ok = false;
-        }
-
-        // Nom
-        var nomVal = trim(getVal('nom'));
-        if (!nomVal) {
-            afficherErreur('nom', 'Le nom du produit est obligatoire');
-            erreurs.push('nom'); ok = false;
-        } else if (nomVal.length < 3) {
-            afficherErreur('nom', 'Le nom doit contenir au moins 3 caractères');
-            erreurs.push('nom'); ok = false;
-        } else if (nomVal.length > 100) {
-            afficherErreur('nom', 'Le nom ne peut pas dépasser 100 caractères');
-            erreurs.push('nom'); ok = false;
-        }
-
-        // Description
-        var descVal = trim(getVal('description'));
-        if (descVal && descVal.length > 1000) {
-            afficherErreur('description', 'La description ne peut pas dépasser 1000 caractères');
-            erreurs.push('description'); ok = false;
-        }
-
-        // Prix
-        var prixVal = getVal('prix');
-        if (!prixVal || trim(prixVal) === '') {
-            afficherErreur('prix', 'Le prix unitaire est obligatoire');
-            erreurs.push('prix'); ok = false;
+    toggleBtn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('open');
         } else {
-            var prixNum = parseFloat(prixVal.replace(',', '.'));
-            if (isNaN(prixNum)) {
-                afficherErreur('prix', 'Le prix doit être un nombre valide');
-                erreurs.push('prix'); ok = false;
-            } else if (prixNum <= 0) {
-                afficherErreur('prix', 'Le prix doit être supérieur à 0');
-                erreurs.push('prix'); ok = false;
-            } else if (prixNum > 999999.99) {
-                afficherErreur('prix', 'Le prix est trop élevé');
-                erreurs.push('prix'); ok = false;
-            }
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+    });
+
+    // Theme toggle
+    const html = document.documentElement;
+    const saved = localStorage.getItem('agri-theme') || 'dark';
+    html.setAttribute('data-theme', saved);
+
+    document.getElementById('themeToggle').addEventListener('click', function () {
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('agri-theme', next);
+    });
+
+    // ── FORM LOGIC (JS) ──
+    (function() {
+        var form = document.getElementById('produitForm');
+        var uploadZone = document.getElementById('uploadZone');
+        var previewZone = document.getElementById('previewZone');
+        var previewImage = document.getElementById('previewImage');
+        var btnSupprimer = document.getElementById('btnSupprimer');
+        var fileInput = document.querySelector('.field-photo');
+        var imageSelectionnee = false;
+
+        function findErr(c) { return document.querySelector('.error-' + c); }
+        function findFld(c) { return document.querySelector('.field-' + c); }
+
+        function showErr(c, msg) {
+            var d = findErr(c);
+            if (d) d.innerHTML = '<div class="error-msg">⚠️ ' + msg + '</div>';
+            var f = findFld(c);
+            if (f) f.style.borderColor = '#ef4444';
         }
 
-        // Photo
-        var photoOk = false;
-        if (imageSelectionnee) photoOk = true;
-        else if (fileInput && fileInput.files && fileInput.files.length > 0) photoOk = true;
-        else if (fileInput && fileInput.value && fileInput.value !== '') photoOk = true;
-        if (!photoOk) {
-            afficherErreur('photo', 'La photo du produit est obligatoire');
-            erreurs.push('photo'); ok = false;
+        function hideErr(c) {
+            var d = findErr(c);
+            if (d) d.innerHTML = '';
+            var f = findFld(c);
+            if (f) f.style.borderColor = '';
         }
-
-        // Stock quantité
-        var qteVal = getVal('quantite');
-        var qteNum = 0;
-        if (qteVal && trim(qteVal) !== '') {
-            qteNum = parseFloat(qteVal);
-            if (isNaN(qteNum)) {
-                afficherErreur('quantite', 'La quantité doit être un nombre valide');
-                erreurs.push('quantite'); ok = false;
-            } else if (qteNum < 0) {
-                afficherErreur('quantite', 'La quantité ne peut pas être négative');
-                erreurs.push('quantite'); ok = false;
-            }
-        }
-
-        // ✅ Seuil d'alerte - DANS la fonction valider()
-        var seuilVal = getVal('seuil');
-        var seuilNum = 0;
-        if (seuilVal && trim(seuilVal) !== '') {
-            seuilNum = parseFloat(seuilVal);
-            if (isNaN(seuilNum)) {
-                afficherErreur('seuil', 'Le seuil d\'alerte doit être un nombre valide');
-                erreurs.push('seuil'); ok = false;
-            } else if (seuilNum < 0) {
-                afficherErreur('seuil', 'Le seuil d\'alerte ne peut pas être négatif');
-                erreurs.push('seuil'); ok = false;
-            } else if (qteVal && trim(qteVal) !== '' && !isNaN(qteNum) && seuilNum > qteNum) {
-                afficherErreur('seuil', 'Le seuil d\'alerte ne peut pas dépasser la quantité actuelle');
-                erreurs.push('seuil'); ok = false;
-            }
-        }
-
-        // Stock unité (si quantité > 0)
-        if (qteVal && trim(qteVal) !== '' && !isNaN(qteNum) && qteNum > 0) {
-            if (!getVal('unite') || trim(getVal('unite')) === '') {
-                afficherErreur('unite', 'L\'unité est requise si la quantité est supérieure à 0');
-                erreurs.push('unite'); ok = false;
-            }
-        }
-
-        // Dates stock
-        var drVal = getVal('dateReception');
-        var deVal = getVal('dateExpiration');
-        if (drVal && trim(drVal) !== '' && deVal && trim(deVal) !== '') {
-            if (new Date(deVal).getTime() < new Date(drVal).getTime()) {
-                afficherErreur('dateExpiration', 'La date d\'expiration doit être après la date de réception');
-                erreurs.push('dateExpiration'); ok = false;
-            }
-        }
-
-        if (erreurs.length > 0) {
-            var el = trouverErreur(erreurs[0]);
-            if (el && el.scrollIntoView) el.scrollIntoView();
-        }
-
-        return ok;
-        // ✅ FIN de valider() - accolade correctement placée
-    }
-
-    function initialiser() {
-        form = document.getElementById('produitForm');
-        uploadZone = document.getElementById('uploadZone');
-        previewZone = document.getElementById('previewZone');
-        previewImage = document.getElementById('previewImage');
-        btnSupprimer = document.getElementById('btnSupprimer');
-
-        fileInput = trouverChamp('photo');
-        if (!fileInput) {
-            var inputs = document.getElementsByTagName('input');
-            for (var i = 0; i < inputs.length; i++) {
-                if (inputs[i].type === 'file') { fileInput = inputs[i]; break; }
-            }
-        }
-
-        if (!form) return;
 
         if (uploadZone && fileInput) {
-            uploadZone.onclick = function(e) {
-                if (e.preventDefault) e.preventDefault();
-                if (e.stopPropagation) e.stopPropagation();
-                fileInput.click();
-                return false;
-            };
-        }
-
-        if (fileInput) {
+            uploadZone.onclick = function() { fileInput.click(); };
             fileInput.onchange = function() {
                 if (this.files && this.files.length > 0) {
-                    var f = this.files[0];
-                    if (!estUneImage(f.name)) {
-                        afficherErreur('photo', 'Veuillez sélectionner une image (JPG, PNG, GIF, WebP)');
-                        this.value = ''; return;
-                    }
-                    if (f.size > 5 * 1024 * 1024) {
-                        afficherErreur('photo', 'L\'image ne doit pas dépasser 5 Mo');
-                        this.value = ''; return;
-                    }
-                    masquerErreur('photo');
-                    if (window.FileReader) {
-                        var reader = new FileReader();
-                        reader.onload = function(e) {
-                            previewImage.src = e.target.result;
-                            previewZone.style.display = 'block';
-                            uploadZone.style.display = 'none';
-                            imageSelectionnee = true;
-                        };
-                        reader.readAsDataURL(f);
-                    } else {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
                         previewZone.style.display = 'block';
                         uploadZone.style.display = 'none';
                         imageSelectionnee = true;
-                    }
+                    };
+                    reader.readAsDataURL(this.files[0]);
                 }
             };
         }
 
         if (btnSupprimer) {
-            btnSupprimer.onclick = function(e) {
-                if (e.preventDefault) e.preventDefault();
-                if (e.stopPropagation) e.stopPropagation();
-                if (fileInput) fileInput.value = '';
-                if (previewImage) previewImage.src = '';
+            btnSupprimer.onclick = function() {
+                fileInput.value = '';
                 previewZone.style.display = 'none';
                 uploadZone.style.display = 'block';
                 imageSelectionnee = false;
-                return false;
             };
         }
 
         form.onsubmit = function(e) {
-            if (!valider()) {
-                if (e.preventDefault) e.preventDefault();
-                else e.returnValue = false;
-                return false;
-            }
-            return true;
+            var ok = true;
+            ['categorie', 'nom', 'prix', 'photo'].forEach(hideErr);
+
+            if (!findFld('categorie').value) { showErr('categorie', 'Requis'); ok = false; }
+            if (!findFld('nom').value) { showErr('nom', 'Requis'); ok = false; }
+            if (!findFld('prix').value) { showErr('prix', 'Requis'); ok = false; }
+            if (!imageSelectionnee) { showErr('photo', 'Photo requise'); ok = false; }
+
+            if (!ok) e.preventDefault();
+            return ok;
         };
-
-        // ✅ 'seuil' ajouté dans le tableau des champs
-        var champs = ['categorie', 'nom', 'prix', 'quantite', 'seuil'];
-        for (var i = 0; i < champs.length; i++) {
-            (function(c) {
-                var ch = trouverChamp(c);
-                if (ch) {
-                    ch.onfocus = function() { masquerErreur(c); };
-                    ch.onblur = function() {
-                        var val = trim(getVal(c));
-
-                        if (c === 'categorie' && !val) {
-                            afficherErreur(c, 'La catégorie est obligatoire');
-                        }
-
-                        if (c === 'nom') {
-                            if (!val) afficherErreur(c, 'Le nom est obligatoire');
-                            else if (val.length < 3) afficherErreur(c, 'Minimum 3 caractères');
-                        }
-
-                        if (c === 'prix') {
-                            if (!val) afficherErreur(c, 'Le prix est obligatoire');
-                            else {
-                                var n = parseFloat(val.replace(',', '.'));
-                                if (isNaN(n)) afficherErreur(c, 'Nombre invalide');
-                                else if (n <= 0) afficherErreur(c, 'Le prix doit être > 0');
-                            }
-                        }
-
-                        if (c === 'quantite' && val) {
-                            if (isNaN(parseFloat(val))) afficherErreur(c, 'Nombre invalide');
-                            else if (parseFloat(val) < 0) afficherErreur(c, 'Quantité négative interdite');
-                        }
-
-                        // ✅ Validation temps réel du seuil
-                        if (c === 'seuil' && val) {
-                            var seuilN = parseFloat(val);
-                            if (isNaN(seuilN)) {
-                                afficherErreur(c, 'Nombre invalide');
-                            } else if (seuilN < 0) {
-                                afficherErreur(c, 'Le seuil ne peut pas être négatif');
-                            } else {
-                                var qteActuelle = parseFloat(getVal('quantite'));
-                                if (!isNaN(qteActuelle) && seuilN > qteActuelle) {
-                                    afficherErreur(c, 'Le seuil ne peut pas dépasser la quantité actuelle');
-                                }
-                            }
-                        }
-                    };
-                }
-            })(champs[i]);
-        }
-    }
-
-    var t = 0;
-    var iv = setInterval(function() {
-        t++;
-        if (document.getElementById('produitForm') || t > 100) {
-            clearInterval(iv);
-            initialiser();
-        }
-    }, 50);
-
-})();
+    })();
 </script>
 {% endblock %}
