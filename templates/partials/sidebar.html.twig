@@ -66,9 +66,9 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 Affectations
             </a>
-            <a href="{{ path('gerant_animaux') }}" class="sidebar-link {{ activePage == 'animaux' ? 'active' : '' }}">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="16" rx="8" ry="5"></ellipse><path d="M12 11v5M7 7.5C7.5 5.5 9 4 12 4s4.5 1.5 5 3.5M16 7.5c.5 2 2 3.5 4 4.5"></path></svg>
-                Animaux
+            <a href="{{ path('animal_management_index') }}" class="sidebar-link {{ activePage == 'animal_management' ? 'active' : '' }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"></path><path d="M7 10V7a5 5 0 0 1 10 0v3"></path></svg>
+                Animal Management
             </a>
 
         {% elseif isGerant %}
@@ -98,9 +98,9 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 Affectations
             </a>
-            <a href="{{ path('gerant_animaux') }}" class="sidebar-link {{ activePage == 'animaux' ? 'active' : '' }}">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="16" rx="8" ry="5"></ellipse><path d="M12 11v5M7 7.5C7.5 5.5 9 4 12 4s4.5 1.5 5 3.5M16 7.5c.5 2 2 3.5 4 4.5"></path></svg>
-                Animaux
+            <a href="{{ path('animal_management_index') }}" class="sidebar-link {{ activePage == 'animal_management' ? 'active' : '' }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"></path><path d="M7 10V7a5 5 0 0 1 10 0v3"></path></svg>
+                Animal Management
             </a>
 
         {% elseif isOwner %}
@@ -113,12 +113,20 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
                 Nouvelle Ferme
             </a>
+            <a href="{{ path('animal_management_index') }}" class="sidebar-link {{ activePage == 'animal_management' ? 'active' : '' }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"></path><path d="M7 10V7a5 5 0 0 1 10 0v3"></path></svg>
+                Animal Management
+            </a>
 
         {% else %}
             <div style="font-size: .75rem; font-weight: 700; color: var(--cp); text-transform: uppercase; letter-spacing: .1em; padding: 10px 16px;">Navigation</div>
             <a href="{{ path('ouvrier_home') }}" class="sidebar-link {{ activePage == 'dashboard' ? 'active' : '' }}">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                 Mon espace
+            </a>
+            <a href="{{ path('animal_management_index') }}" class="sidebar-link {{ activePage == 'animal_management' ? 'active' : '' }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"></path><path d="M7 10V7a5 5 0 0 1 10 0v3"></path></svg>
+                Animal Management
             </a>
         {% endif %}
     </div>

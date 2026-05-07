@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\DBAL\Types\Types;
 
@@ -17,11 +19,8 @@ class Animal
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
     private ?int $ear_tag = null;
 
-    #[ORM\Column(type: Types::STRING, nullable: false)]
+    #[ORM\Column(type: Types::STRING, nullable: true)]
     private ?string $type = null;
-
-    #[ORM\Column(type: Types::STRING, nullable: false)]
-    private ?string $gender = null;
 
     #[ORM\Column(type: Types::FLOAT, nullable: true)]
     private ?float $weight = null;
@@ -43,6 +42,14 @@ class Animal
 
     #[ORM\Column(type: Types::STRING, nullable: true)]
     private ?string $location = null;
+
+    #[ORM\OneToMany(mappedBy: 'animal', targetEntity: AnimalHealthRecord::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $healthRecords;
+
+    public function __construct()
+    {
+        $this->healthRecords = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -69,18 +76,6 @@ class Animal
     public function setType(string $type): static
     {
         $this->type = $type;
-
-        return $this;
-    }
-
-    public function getGender(): ?string
-    {
-        return $this->gender;
-    }
-
-    public function setGender(string $gender): static
-    {
-        $this->gender = $gender;
 
         return $this;
     }
@@ -167,6 +162,32 @@ class Animal
         $this->location = $location;
 
         return $this;
+    }
+
+    public function isVaccinated(): ?bool
+    {
+        if ($this->vaccinated === null) {
+            return null;
+        }
+
+        return $this->vaccinated === 1;
+    }
+
+    public function getAge(): ?int
+    {
+        if (!$this->birth_date instanceof \DateTimeInterface) {
+            return null;
+        }
+
+        return (int) $this->birth_date->diff(new \DateTimeImmutable('today'))->y;
+    }
+
+    /**
+     * @return Collection<int, AnimalHealthRecord>
+     */
+    public function getHealthRecords(): Collection
+    {
+        return $this->healthRecords;
     }
 
 }

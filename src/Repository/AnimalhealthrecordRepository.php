@@ -2,16 +2,14 @@
 
 namespace App\Repository;
 
-use App\Entity\Animalhealthrecord;
+use App\Entity\AnimalHealthRecord;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-class AnimalhealthrecordRepository extends ServiceEntityRepository
+class AnimalHealthRecordRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Animalhealthrecord::class);
+        parent::__construct($registry, AnimalHealthRecord::class);
     }
-
-    // Add custom methods as needed
 }

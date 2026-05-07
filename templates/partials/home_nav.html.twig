@@ -29,12 +29,16 @@
         <li><a href="{{ path('gerant_equipements') }}">Équipements</a></li>
         <li><a href="{{ path('gerant_affectations') }}">Affectations</a></li>
         <li><a href="{{ path('gerant_animaux') }}">Animaux</a></li>
+        <li><a href="{{ path('animal_management_index') }}">Animal Management</a></li>
       {% else %}
         <li><a href="{{ path('app_index') }}#hero">Accueil</a></li>
         <li><a href="{{ path('app_index') }}#features">À propos</a></li>
         <li><a href="{{ path('app_index') }}#how">Comment ça marche</a></li>
         <li><a href="{{ path('app_index') }}#who">Pour qui</a></li>
         <li><a href="{{ path('app_index') }}#contact">Contact</a></li>
+        {% if app.user %}
+          <li><a href="{{ path('animal_management_index') }}">Animal Management</a></li>
+        {% endif %}
       {% endif %}
     </ul>
     <div class="home-nav__right">

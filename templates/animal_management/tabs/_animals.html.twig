@@ -1,0 +1,118 @@
+{% set editAnimal = null %}
+{% for a in animals %}
+    {% if a.id == editAnimalId %}{% set editAnimal = a %}{% endif %}
+{% endfor %}
+
+<div class="mgmt-form-card">
+    <div class="mgmt-form-card-header">
+        <div>
+            <div class="mgmt-form-title">Ajouter / Modifier un Animal</div>
+            <div class="mgmt-form-subtitle">Les champs obligatoires sont marques avec *</div>
+        </div>
+    </div>
+    <div class="mgmt-form-body">
+        <form method="post" action="{{ editAnimal ? path('animal_update', {id: editAnimal.id}) : path('animal_add') }}" class="mgmt-grid">
+            <label>Boucle d'Oreille *</label>
+            <input class="mgmt-input" name="earTag" value="{{ editAnimal ? editAnimal.earTag : '' }}">
+            <label>Type *</label>
+            <select class="mgmt-input" name="type">
+                <option value="">Selectionner un type</option>
+                {% for type in types %}
+                    <option value="{{ type }}" {% if editAnimal and editAnimal.type == type %}selected{% endif %}>{{ type }}</option>
+                {% endfor %}
+            </select>
+            <label>Poids (kg)</label>
+            <input class="mgmt-input" name="weight" value="{{ editAnimal and editAnimal.weight is not null ? editAnimal.weight : '' }}">
+            <label>Date de Naissance</label>
+            <input class="mgmt-input" type="date" name="birthDate" value="{{ editAnimal and editAnimal.birthDate ? editAnimal.birthDate|date('Y-m-d') : '' }}">
+            <label>Date d'Entree</label>
+            <input class="mgmt-input" type="date" name="entryDate" value="{{ editAnimal and editAnimal.entryDate ? editAnimal.entryDate|date('Y-m-d') : '' }}">
+            <label>Origine *</label>
+            <select class="mgmt-input" name="origin">
+                <option value="">Selectionner une origine</option>
+                {% for origin in origins %}
+                    <option value="{{ origin }}" {% if editAnimal and editAnimal.origin == origin %}selected{% endif %}>{{ origin }}</option>
+                {% endfor %}
+            </select>
+            <label>Emplacement *</label>
+            <select class="mgmt-input" name="location">
+                <option value="">Selectionner un emplacement</option>
+                {% for location in locations %}
+                    <option value="{{ location }}" {% if editAnimal and editAnimal.location == location %}selected{% endif %}>{{ location }}</option>
+                {% endfor %}
+            </select>
+            <label>Vaccine</label>
+            <input type="checkbox" name="vaccinated" value="1" {% if editAnimal and editAnimal.vaccinated %}checked{% endif %}>
+            <div class="mgmt-actions">
+                <button class="mgmt-btn-primary" type="submit">{{ editAnimal ? 'Modifier' : 'Ajouter' }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mgmt-table-card">
+    <div class="mgmt-table-title">Tous les Animaux</div>
+    <form method="get" class="inline-form" style="margin-bottom:10px;">
+        <input type="hidden" name="tab" value="animaux">
+        <select class="mgmt-input" name="animalSearchField">
+            <option value="all" {{ animalSearchField == 'all' ? 'selected' : '' }}>All Fields</option>
+            <option value="id" {{ animalSearchField == 'id' ? 'selected' : '' }}>ID</option>
+            <option value="earTag" {{ animalSearchField == 'earTag' ? 'selected' : '' }}>Ear Tag</option>
+            <option value="type" {{ animalSearchField == 'type' ? 'selected' : '' }}>Type</option>
+            <option value="weight" {{ animalSearchField == 'weight' ? 'selected' : '' }}>Weight</option>
+            <option value="healthStatus" {{ animalSearchField == 'healthStatus' ? 'selected' : '' }}>Health</option>
+            <option value="birthDate" {{ animalSearchField == 'birthDate' ? 'selected' : '' }}>Birth Date</option>
+            <option value="origin" {{ animalSearchField == 'origin' ? 'selected' : '' }}>Origin</option>
+            <option value="location" {{ animalSearchField == 'location' ? 'selected' : '' }}>Location</option>
+        </select>
+        <input class="mgmt-input" type="text" name="animalSearch" value="{{ animalSearch }}" placeholder="Search...">
+        <button class="mgmt-btn-primary" type="submit">Search</button>
+    </form>
+    <table class="mgmt-table">
+        <thead>
+        <tr>
+            <th><a class="sort-link {{ animalSort == 'id' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'id', animalDir: (animalSort == 'id' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">ID</a></th>
+            <th><a class="sort-link {{ animalSort == 'earTag' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'earTag', animalDir: (animalSort == 'earTag' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Ear Tag</a></th>
+            <th><a class="sort-link {{ animalSort == 'type' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'type', animalDir: (animalSort == 'type' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Type</a></th>
+            <th><a class="sort-link {{ animalSort == 'weight' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'weight', animalDir: (animalSort == 'weight' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Weight</a></th>
+            <th><a class="sort-link {{ animalSort == 'healthStatus' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'healthStatus', animalDir: (animalSort == 'healthStatus' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Health</a></th>
+            <th><a class="sort-link {{ animalSort == 'birthDate' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'birthDate', animalDir: (animalSort == 'birthDate' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Birth Date</a></th>
+            <th>Age</th>
+            <th><a class="sort-link {{ animalSort == 'origin' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'origin', animalDir: (animalSort == 'origin' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Origin</a></th>
+            <th><a class="sort-link {{ animalSort == 'location' ? 'is-active ' ~ (animalDir == 'ASC' ? 'asc' : 'desc') : '' }}" href="{{ path('animal_management_index', {tab:'animaux', animalSort:'location', animalDir: (animalSort == 'location' and animalDir == 'ASC') ? 'DESC' : 'ASC', animalSearchField: animalSearchField, animalSearch: animalSearch, animalPage: animalPage}) }}">Location</a></th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for animal in animals %}
+            <tr>
+                <td>{{ animal.id }}</td>
+                <td>{{ animal.earTag }}</td>
+                <td>{{ animal.type }}</td>
+                <td>{{ animal.weight is not null ? animal.weight ~ ' kg' : '-' }}</td>
+                <td>{{ animal.healthStatus ?: '-' }}</td>
+                <td>{{ animal.birthDate ? animal.birthDate|date('Y-m-d') : '-' }}</td>
+                <td>{{ animal.age is not null ? animal.age ~ ' yr' : '-' }}</td>
+                <td>{{ animal.origin ?: '-' }}</td>
+                <td>{{ animal.location ?: '-' }}</td>
+                <td class="row-actions">
+                    <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {tab: 'animaux', editAnimalId: animal.id, animalId: animal.id, animalPage: animalPage}) }}">Modifier</a>
+                    <form method="post" action="{{ path('animal_delete', {id: animal.id}) }}">
+                        <button class="mgmt-btn-danger" type="submit">Supprimer</button>
+                    </form>
+                    <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {tab: 'dossiers', animalId: animal.id}) }}">+ Dossier</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div class="pagination">
+        {% if animalPage > 1 %}
+            <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {tab:'animaux', animalPage: animalPage - 1, animalSort: animalSort, animalDir: animalDir, animalSearchField: animalSearchField, animalSearch: animalSearch}) }}">Prev</a>
+        {% endif %}
+        <span>Page {{ animalPage }} / {{ animalTotalPages }}</span>
+        {% if animalPage < animalTotalPages %}
+            <a class="mgmt-btn-ghost-link" href="{{ path('animal_management_index', {tab:'animaux', animalPage: animalPage + 1, animalSort: animalSort, animalDir: animalDir, animalSearchField: animalSearchField, animalSearch: animalSearch}) }}">Next</a>
+        {% endif %}
+    </div>
+</div>

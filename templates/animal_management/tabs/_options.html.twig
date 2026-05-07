@@ -1,0 +1,125 @@
+<div class="mgmt-form-card">
+    <div class="mgmt-form-card-header">
+        <div class="mgmt-form-title">Types et Emplacements</div>
+    </div>
+    <div class="mgmt-form-body options-grid">
+        <div>
+            <div class="mgmt-table-title">Animal Types</div>
+            <ul class="mgmt-list">
+                {% for type in types %}
+                    <li class="mgmt-list-row">
+                        <span>{{ type }}</span>
+                        <form method="post" action="{{ path('option_type_delete') }}">
+                            <input type="hidden" name="value" value="{{ type }}">
+                            <button class="mgmt-btn-danger" type="submit">Delete</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+            <form method="post" action="{{ path('option_type_add') }}" class="inline-form">
+                <input class="mgmt-input" name="value" placeholder="New type name...">
+                <button class="mgmt-btn-primary" type="submit">Add</button>
+            </form>
+        </div>
+        <div>
+            <div class="mgmt-table-title">Pen Locations</div>
+            <ul class="mgmt-list">
+                {% for location in locations %}
+                    <li class="mgmt-list-row">
+                        <span>{{ location }}</span>
+                        <form method="post" action="{{ path('option_location_delete') }}">
+                            <input type="hidden" name="value" value="{{ location }}">
+                            <button class="mgmt-btn-danger" type="submit">Delete</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+            <form method="post" action="{{ path('option_location_add') }}" class="inline-form">
+                <input class="mgmt-input" name="value" placeholder="New location name...">
+                <button class="mgmt-btn-primary" type="submit">Add</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mgmt-form-card" style="margin-top:14px;">
+    <div class="mgmt-form-card-header">
+        <div>
+            <div class="mgmt-form-title">Rapport email veterinaire</div>
+        </div>
+    </div>
+    <div class="mgmt-form-body">
+        <form method="post" action="{{ path('vet_report_send') }}" class="mgmt-grid">
+            <label>Email du veterinaire</label>
+            <input class="mgmt-input" type="email" name="vetEmail" required placeholder="vet@example.com" autocomplete="email" value="{{ defaultVetEmail }}">
+            <label>Notes additionnelles</label>
+            <textarea class="mgmt-input" name="notes" rows="5" style="width:100%;min-height:100px;resize:vertical;" placeholder=""></textarea>
+            <div class="mgmt-actions">
+                <button class="mgmt-btn-primary" type="submit">Envoyer le rapport</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="mgmt-form-card" style="margin-top:14px;">
+    <div class="mgmt-form-card-header">
+        <div>
+            <div class="mgmt-form-title">Entrainement du Modele Personnalise</div>
+            <div class="mgmt-form-subtitle">Utilisez vos propres donnees pour de meilleures predictions pour votre ferme</div>
+        </div>
+    </div>
+    <div class="mgmt-form-body">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="mgmt-list-row" style="justify-content:flex-start;">
+                <strong>Dossiers de sante en base :</strong>
+                <span>{{ healthRecordCount }}</span>
+            </div>
+            {% if canTrainCustomModel %}
+                <div class="flash flash-success" style="margin-bottom:0;">Vous avez assez de dossiers pour entrainer un modele personnalise.</div>
+            {% else %}
+                <div class="flash flash-error" style="margin-bottom:0;">Vous avez besoin d'au moins {{ trainThreshold }} dossiers de sante. Il en manque {{ trainThreshold - healthRecordCount }}.</div>
+            {% endif %}
+            <div class="mgmt-form-subtitle">
+                Statut du modele personnalise :
+                <strong>{{ customModelAvailable ? 'disponible' : 'pas encore entraine' }}</strong>
+            </div>
+            <form method="post" action="{{ path('ai_model_train') }}">
+                <button class="mgmt-btn-primary" type="submit" {% if not canTrainCustomModel %}disabled{% endif %}>Exporter &amp; Reentrainer le Modele</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mgmt-form-card" style="margin-top:14px;">
+    <div class="mgmt-form-card-header">
+        <div>
+            <div class="mgmt-form-title">Exporter un Rapport PDF</div>
+            <div class="mgmt-form-subtitle">Choisissez les sections a inclure dans le rapport de la ferme</div>
+        </div>
+    </div>
+    <div class="mgmt-form-body">
+        <form method="post" action="{{ path('farm_report_pdf_export') }}" data-turbo="false">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <label class="mgmt-list-row" style="justify-content:flex-start;">
+                    <input type="checkbox" name="includeSummary" value="1">
+                    <span>Resume de la Ferme (totaux, vaccination, animaux a risque)</span>
+                </label>
+                <label class="mgmt-list-row" style="justify-content:flex-start;">
+                    <input type="checkbox" name="includeAllAnimals" value="1">
+                    <span>Liste complete des animaux</span>
+                </label>
+                <label class="mgmt-list-row" style="justify-content:flex-start;">
+                    <input type="checkbox" name="includeAtRisk" value="1">
+                    <span>Animaux a risque (malades, blesses, critiques)</span>
+                </label>
+                <label class="mgmt-list-row" style="justify-content:flex-start;">
+                    <input type="checkbox" name="includeRecentRecords" value="1">
+                    <span>Dossiers de sante recents (20 derniers)</span>
+                </label>
+            </div>
+            <div class="mgmt-actions">
+                <button class="mgmt-btn-primary" type="submit">Generer le Rapport PDF</button>
+            </div>
+        </form>
+    </div>
+</div>

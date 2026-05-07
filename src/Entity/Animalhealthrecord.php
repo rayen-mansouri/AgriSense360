@@ -2,22 +2,23 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'animalhealthrecord')]
-class Animalhealthrecord
+class AnimalHealthRecord
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: false)]
-    private ?int $animal = null;
+    #[ORM\ManyToOne(targetEntity: Animal::class, inversedBy: 'healthRecords')]
+    #[ORM\JoinColumn(name: 'animal_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private ?Animal $animal = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: false)]
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $record_date = null;
 
     #[ORM\Column(type: Types::FLOAT, nullable: true)]
@@ -46,12 +47,12 @@ class Animalhealthrecord
         return $this->id;
     }
 
-    public function getAnimal(): ?int
+    public function getAnimal(): ?Animal
     {
         return $this->animal;
     }
 
-    public function setAnimal(int $animal): static
+    public function setAnimal(?Animal $animal): static
     {
         $this->animal = $animal;
 
@@ -60,10 +61,10 @@ class Animalhealthrecord
 
     public function getRecordDate(): ?\DateTime
     {
-        return $this->record_date;
+        return $this->record_date instanceof \DateTime ? $this->record_date : null;
     }
 
-    public function setRecordDate(\DateTime $record_date): static
+    public function setRecordDate(\DateTimeInterface $record_date): static
     {
         $this->record_date = $record_date;
 
@@ -153,5 +154,4 @@ class Animalhealthrecord
 
         return $this;
     }
-
 }
