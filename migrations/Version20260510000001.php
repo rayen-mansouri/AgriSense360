@@ -23,6 +23,12 @@ final class Version20260510000001 extends AbstractMigration
 
         $alterParts = [];
 
+        if (!in_array('reset_token', $columns)) {
+            $alterParts[] = 'ADD COLUMN reset_token VARCHAR(255) DEFAULT NULL';
+        }
+        if (!in_array('reset_token_expires_at', $columns)) {
+            $alterParts[] = 'ADD COLUMN reset_token_expires_at DATETIME DEFAULT NULL';
+        }
         if (!in_array('first_login', $columns)) {
             $alterParts[] = 'ADD COLUMN first_login TINYINT(1) NOT NULL DEFAULT 1';
         }
