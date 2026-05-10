@@ -251,22 +251,24 @@ footer a:hover{opacity:1}
 {% block body %}
 <!-- ═══════════════════════════ HERO ═══════════════════════════ -->
 <section id="hero">
-  <video autoplay muted loop playsinline poster="{{ asset('images/logo.png') }}">
+  <video autoplay muted loop playsinline poster="{{ asset('images/logo.png') }}" style="filter: brightness(0.4);">
     <source src="{{ asset('videos/farm.mp4') }}" type="video/mp4">
   </video>
   <div class="hero-overlay"></div>
-  <div class="hero-content">
-    <div class="hero-badge">Agriculture Intelligente</div>
-    <h1>Gérez votre ferme<br>avec <span>l'Intelligence<br>Artificielle</span></h1>
-    <p>AgriSense 360 connecte propriétaires agricoles et ouvriers qualifiés grâce à une plateforme IA puissante et simple d'utilisation.</p>
-    <div class="hero-btns">
+  <div class="hero-content animate-fade-in">
+    <div class="hero-badge" style="background: rgba(90, 181, 90, 0.2); border: 1px solid var(--g); color: white;">Agriculture Intelligente 3.0</div>
+    <h1 style="text-shadow: 0 10px 40px rgba(0,0,0,0.6); font-size: clamp(3rem, 6vw, 5rem);">Gérez votre ferme<br>avec <span>l'Intelligence<br>Artificielle</span></h1>
+    <p style="font-weight: 500; font-size: 1.2rem; color: rgba(255,255,255,0.9);">AgriSense 360 connecte propriétaires agricoles et ouvriers qualifiés grâce à une plateforme IA puissante et simple d'utilisation.</p>
+    <div class="hero-btns" style="margin-top: 30px; display: flex; gap: 20px;">
       {% if not app.user %}
-        <a href="{{ path('app_register') }}" class="hero-btn-primary">Commencer gratuitement</a>
-        <a href="#how" class="hero-btn-secondary">Comment ça marche →</a>
+        <a href="{{ path('app_register') }}" class="btn btn-save" style="padding: 20px 45px; font-size: 1.1rem; border-radius: 50px;">Commencer gratuitement</a>
+        <a href="#how" class="btn" style="padding: 20px 45px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 50px; backdrop-filter: blur(10px);">Découvrir →</a>
+      {% else %}
+        <a href="{{ path('app_home') }}" class="btn-premium" style="padding: 18px 40px; font-size: 1rem;">Accéder au Dashboard</a>
       {% endif %}
     </div>
   </div>
-  <div class="hero-scroll">
+  <div class="hero-scroll" style="opacity: 0.7;">
     <div class="scroll-dot"></div>
     Défiler
   </div>
