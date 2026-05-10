@@ -758,6 +758,22 @@ final class ManagementController extends AbstractController
         ]);
     }
 
+    public function management(): void
+    {
+    }
+
+    public function adminManagement(): void
+    {
+    }
+
+    public function createAffectation(): void
+    {
+    }
+
+    public function editAffectation(): void
+    {
+    }
+
     #[Route('/management/workers', name: 'management_workers', methods: ['GET', 'POST'])]
     public function workers(Request $request, PdoCrudService $crudService, OpenWeatherService $weatherService, GroqAIService $groqService, DiscordWebhookService $discordService): Response
     {
