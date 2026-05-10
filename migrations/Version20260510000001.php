@@ -53,6 +53,9 @@ final class Version20260510000001 extends AbstractMigration
         if (!in_array('decision_reason', $columns)) {
             $alterParts[] = 'ADD COLUMN decision_reason LONGTEXT DEFAULT NULL';
         }
+        if (!in_array('approved_by', $columns)) {
+            $alterParts[] = 'ADD COLUMN approved_by INT DEFAULT NULL';
+        }
 
         if (!empty($alterParts)) {
             $this->addSql('ALTER TABLE `user` ' . implode(', ', $alterParts));
