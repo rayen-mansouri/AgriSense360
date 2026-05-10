@@ -60,6 +60,9 @@ final class Version20260510000001 extends AbstractMigration
         if (!empty($alterParts)) {
             $this->addSql('ALTER TABLE `user` ' . implode(', ', $alterParts));
         }
+
+        // Ensure phone column is nullable (matches entity definition)
+        $this->addSql('ALTER TABLE `user` MODIFY COLUMN phone VARCHAR(20) DEFAULT NULL');
     }
 
     public function down(Schema $schema): void
