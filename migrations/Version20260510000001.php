@@ -44,6 +44,15 @@ final class Version20260510000001 extends AbstractMigration
         if (!in_array('pending_notification', $columns)) {
             $alterParts[] = 'ADD COLUMN pending_notification LONGTEXT DEFAULT NULL';
         }
+        if (!in_array('cv_file', $columns)) {
+            $alterParts[] = 'ADD COLUMN cv_file VARCHAR(255) DEFAULT NULL';
+        }
+        if (!in_array('ai_suggested_role', $columns)) {
+            $alterParts[] = 'ADD COLUMN ai_suggested_role VARCHAR(255) DEFAULT NULL';
+        }
+        if (!in_array('decision_reason', $columns)) {
+            $alterParts[] = 'ADD COLUMN decision_reason LONGTEXT DEFAULT NULL';
+        }
 
         if (!empty($alterParts)) {
             $this->addSql('ALTER TABLE `user` ' . implode(', ', $alterParts));
