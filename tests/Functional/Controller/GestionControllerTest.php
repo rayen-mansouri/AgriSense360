@@ -30,7 +30,7 @@ class GestionControllerTest extends WebTestCase
     public function testProduitNewPageIsAccessible(): void
     {
         $this->client->request('GET', '/produit/nouveau');
-
+        
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h1', 'Nouveau Produit');
     }
@@ -39,7 +39,7 @@ class GestionControllerTest extends WebTestCase
     {
         // Récupérer un produit existant
         $produit = $this->produitRepository->findOneBy([]);
-
+        
         if ($produit) {
             $this->client->request('GET', '/produit/' . $produit->getId());
             $this->assertResponseIsSuccessful();
@@ -51,7 +51,7 @@ class GestionControllerTest extends WebTestCase
     public function testProduitShowForNonExistentProduct(): void
     {
         $this->client->request('GET', '/produit/99999');
-
+        
         // Devrait rediriger avec un flash message
         $this->assertResponseRedirects('/home');
     }
@@ -59,7 +59,7 @@ class GestionControllerTest extends WebTestCase
     public function testProduitEditPageForExistingProduct(): void
     {
         $produit = $this->produitRepository->findOneBy([]);
-
+        
         if ($produit) {
             $this->client->request('GET', '/produit/' . $produit->getId() . '/edit');
             $this->assertResponseIsSuccessful();
@@ -73,13 +73,13 @@ class GestionControllerTest extends WebTestCase
     public function testSearchByBarcodeWithValidSku(): void
     {
         $produit = $this->produitRepository->findOneBy(['sku' => $this->getValidSku()]);
-
+        
         if ($produit && $produit->getSku()) {
             $this->client->request('GET', '/api/produit/recherche?code=' . $produit->getSku());
-
+            
             $this->assertResponseIsSuccessful();
             $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
+            
             $this->assertArrayHasKey('id', $responseData);
             $this->assertArrayHasKey('nom', $responseData);
             $this->assertArrayHasKey('sku', $responseData);
@@ -91,13 +91,13 @@ class GestionControllerTest extends WebTestCase
     public function testSearchByBarcodeWithValidId(): void
     {
         $produit = $this->produitRepository->findOneBy([]);
-
+        
         if ($produit) {
             $this->client->request('GET', '/api/produit/recherche?code=' . $produit->getId());
-
+            
             $this->assertResponseIsSuccessful();
             $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
+            
             $this->assertEquals($produit->getId(), $responseData['id']);
         } else {
             $this->markTestSkipped('Aucun produit en base de données');
@@ -107,10 +107,10 @@ class GestionControllerTest extends WebTestCase
     public function testSearchByBarcodeWithInvalidCode(): void
     {
         $this->client->request('GET', '/api/produit/recherche?code=INVALID_CODE_12345');
-
+        
         $this->assertResponseStatusCodeSame(404);
         $responseData = json_decode($this->client->getResponse()->getContent(), true);
-
+        
         $this->assertArrayHasKey('error', $responseData);
         $this->assertEquals('Produit non trouvé', $responseData['error']);
     }
@@ -119,7 +119,7 @@ class GestionControllerTest extends WebTestCase
     public function testScannerPageIsAccessible(): void
     {
         $this->client->request('GET', '/scannerback');
-
+        
         $this->assertResponseIsSuccessful();
     }
 
