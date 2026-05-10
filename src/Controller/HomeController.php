@@ -52,16 +52,41 @@ class HomeController extends AbstractController
      * GERANT DASHBOARD
      */
     #[Route('/gerant', name: 'gerant_home')]
-    public function gerantHome(): Response
+    public function gerantHome(\App\Repository\UserRepository $userRepository, \App\Service\CultureService $cultureService): Response
     {
         $this->denyAccessUnlessGranted('ROLE_GERANT');
 
-        if ($this->getUser()->isFirstLogin()) {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if ($user->isFirstLogin()) {
             return $this->redirectToRoute('profile_first_login');
         }
 
+        $farm = $user->getFarm();
+        $pending_applications = [];
+        $approved_team = [];
+        $stats = ['total' => 0, 'retard' => 0, 'pretes' => 0];
+
+        if ($farm) {
+            $allMembers = $userRepository->findBy(['farm' => $farm]);
+            foreach ($allMembers as $m) {
+                if ($m->getStatus() === 'pending') {
+                    $pending_applications[] = $m;
+                } elseif ($m->getStatus() === 'active' || $m->getStatus() === 'ACTIVE') {
+                    $approved_team[] = $m;
+                }
+            }
+            $stats = $cultureService->getStats($farm);
+        }
+
         return $this->render('gerant/home.html.twig', [
-            'user' => $this->getUser()
+            'user' => $user,
+            'pending_applications' => $pending_applications,
+            'approved_team' => $approved_team,
+            'pending_count' => count($pending_applications),
+            'team_count' => count($approved_team),
+            'culture_stats' => $stats,
+            'farms_count' => $farm ? 1 : 0,
         ]);
     }
 

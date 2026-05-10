@@ -8,16 +8,20 @@ class ParcelleService
 {
     public function __construct(private EntityManagerInterface $em) {}
 
-    public function createParcelle(Parcelle $p): void
+    public function createParcelle(Parcelle $p, ?\App\Entity\Farm $farm = null): void
     {
         $p->setSurfaceRestant($p->getSurface());
         $p->setStatut('Libre');
+        $p->setFarm($farm);
         $this->em->persist($p);
         $this->em->flush();
     }
 
-    public function getAllParcelles(): array
+    public function getAllParcelles(?\App\Entity\Farm $farm = null): array
     {
+        if ($farm) {
+            return $this->em->getRepository(Parcelle::class)->findBy(['farm' => $farm]);
+        }
         return $this->em->getRepository(Parcelle::class)->findAll();
     }
 
@@ -32,13 +36,19 @@ class ParcelleService
         return $p ? $p->getSurfaceRestant() : 0;
     }
 
-    public function searchParcelles(string $term): array
+    public function searchParcelles(string $term, ?\App\Entity\Farm $farm = null): array
     {
-        return $this->em->getRepository(Parcelle::class)
+        $qb = $this->em->getRepository(Parcelle::class)
             ->createQueryBuilder('p')
             ->where('p.nom LIKE :t OR p.localisation LIKE :t')
-            ->setParameter('t', '%' . $term . '%')
-            ->getQuery()->getResult();
+            ->setParameter('t', '%' . $term . '%');
+
+        if ($farm) {
+            $qb->andWhere('p.farm = :farm')
+               ->setParameter('farm', $farm);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function updateParcelle(Parcelle $p): void
@@ -68,10 +78,17 @@ class ParcelleService
         $this->em->flush();
     }
 
-    public function getTotalSurface(): float
+    public function getTotalSurface(?\App\Entity\Farm $farm = null): float
     {
-        return (float)$this->em->createQuery(
-            'SELECT COALESCE(SUM(p.surface), 0) FROM App\Entity\Parcelle p'
-        )->getSingleScalarResult();
+        $qb = $this->em->createQueryBuilder()
+            ->select('COALESCE(SUM(p.surface), 0)')
+            ->from(\App\Entity\Parcelle::class, 'p');
+
+        if ($farm) {
+            $qb->where('p.farm = :farm')
+               ->setParameter('farm', $farm);
+        }
+
+        return (float)$qb->getQuery()->getSingleScalarResult();
     }
 }

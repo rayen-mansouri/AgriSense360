@@ -34,6 +34,12 @@ class ParcelleHistoriqueController extends AbstractController
             throw $this->createNotFoundException('Parcelle introuvable.');
         }
 
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if ($user && $user->getFarm() && $parcelle->getFarm() !== $user->getFarm() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('Vous n\'avez pas accès à cette parcelle.');
+        }
+
         $typeFilter = $request->query->get('type', '');
 
         $historique = $typeFilter
@@ -67,6 +73,12 @@ class ParcelleHistoriqueController extends AbstractController
         $parcelle = $this->parcelleService->getParcelleById($id);
         if (!$parcelle) {
             throw $this->createNotFoundException('Parcelle introuvable.');
+        }
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if ($user && $user->getFarm() && $parcelle->getFarm() !== $user->getFarm() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('Vous n\'avez pas accès à cette parcelle.');
         }
 
         $typeFilter = $request->query->get('type', '');

@@ -101,7 +101,7 @@ class CultureService
     }
 
     // ── CREATE ────────────────────────────────────────────────────────
-    public function createCulture(Culture $c, Parcelle $parcelle): array
+    public function createCulture(Culture $c, Parcelle $parcelle, ?\App\Entity\Farm $farm = null): array
     {
         if (!trim($c->getNom()))
             return ['ok'=>false,'error'=>'❌ Veuillez sélectionner un nom de culture'];
@@ -123,6 +123,7 @@ class CultureService
         $c->setEtat(self::calculateEtat($c->getDatePlantation(), $c->getDateRecolte(), $c->getNom()));
         if (!$c->getImg()) $c->setImg(self::getImageForNom($c->getNom()));
         $c->setParcelle($parcelle);
+        $c->setFarm($farm);
 
         $this->em->persist($c);
         $this->em->flush();
@@ -151,22 +152,30 @@ class CultureService
     }
 
     // ── READ ──────────────────────────────────────────────────────────
-    public function getAllCultures(): array
+    public function getAllCultures(?\App\Entity\Farm $farm = null): array
     {
+        if ($farm) {
+            return $this->em->getRepository(Culture::class)->findBy(['farm' => $farm]);
+        }
         return $this->em->getRepository(Culture::class)->findAll();
     }
 
-    public function getCulturesHarvestingToday(): array
+    public function getCulturesHarvestingToday(?\App\Entity\Farm $farm = null): array
     {
         $today = new \DateTime('today');
 
-        return $this->em->getRepository(Culture::class)
+        $qb = $this->em->getRepository(Culture::class)
             ->createQueryBuilder('c')
             ->where('c.dateRecolte = :today')
             ->setParameter('today', $today->format('Y-m-d'))
-            ->orderBy('c.nom', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy('c.nom', 'ASC');
+
+        if ($farm) {
+            $qb->andWhere('c.farm = :farm')
+               ->setParameter('farm', $farm);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function getCultureById(int $id): ?Culture
@@ -179,13 +188,19 @@ class CultureService
         return $this->em->getRepository(Culture::class)->findBy(['parcelle' => $parcelleId]);
     }
 
-    public function searchCultures(string $term): array
+    public function searchCultures(string $term, ?\App\Entity\Farm $farm = null): array
     {
-        return $this->em->getRepository(Culture::class)
+        $qb = $this->em->getRepository(Culture::class)
             ->createQueryBuilder('c')
             ->where('c.nom LIKE :t')
-            ->setParameter('t', '%'.$term.'%')
-            ->getQuery()->getResult();
+            ->setParameter('t', '%'.$term.'%');
+
+        if ($farm) {
+            $qb->andWhere('c.farm = :farm')
+               ->setParameter('farm', $farm);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────
@@ -269,9 +284,9 @@ $this->historiqueService->logAction(
      * It recalculates états AND fires alerts for any culture
      * whose dateRecolte is today or already passed.
      */
-    public function refreshAllEtats(): void
+    public function refreshAllEtats(?\App\Entity\Farm $farm = null): void
     {
-        foreach ($this->getAllCultures() as $c) {
+        foreach ($this->getAllCultures($farm) as $c) {
             if ($c->getDatePlantation() && $c->getDateRecolte()) {
                 $c->setEtat(self::calculateEtat(
                     $c->getDatePlantation(),
@@ -286,9 +301,9 @@ $this->historiqueService->logAction(
     }
 
     // ── Stats ─────────────────────────────────────────────────────────
-    public function getStats(): array
+    public function getStats(?\App\Entity\Farm $farm = null): array
     {
-        $all = $this->getAllCultures();
+        $all = $this->getAllCultures($farm);
         return [
             'total'  => count($all),
             'retard' => count(array_filter($all, fn($c) => $c->getEtat() === 'Récolte en Retard')),

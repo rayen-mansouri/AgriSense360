@@ -24,8 +24,12 @@ class EmbedController extends AbstractController
     #[Route('/agenda', name: 'agenda_view', methods: ['GET'])]
     public function agenda(): Response
     {
-        $this->cultureService->refreshAllEtats();
-        $cultures = $this->cultureService->getAllCultures();
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $farm = $user ? $user->getFarm() : null;
+
+        $this->cultureService->refreshAllEtats($farm);
+        $cultures = $this->cultureService->getAllCultures($farm);
 
         // Build the same JSON structure AgendaController.java used
         $data = array_map(fn($c) => [
@@ -45,7 +49,11 @@ class EmbedController extends AbstractController
     #[Route('/carte-parcelles', name: 'carte_parcelles', methods: ['GET'])]
     public function carte(): Response
     {
-        $parcelles = $this->parcelleService->getAllParcelles();
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $farm = $user ? $user->getFarm() : null;
+
+        $parcelles = $this->parcelleService->getAllParcelles($farm);
 
         $data = array_map(fn($p) => [
             'nom'          => $p->getNom(),

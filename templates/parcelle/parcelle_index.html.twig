@@ -76,8 +76,8 @@
 .parcelle-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
 .parcelle-card-name { font-size: 1.1rem; font-weight: 700; color: var(--ch3); }
 .parcelle-statut { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-.statut-libre { background: rgba(76,175,80,0.2); color: #4CAF50; }
-.statut-occupee { background: rgba(160,120,80,0.2); color: #a07850; }
+.statut-libre { background: var(--badge-g); color: var(--g); }
+.statut-occupee { background: rgba(245,158,11,0.1); color: #f59e0b; }
 
 /* Info grid */
 .parcelle-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 12px 0; }
@@ -111,7 +111,7 @@
 
 /* Historique button */
 .btn-historique {
-    background: linear-gradient(135deg, #1ABC9C, #16A085) !important;
+    background: linear-gradient(135deg, var(--indigo), var(--gm)) !important;
     color: #fff !important;
     border: none !important;
     font-weight: 600;
@@ -184,14 +184,13 @@
     }
     .form-control { 
         width: 100%;
-        background: rgba(0,0,0,0.1); 
+        background-color: rgba(0,0,0,0.1); 
         border: 1.5px solid var(--sidebar-border);
         border-radius: 12px; padding: 12px 16px; 
         color: var(--ch3); font-weight: 500;
         transition: all 0.2s;
     }
-    [data-theme="light"] .form-control { background: #f8fafc; border-color: rgba(0,0,0,0.1); color: #1a3a1a; }
-    .form-control:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 4px rgba(90,181,90,0.1); }
+    .form-control:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 4px rgba(90,181,90,0.1); background: rgba(255,255,255,0.08); }
     
     /* Orange button from capture */
     .btn-orange { 
@@ -223,11 +222,11 @@
     display: block;
 }
 .input-invalid {
-    border-color: #e53935 !important;
-    background: #fff8f8 !important;
+    border-color: var(--danger) !important;
+    background: var(--danger-bg) !important;
 }
 .input-valid {
-    border-color: #43a047 !important;
+    border-color: var(--g) !important;
 }
 </style>
 
@@ -251,9 +250,9 @@
 {% for type, messages in app.flashes %}
     {% for message in messages %}
         <div style="padding:12px 18px;margin-bottom:12px;border-radius:8px;
-             background:{{ type == 'success' ? '#e8f5e9' : '#ffebee' }};
-             border-left:4px solid {{ type == 'success' ? '#4CAF50' : '#f44336' }};
-             color:{{ type == 'success' ? '#2e7d32' : '#c62828' }};font-weight:500;">
+             background:var(--surface2);
+             border-left:4px solid {{ type == 'success' ? 'var(--g)' : 'var(--danger)' }};
+             color:var(--ch3); font-weight:500;">
             {{ message }}
         </div>
     {% endfor %}
@@ -280,7 +279,7 @@
 </div>
 
 {% if parcelles|length > 0 %}
-<div style="margin-bottom:10px;color:#888;font-size:0.82rem;text-align:center;">
+<div style="margin-bottom:10px; color: var(--cp); font-size: 0.82rem; text-align: center;">
     💡 Double-cliquez sur une carte pour voir les détails et les cultures
 </div>
 {% endif %}
@@ -571,13 +570,13 @@ const PARCELLES_DATA = [
 {# ════════════════════════════════════════════════════════════
    MODAL — Carte
    ════════════════════════════════════════════════════════════ #}
-<div id="modal-carte" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;width:95%;max-width:1000px;height:80vh;display:flex;flex-direction:column;overflow:hidden;">
-        <div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-            <strong>🗺️ Carte des parcelles</strong>
-            <button onclick="closeCarteModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;">✕</button>
+<div id="modal-carte" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(5px);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--sidebar-bg);border-radius:24px;width:95%;max-width:1100px;height:85vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--sidebar-border);box-shadow:0 30px 60px rgba(0,0,0,0.5);">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--sidebar-border);display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.05);">
+            <strong style="color:var(--ch3);font-size:1.1rem;">🗺️ Carte des parcelles</strong>
+            <button onclick="closeCarteModal()" style="background:none;border:none;font-size:1.5rem;color:var(--cp);cursor:pointer;line-height:1;">✕</button>
         </div>
-        <iframe id="carte-iframe" style="flex:1;border:none;" src=""></iframe>
+        <iframe id="carte-iframe" style="flex:1;border:none;background:#fff;" src=""></iframe>
     </div>
 </div>
 

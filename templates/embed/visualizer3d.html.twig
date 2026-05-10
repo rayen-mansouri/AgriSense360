@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Wrapper — {{ parcelle.nom }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0f172a; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+    </style>
+</head>
+<body>
+    <iframe id="v3d-frame" src="{{ asset('visualizer3d/index.html') }}" onload="injectData()"></iframe>
+
+    <script>
+        // Data from Symfony
+        var PARCELLE_DATA = {
+            id: {{ parcelle.id }},
+            nom: "{{ parcelle.nom|e('js') }}",
+            surface: {{ parcelle.surface }},
+            typeSol: "{{ parcelle.typeSol|e('js') }}",
+            cultures: [
+                {% for culture in cultures %}
+                {
+                    id: {{ culture.id }},
+                    nom: "{{ culture.nom|e('js') }}",
+                    typeCulture: "{{ culture.typeCulture|e('js') }}",
+                    surface: {{ culture.surface|default(0) }},
+                    growth: {{ culture.etat == 'Maturité' ? 90 : (culture.etat == 'Croissance' ? 60 : (culture.etat == 'Semis' ? 20 : 100)) }},
+                    etat: "{{ culture.etat|e('js') }}",
+                    dateRecolte: "{{ culture.dateRecolte ? culture.dateRecolte|date('d/m/Y') : '—' }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        };
+
+        function injectData() {
+            var frame = document.getElementById('v3d-frame');
+            try {
+                var win = frame.contentWindow;
+                if (win && typeof win.setParcelleData === 'function') {
+                    win.setParcelleData(JSON.stringify(PARCELLE_DATA));
+                } else {
+                    // Retry once if not loaded
+                    setTimeout(function() {
+                        if (win.setParcelleData) win.setParcelleData(JSON.stringify(PARCELLE_DATA));
+                    }, 500);
+                }
+            } catch(e) {
+                console.warn('3D Inject error:', e);
+            }
+        }
+    </script>
+</body>
+</html>

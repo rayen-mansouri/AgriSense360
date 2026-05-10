@@ -35,6 +35,10 @@ class Parcelle
     #[ORM\OneToMany(mappedBy: 'parcelle', targetEntity: Culture::class, cascade: ['remove'], fetch: 'EAGER')]
     private Collection $cultures;
 
+    #[ORM\ManyToOne(targetEntity: Farm::class)]
+    #[ORM\JoinColumn(name: 'farm_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Farm $farm = null;
+
     public function __construct()
     {
         $this->cultures = new ArrayCollection();
@@ -62,6 +66,8 @@ class Parcelle
     public function setStatut(?string $v): self { $this->statut = $v; return $this; }
 
     public function getCultures(): Collection { return $this->cultures; }
+    public function getFarm(): ?Farm { return $this->farm; }
+    public function setFarm(?Farm $farm): self { $this->farm = $farm; return $this; }
 
     public function getTauxOccupation(): float
     {

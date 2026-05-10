@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
+
+:root {
+    --bg: #020617;
+    --panel: rgba(10, 15, 25, 0.85);
+    --accent: #10b981;
+    --accent-glow: rgba(16, 185, 129, 0.5);
+    --text: #f8fafc;
+    --border: rgba(255, 255, 255, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
+
+canvas { display: block; outline: none; }
+
+/* Overlays */
+#vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+#ui-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#ui-layer > * { pointer-events: auto; }
+
+/* Top Header */
+.header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 30px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo span {
+    background: linear-gradient(135deg, #a7f3d0, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.weather-indicator {
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    padding: 15px 25px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.wi-title { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #64748b; }
+.wi-main { display: flex; align-items: center; gap: 15px; font-size: 1.2rem; font-weight: 900; }
+.wi-icon { font-size: 1.5rem; }
+
+/* Bottom Bar */
+.bottom-bar {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+}
+
+.btn-mode {
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    color: #94a3b8;
+    padding: 14px 35px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-mode.active {
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 0 25px var(--accent-glow);
+    transform: scale(1.05);
+}
+
+/* Info Panel */
+#info-panel {
+    position: absolute;
+    top: 120px;
+    right: 40px;
+    width: 380px;
+    background: var(--panel);
+    backdrop-filter: blur(30px);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 35px;
+    transform: translateX(450px);
+    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 50px 100px rgba(0,0,0,0.6);
+}
+
+#info-panel.visible { transform: translateX(0); }
+
+.panel-section { margin-bottom: 30px; }
+.p-tag { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 3px; margin-bottom: 8px; }
+.p-title { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1.1; margin-bottom: 10px; }
+.p-soil-badge { display: inline-block; padding: 4px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); font-size: 0.7rem; font-weight: 700; color: #94a3b8; border: 1px solid var(--border); }
+
+.cultures-list { display: flex; flex-direction: column; gap: 15px; }
+.c-item { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+.c-icon { font-size: 1.5rem; }
+.c-info { flex: 1; }
+.c-name { font-size: 0.95rem; font-weight: 800; color: #fff; }
+.c-status { font-size: 0.7rem; color: #94a3b8; }
+.c-progress { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 8px; overflow: hidden; }
+.c-bar { height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); transition: width 1s ease-out; }
+
+.ia-preview { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 20px; margin-top: 20px; }
+.ia-title { font-size: 0.7rem; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ia-content { font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; font-style: italic; }
+
+/* Loader */
+#loader {
+    position: fixed;
+    inset: 0;
+    background: #020617;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 1.5s;
+}
+
+.loader-ring { width: 80px; height: 80px; border: 3px solid transparent; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; position: relative; }
+.loader-ring::after { content: ''; position: absolute; inset: 10px; border: 3px solid transparent; border-top-color: #34d399; border-radius: 50%; animation: spin 2s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Legend */
+.legend {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    padding: 25px;
+    border-radius: 25px;
+    border: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.l-item { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; font-weight: 700; color: #94a3b8; }
+.l-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Auto-tour hint */
+.tour-hint {
+    position: absolute;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.75rem;
+    color: #64748b;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 800;
+}

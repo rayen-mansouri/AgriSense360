@@ -37,6 +37,10 @@ class Culture
     #[ORM\JoinColumn(name: 'parcelle_Id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private Parcelle $parcelle;
 
+    #[ORM\ManyToOne(targetEntity: Farm::class)]
+    #[ORM\JoinColumn(name: 'farm_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Farm $farm = null;
+
     // ── NEW FIELDS — added for IA harvest feature ─────────────────────────────
 
     /**
@@ -80,6 +84,9 @@ class Culture
 
     public function getParcelle(): Parcelle { return $this->parcelle; }
     public function setParcelle(Parcelle $v): self { $this->parcelle = $v; return $this; }
+
+    public function getFarm(): ?Farm { return $this->farm; }
+    public function setFarm(?Farm $farm): self { $this->farm = $farm; return $this; }
 
     // ── New getters/setters ───────────────────────────────────────────────────
 

@@ -38,12 +38,16 @@ class ParcelleController extends AbstractController
     #[Route('', name: 'parcelle_index', methods: ['GET'])]
     public function index(Request $request): Response
     {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $farm = $user ? $user->getFarm() : null;
+
         $search = $request->query->get('search', '');
         $sort   = $request->query->get('sort', '');
 
         $parcelles = $search
-            ? $this->parcelleService->searchParcelles($search)
-            : $this->parcelleService->getAllParcelles();
+            ? $this->parcelleService->searchParcelles($search, $farm)
+            : $this->parcelleService->getAllParcelles($farm);
 
         usort($parcelles, match($sort) {
             'statut'  => fn($a,$b) => strcmp($a->getStatut()??'',$b->getStatut()??''),
@@ -97,6 +101,20 @@ class ParcelleController extends AbstractController
             'parcelle' => $parcelle,
             'cultures' => $cultures,
             'weather'  => $weather,
+        ]);
+    }
+
+    #[Route('/{id}/visualizer', name: 'parcelle_visualizer', methods: ['GET'], requirements: ['id'=>'\d+'])]
+    public function visualizer(int $id): Response
+    {
+        $parcelle = $this->parcelleService->getParcelleById($id);
+        if (!$parcelle) throw $this->createNotFoundException();
+
+        $cultures = $this->cultureService->getCulturesByParcelle($id);
+
+        return $this->render('embed/visualizer3d.html.twig', [
+            'parcelle' => $parcelle,
+            'cultures' => $cultures,
         ]);
     }
 
@@ -159,7 +177,10 @@ class ParcelleController extends AbstractController
         $p = new Parcelle();
         $p->setNom($nom)->setSurface((float)$surfaceTxt)
           ->setLocalisation($localisation)->setTypeSol($typeSol)->setStatut($statut);
-        $this->parcelleService->createParcelle($p);
+        
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $this->parcelleService->createParcelle($p, $user ? $user->getFarm() : null);
 
         $this->addFlash('success', '✅ Parcelle "'.$nom.'" ajoutée avec succès!');
         return $this->redirectToRoute('parcelle_index');

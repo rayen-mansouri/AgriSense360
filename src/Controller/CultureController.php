@@ -37,14 +37,18 @@ class CultureController extends AbstractController
     #[Route('', name: 'culture_index', methods: ['GET'])]
     public function index(Request $request): Response
     {
-        $this->cultureService->refreshAllEtats();
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $farm = $user ? $user->getFarm() : null;
+
+        $this->cultureService->refreshAllEtats($farm);
 
         $search = $request->query->get('search', '');
         $sort   = $request->query->get('sort', '');
 
         $cultures = $search
-            ? $this->cultureService->searchCultures($search)
-            : $this->cultureService->getAllCultures();
+            ? $this->cultureService->searchCultures($search, $farm)
+            : $this->cultureService->getAllCultures($farm);
 
         usort($cultures, match($sort) {
             'type'    => fn($a,$b) => strcmp($a->getTypeCulture()??'',$b->getTypeCulture()??''),
@@ -53,7 +57,7 @@ class CultureController extends AbstractController
             default   => fn($a,$b) => $a->getId() <=> $b->getId(),
         });
 
-        $parcelles   = $this->parcelleService->getAllParcelles();
+        $parcelles   = $this->parcelleService->getAllParcelles($farm);
         $parcelleMap = [];
         foreach ($parcelles as $p) $parcelleMap[$p->getId()] = $p->getNom();
 
@@ -64,6 +68,7 @@ class CultureController extends AbstractController
             'search'      => $search,
             'sort'        => $sort,
             'cultureMap'  => self::CULTURE_MAP,
+            'currentFarm' => $farm,
         ]);
     }
 
@@ -72,11 +77,23 @@ class CultureController extends AbstractController
     #[Route('/analytics', name: 'culture_analytics', methods: ['GET'])]
     public function analytics(): Response
     {
-        $harvests = $this->em->getRepository(\App\Entity\ParcelleHistorique::class)
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $farm = $user ? $user->getFarm() : null;
+
+        $qb = $this->em->getRepository(\App\Entity\ParcelleHistorique::class)
             ->createQueryBuilder('h')
             ->where('h.typeAction = :type')
-            ->setParameter('type', 'RECOLTE')
-            ->orderBy('h.dateAction', 'DESC')
+            ->setParameter('type', 'RECOLTE');
+
+        if ($farm) {
+            // Join with Parcelle to filter by farm
+            $qb->innerJoin(\App\Entity\Parcelle::class, 'p', 'WITH', 'h.parcelleId = p.id')
+               ->andWhere('p.farm = :farm')
+               ->setParameter('farm', $farm);
+        }
+
+        $harvests = $qb->orderBy('h.dateAction', 'DESC')
             ->getQuery()
             ->getResult();
 
@@ -251,7 +268,9 @@ class CultureController extends AbstractController
 
         if (is_numeric($surfaceTxt)) $c->setSurface((float)$surfaceTxt);
 
-        $result = $this->cultureService->createCulture($c, $parcelle);
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $result = $this->cultureService->createCulture($c, $parcelle, $user ? $user->getFarm() : null);
         if ($result['ok']) {
             $this->addFlash('success', '✅ Culture "'.$nom.'" ajoutée avec succès!');
             return $this->redirectToRoute('culture_index');

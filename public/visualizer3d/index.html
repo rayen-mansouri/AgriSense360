@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriSense 3D — Expérience Immersive</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="vignette"></div>
+    <div id="film-grain"></div>
+    <div id="crosshair"></div>
+
+    <div id="loader">
+        <div class="loader-ring"></div>
+        <p style="margin-top: 30px; font-weight: 900; color: #10b981; letter-spacing: 8px; text-transform: uppercase; font-size: 0.7rem;">Génération du Domaine Agricole</p>
+    </div>
+
+    <div id="ui-layer">
+        <header class="header">
+            <div class="logo">🎑 <span>AGRISENSE</span> 3D</div>
+            <div class="weather-indicator" id="weatherDisplay">
+                <div class="wi-title">Climat Local</div>
+                <div class="wi-main">
+                    <span class="wi-icon" id="wiIcon">☀️</span>
+                    <span id="wiTemp">24°C</span>
+                    <span id="wiLabel">Plein Soleil</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="inspect-prompt">Appuyez sur <span class="key">E</span> pour examiner la culture</div>
+
+        <div id="info-panel">
+            <div class="panel-section">
+                <div class="p-tag">Secteur</div>
+                <h1 class="p-title" id="pTitle">Vignoble Nord</h1>
+                <div class="p-soil-badge" id="pSoil">Sol Limoneux</div>
+            </div>
+
+            <div class="panel-section">
+                <div class="p-tag">États des Cultures</div>
+                <div class="cultures-list" id="cultureList">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="ia-preview">
+                    <div class="ia-title">✨ Prédiction IA</div>
+                    <div class="ia-content" id="iaContent">
+                        Analyse environnementale terminée. Conditions optimales détectées. La maturité sera atteinte avec 98% de succès.
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section" style="margin-bottom:0;">
+                <div class="p-tag">Simulation de Croissance (7j)</div>
+                <canvas id="growthCanvas" style="width:100%; height:80px;"></canvas>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="l-item"><div class="l-dot" style="background: #f59e0b; box-shadow: 0 0 10px #f59e0b;"></div> Blé</div>
+            <div class="l-item"><div class="l-dot" style="background: #22c55e; box-shadow: 0 0 10px #22c55e;"></div> Maïs</div>
+            <div class="l-item"><div class="l-dot" style="background: #ef4444; box-shadow: 0 0 10px #ef4444;"></div> Tomate</div>
+            <div class="l-item"><div class="l-dot" style="background: #a855f7; box-shadow: 0 0 10px #a855f7;"></div> Rosier</div>
+        </div>
+
+        <div class="tour-hint">Utilisez [Z][Q][S][D] pour marcher dans les cultures</div>
+
+        <div class="bottom-bar">
+            <div style="background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; letter-spacing: 2px;">MODE IMMERSION BLOCS</div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+                "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.2/index.js",
+                "simplex-noise": "https://cdn.skypack.dev/simplex-noise@2.4.0"
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
