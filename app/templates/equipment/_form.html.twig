@@ -1,9 +1,0 @@
-{{ form_start(form, {'attr': {'class': 'form'}}) }}
-    <div class="form-grid">
-        {{ form_row(form.name) }}
-        {{ form_row(form.type) }}
-        {{ form_row(form.status) }}
-        {{ form_row(form.purchaseDate) }}
-    </div>
-    <button class="btn primary" type="submit">{{ button_label|default('Save') }}</button>
-{{ form_end(form) }}

@@ -1,0 +1,560 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 24px; margin: 0;">{{ title }}</h1>
+            <p style="color: #666; margin: 5px 0 0;">{{ subtitle }}</p>
+        </div>
+        <a href="{{ path('home') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour</a>
+    </div>
+
+    <form method="post" id="produitForm" enctype="multipart/form-data">
+        {{ form_widget(form._token) }}
+
+        <!-- Carte Produit -->
+        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px;">
+                    <i class="fa-solid fa-box"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 18px; margin: 0;">📦 Informations Produit</h2>
+                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Renseignez les détails du produit agricole</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Catégorie -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Catégorie *</label>
+                    {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-categorie" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Nom -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Nom du produit *</label>
+                    {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-nom" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div style="grid-column: span 2;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Description</label>
+                    {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'rows': 4, 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                </div>
+
+                <!-- Prix -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Prix unitaire (DT) *</label>
+                    {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-prix" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Photo -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Photo du produit *</label>
+                    
+                    <!-- Zone d'upload cliquable -->
+                    <div id="uploadZone" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc;">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px; display: block;"></i>
+                        <p style="margin: 0; font-size: 13px; color: #475569;">Cliquez pour choisir une image</p>
+                    </div>
+                    
+                    <!-- Input file caché -->
+                    <div style="width: 0; height: 0; overflow: hidden;">
+                        {{ form_widget(form.produit.photoFile, {'attr': {'id': 'fileInput', 'class': 'file-input-hidden'}}) }}
+                    </div>
+                    
+                    <!-- Aperçu image -->
+                    <div id="previewZone" style="display: none; margin-top: 10px; text-align: center;">
+                        <img id="previewImage" src="" alt="Aperçu" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #5a9814;">
+                        <br>
+                        <span id="fileName" style="font-size: 12px; color: #666; display: block; margin-top: 5px;"></span>
+                        <button type="button" id="btnSupprimer" style="background: #dc3545; color: white; border: none; padding: 6px 14px; border-radius: 20px; cursor: pointer; margin-top: 8px; font-size: 12px;">✖ Supprimer</button>
+                    </div>
+                    
+                    <div id="error-photo" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carte Stock -->
+        <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+                <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 20px;">
+                    <i class="fa-solid fa-warehouse"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 18px; margin: 0;">📊 Stock Initial</h2>
+                    <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Optionnel</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Quantité -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Quantité actuelle</label>
+                    {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-quantite" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Seuil -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Seuil d'alerte</label>
+                    {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-seuil" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Unité -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Unité de mesure</label>
+                    {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-unite" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Emplacement -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Emplacement</label>
+                    {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control', 'id': 'emplacement', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-emplacement" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Date Réception -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date de réception</label>
+                    {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control', 'id': 'dateReception', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-dateReception" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+
+                <!-- Date Expiration -->
+                <div>
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date d'expiration</label>
+                    {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control', 'id': 'dateExpiration', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                    <div id="error-dateExpiration" class="error-message" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 20px; display: none;">
+                        <span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; display: inline-block;">⚠️ <span class="error-text"></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <a href="{{ path('home') }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
+            <button type="submit" id="btnSubmit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">{{ btnLabel }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script type="text/javascript">
+// IIFE pour éviter les conflits
+(function() {
+    
+    var uploadZone = null;
+    var fileInput = null;
+    var previewZone = null;
+    var previewImage = null;
+    var fileName = null;
+    var btnSupprimer = null;
+    var form = null;
+    var imageSelectionnee = false;
+    
+    // Fonction pour trouver l'input file
+    function trouverInputFile() {
+        // D'abord par ID
+        var input = document.getElementById('fileInput');
+        if (input) return input;
+        
+        // Sinon chercher par type
+        var allInputs = document.getElementsByTagName('input');
+        for (var i = 0; i < allInputs.length; i++) {
+            if (allInputs[i].type === 'file') {
+                return allInputs[i];
+            }
+        }
+        return null;
+    }
+    
+    // Afficher une erreur
+    function afficherErreur(champId, message) {
+        var errorDiv = document.getElementById('error-' + champId);
+        if (errorDiv) {
+            var textSpan = errorDiv.getElementsByClassName('error-text')[0];
+            if (textSpan) {
+                textSpan.innerHTML = message;
+            }
+            errorDiv.style.display = 'block';
+        }
+        
+        // Bordure rouge sur le champ
+        var champ = document.getElementById(champId);
+        if (champ) {
+            champ.style.borderColor = '#dc3545';
+            champ.style.backgroundColor = '#fff8f8';
+        }
+    }
+    
+    // Masquer une erreur
+    function masquerErreur(champId) {
+        var errorDiv = document.getElementById('error-' + champId);
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+        
+        var champ = document.getElementById(champId);
+        if (champ) {
+            champ.style.borderColor = '#ddd';
+            champ.style.backgroundColor = '';
+        }
+    }
+    
+    // Masquer toutes les erreurs
+    function masquerToutesErreurs() {
+        var erreurs = document.getElementsByClassName('error-message');
+        for (var i = 0; i < erreurs.length; i++) {
+            erreurs[i].style.display = 'none';
+        }
+    }
+    
+    // Vérifier si c'est une image
+    function estUneImage(nomFichier) {
+        var extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+        var nomLower = nomFichier.toLowerCase();
+        for (var i = 0; i < extensions.length; i++) {
+            if (nomLower.indexOf(extensions[i]) !== -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Fonction de validation
+    function validerFormulaire() {
+        var estValide = true;
+        masquerToutesErreurs();
+        
+        // === VALIDATION CATEGORIE ===
+        var categorie = document.getElementById('categorie');
+        if (categorie) {
+            if (!categorie.value || categorie.value === '') {
+                afficherErreur('categorie', 'La catégorie est obligatoire');
+                estValide = false;
+            }
+        }
+        
+        // === VALIDATION NOM ===
+        var nom = document.getElementById('nom');
+        if (nom) {
+            var nomValeur = nom.value.replace(/^\s+|\s+$/g, ''); // trim
+            if (!nomValeur || nomValeur === '') {
+                afficherErreur('nom', 'Le nom du produit est obligatoire');
+                estValide = false;
+            } else if (nomValeur.length < 3) {
+                afficherErreur('nom', 'Le nom doit contenir au moins 3 caractères');
+                estValide = false;
+            } else if (nomValeur.length > 100) {
+                afficherErreur('nom', 'Le nom ne peut pas dépasser 100 caractères');
+                estValide = false;
+            }
+        }
+        
+        // === VALIDATION PRIX ===
+        var prix = document.getElementById('prix');
+        if (prix) {
+            var prixValeur = prix.value.replace(',', '.');
+            if (!prixValeur || prixValeur === '') {
+                afficherErreur('prix', 'Le prix unitaire est obligatoire');
+                estValide = false;
+            } else {
+                var prixNum = parseFloat(prixValeur);
+                if (isNaN(prixNum)) {
+                    afficherErreur('prix', 'Le prix doit être un nombre valide');
+                    estValide = false;
+                } else if (prixNum <= 0) {
+                    afficherErreur('prix', 'Le prix doit être supérieur à 0');
+                    estValide = false;
+                } else if (prixNum > 999999.99) {
+                    afficherErreur('prix', 'Le prix est trop élevé');
+                    estValide = false;
+                }
+            }
+        }
+        
+        // === VALIDATION PHOTO ===
+        if (!imageSelectionnee) {
+            if (!fileInput || !fileInput.value || fileInput.value === '') {
+                afficherErreur('photo', 'La photo du produit est obligatoire');
+                estValide = false;
+            }
+        }
+        
+        // === VALIDATION QUANTITE ===
+        var quantite = document.getElementById('quantite');
+        if (quantite && quantite.value && quantite.value !== '') {
+            var qteNum = parseFloat(quantite.value);
+            if (isNaN(qteNum)) {
+                afficherErreur('quantite', 'La quantité doit être un nombre');
+                estValide = false;
+            } else if (qteNum < 0) {
+                afficherErreur('quantite', 'La quantité ne peut pas être négative');
+                estValide = false;
+            }
+        }
+        
+        // === VALIDATION SEUIL ===
+        var seuil = document.getElementById('seuil');
+        if (seuil && seuil.value && seuil.value !== '') {
+            var seuilNum = parseFloat(seuil.value);
+            if (isNaN(seuilNum)) {
+                afficherErreur('seuil', 'Le seuil doit être un nombre');
+                estValide = false;
+            } else if (seuilNum < 0) {
+                afficherErreur('seuil', 'Le seuil ne peut pas être négatif');
+                estValide = false;
+            }
+        }
+        
+        // === VALIDATION UNITE (requise si quantité > 0) ===
+        var unite = document.getElementById('unite');
+        if (quantite && quantite.value && quantite.value !== '') {
+            var qteVal = parseFloat(quantite.value);
+            if (!isNaN(qteVal) && qteVal > 0) {
+                if (!unite || !unite.value || unite.value === '') {
+                    afficherErreur('unite', 'L\'unité de mesure est requise si la quantité est > 0');
+                    estValide = false;
+                }
+            }
+        }
+        
+        // === VALIDATION DATES ===
+        var dateReception = document.getElementById('dateReception');
+        var dateExpiration = document.getElementById('dateExpiration');
+        
+        if (dateReception && dateReception.value && dateExpiration && dateExpiration.value) {
+            var dr = new Date(dateReception.value);
+            var de = new Date(dateExpiration.value);
+            
+            if (de.getTime() < dr.getTime()) {
+                afficherErreur('dateExpiration', 'La date d\'expiration doit être après la date de réception');
+                estValide = false;
+            }
+        }
+        
+        return estValide;
+    }
+    
+    // Initialisation
+    function initialiser() {
+        uploadZone = document.getElementById('uploadZone');
+        previewZone = document.getElementById('previewZone');
+        previewImage = document.getElementById('previewImage');
+        fileName = document.getElementById('fileName');
+        btnSupprimer = document.getElementById('btnSupprimer');
+        form = document.getElementById('produitForm');
+        
+        // Trouver l'input file
+        fileInput = trouverInputFile();
+        
+        if (!uploadZone) {
+            return;
+        }
+        
+        if (!fileInput) {
+            return;
+        }
+        
+        // === CLIC SUR ZONE UPLOAD ===
+        uploadZone.onclick = function(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            // Déclencher le clic sur l'input file
+            if (fileInput.click) {
+                fileInput.click();
+            } else {
+                // Fallback pour vieux navigateurs
+                var evt = document.createEvent('MouseEvents');
+                evt.initEvent('click', true, true);
+                fileInput.dispatchEvent(evt);
+            }
+            
+            return false;
+        };
+        
+        // === CHANGEMENT DE FICHIER ===
+        fileInput.onchange = function() {
+            var fichiers = this.files;
+            
+            if (fichiers && fichiers.length > 0) {
+                var fichier = fichiers[0];
+                var nom = fichier.name;
+                
+                // Vérifier si c'est une image
+                if (!estUneImage(nom)) {
+                    afficherErreur('photo', 'Veuillez sélectionner une image (JPG, PNG, GIF, WEBP)');
+                    this.value = '';
+                    return;
+                }
+                
+                // Vérifier la taille (max 5MB)
+                if (fichier.size > 5 * 1024 * 1024) {
+                    afficherErreur('photo', 'L\'image ne doit pas dépasser 5 Mo');
+                    this.value = '';
+                    return;
+                }
+                
+                // Masquer l'erreur
+                masquerErreur('photo');
+                
+                // Afficher l'aperçu
+                if (window.FileReader) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        fileName.innerHTML = nom;
+                        previewZone.style.display = 'block';
+                        uploadZone.style.display = 'none';
+                        imageSelectionnee = true;
+                    };
+                    reader.readAsDataURL(fichier);
+                } else {
+                    // Sans FileReader, juste afficher le nom
+                    fileName.innerHTML = nom;
+                    previewZone.style.display = 'block';
+                    uploadZone.style.display = 'none';
+                    imageSelectionnee = true;
+                }
+            }
+        };
+        
+        // === BOUTON SUPPRIMER ===
+        if (btnSupprimer) {
+            btnSupprimer.onclick = function(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                
+                // Réinitialiser
+                fileInput.value = '';
+                previewImage.src = '';
+                fileName.innerHTML = '';
+                previewZone.style.display = 'none';
+                uploadZone.style.display = 'block';
+                imageSelectionnee = false;
+                
+                return false;
+            };
+        }
+        
+        // === SOUMISSION DU FORMULAIRE ===
+        if (form) {
+            form.onsubmit = function(e) {
+                var estValide = validerFormulaire();
+                
+                if (!estValide) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    } else {
+                        e.returnValue = false;
+                    }
+                    
+                    // Scroll vers la première erreur
+                    var premiereErreur = document.querySelector('.error-message[style*="display: block"]');
+                    if (premiereErreur) {
+                        premiereErreur.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    
+                    return false;
+                }
+                
+                return true;
+            };
+        }
+        
+        // === VALIDATION EN TEMPS REEL ===
+        var champsAValider = ['categorie', 'nom', 'prix', 'quantite', 'seuil', 'unite'];
+        for (var i = 0; i < champsAValider.length; i++) {
+            (function(champId) {
+                var champ = document.getElementById(champId);
+                if (champ) {
+                    champ.onblur = function() {
+                        // Validation individuelle au blur
+                        var errorDiv = document.getElementById('error-' + champId);
+                        if (errorDiv && errorDiv.style.display === 'block') {
+                            // Re-valider ce champ
+                            masquerErreur(champId);
+                            
+                            if (champId === 'categorie' && (!this.value || this.value === '')) {
+                                afficherErreur(champId, 'La catégorie est obligatoire');
+                            }
+                            if (champId === 'nom') {
+                                var val = this.value.replace(/^\s+|\s+$/g, '');
+                                if (!val) afficherErreur(champId, 'Le nom est obligatoire');
+                                else if (val.length < 3) afficherErreur(champId, 'Minimum 3 caractères');
+                            }
+                            if (champId === 'prix') {
+                                var pv = parseFloat(this.value.replace(',', '.'));
+                                if (!this.value) afficherErreur(champId, 'Le prix est obligatoire');
+                                else if (isNaN(pv) || pv <= 0) afficherErreur(champId, 'Prix invalide');
+                            }
+                        }
+                    };
+                    
+                    champ.onfocus = function() {
+                        // Masquer l'erreur au focus
+                        masquerErreur(champId);
+                    };
+                }
+            })(champsAValider[i]);
+        }
+    }
+    
+    // Lancer l'initialisation quand le DOM est prêt
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        initialiser();
+    } else {
+        // Polling pour compatibilité
+        var interval = setInterval(function() {
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                clearInterval(interval);
+                initialiser();
+            }
+        }, 50);
+    }
+    
+})();
+</script>
+{% endblock %}

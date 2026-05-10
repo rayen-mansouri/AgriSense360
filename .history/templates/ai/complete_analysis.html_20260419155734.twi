@@ -1,0 +1,238 @@
+{# templates/ai/complete_analysis.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Analyse avancée - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">📊 Analyse des produits</h1>
+        <p class="page-subtitle">Métiers avancés et intelligence artificielle</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Produits analysés</div>
+        <div class="stat-value">{{ produits|length }}</div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon"><i class="fa-solid fa-brain"></i></div>
+        <div class="stat-label">Catégories</div>
+        <div class="stat-value">{{ categories|length }}</div>
+    </div>
+    <div class="stat-card stat-orange">
+        <div class="stat-icon"><i class="fa-solid fa-tag"></i></div>
+        <div class="stat-label">Prix moyen</div>
+        <div class="stat-value">{{ prixMoyen }} DT</div>
+    </div>
+</div>
+
+<!-- SECTION 1 : QUALITÉ DES PRODUITS -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#4caf50;color:white">
+            <i class="fa-solid fa-star"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">⭐ Qualité des produits</h2>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr><th>Produit</th><th>Score</th><th>Niveau</th><th>Manquants</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                {% for qualite in qualites %}
+                <tr>
+                    <td>{{ qualite.produit }}</td>
+                    <td>{{ qualite.score_global }}/100</td>
+                    <td>{{ qualite.niveau }}</td>
+                    <td>{{ qualite.champs_manquants|length }} champ(s)</td>
+                    <td><a href="#" class="btn-sm btn-primary">Améliorer</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SECTION 2 : PRODUITS SIMILAIRES -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#2196f3;color:white">
+            <i class="fa-solid fa-copy"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">🔍 Produits similaires</h2>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <select id="produitSelect" class="form-control" style="margin-bottom: 15px;">
+            <option value="">Sélectionnez un produit</option>
+            {% for produit in produits %}
+                <option value="{{ produit.id }}">{{ produit.nom }}</option>
+            {% endfor %}
+        </select>
+        <button id="btnSimilaires" class="btn btn-primary">Trouver des similaires</button>
+        <div id="similairesResult" style="margin-top: 20px;"></div>
+    </div>
+</div>
+
+<!-- SECTION 3 : RENTABILITÉ -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-coins"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">💰 Rentabilité des produits</h2>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr><th>Produit</th><th>Prix vente</th><th>Marge brute</th><th>Taux marge</th><th>Performance</th></tr>
+            </thead>
+            <tbody>
+                {% for renta in rentabilite %}
+                <tr>
+                    <td>{{ renta.produit }}</td>
+                    <td>{{ renta.prix_vente }} DT</td>
+                    <td>{{ renta.marge_brute }} DT</td>
+                    <td>{{ renta.taux_marge }}%</td>
+                    <td>{{ renta.performance }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SECTION 4 : IA - Classification -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#9c27b0;color:white">
+            <i class="fa-solid fa-microchip"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">🤖 IA - Classification automatique</h2>
+            <p class="form-card-subtitle">L'IA classe les produits par catégorie</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div class="alert-info" style="margin-bottom: 15px;">
+            <i class="fa-solid fa-info-circle"></i> L'IA a analysé {{ produits|length }} produits pour apprendre à classifier.
+        </div>
+        
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <input type="text" id="nomProduitIA" class="form-control" placeholder="Entrez un nom de produit..." style="flex: 1;">
+            <input type="number" id="prixProduitIA" class="form-control" placeholder="Prix (DT)" style="width: 150px;">
+            <button id="btnClasser" class="btn btn-primary">Classer</button>
+        </div>
+        <div id="classificationResult" style="margin-top: 20px; display: none;"></div>
+    </div>
+</div>
+
+<!-- SECTION 5 : IA - Anomalies de prix -->
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#f44336;color:white">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">⚠️ IA - Détection d'anomalies</h2>
+            <p class="form-card-subtitle">Produits avec des prix anormaux</p>
+        </div>
+    </div>
+    
+    <div id="anomaliesResult"></div>
+</div>
+
+<script>
+// Produits similaires
+document.getElementById('btnSimilaires').addEventListener('click', function() {
+    const id = document.getElementById('produitSelect').value;
+    if (!id) return;
+    
+    fetch(`/api/similar/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            let html = '<div style="display: grid; gap: 10px;">';
+            data.forEach(item => {
+                html += `
+                    <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between;">
+                        <span><strong>${item.produit.nom}</strong></span>
+                        <span style="color: #5a9814;">${item.score}%</span>
+                        <span style="color: #666;">${item.raison}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            document.getElementById('similairesResult').innerHTML = html || '<p>Aucun produit similaire</p>';
+        });
+});
+
+// IA Classification
+document.getElementById('btnClasser').addEventListener('click', function() {
+    const nom = document.getElementById('nomProduitIA').value;
+    const prix = document.getElementById('prixProduitIA').value;
+    
+    if (!nom) return;
+    
+    fetch('/api/ai/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom: nom, prix: prix || 50 })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('classificationResult').innerHTML = `
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 10px;">🤖 Prédiction</div>
+                <div style="font-size: 20px; font-weight: bold; color: #5a9814;">${data.categorie_predite}</div>
+                <div style="margin-top: 10px;">Confiance: ${data.confiance}%</div>
+                <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                    Votes: ${Object.entries(data.votes).map(([cat, v]) => `${cat}: ${v}`).join(', ')}
+                </div>
+            </div>
+        `;
+        document.getElementById('classificationResult').style.display = 'block';
+    });
+});
+
+// Anomalies
+fetch('/api/ai/anomalies')
+    .then(res => res.json())
+    .then(data => {
+        if (data.anomalies.length === 0) {
+            document.getElementById('anomaliesResult').innerHTML = '<div class="alert-success">✅ Aucune anomalie détectée</div>';
+        } else {
+            let html = '<div class="table-responsive"><table class="data-table"><thead><tr><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Prix moyen</th><th>Recommandation</th></tr></thead><tbody>';
+            data.anomalies.forEach(a => {
+                html += `<tr>
+                    <td><strong>${a.produit}</strong></td>
+                    <td>${a.categorie}</td>
+                    <td>${a.prix} DT</td>
+                    <td>${a.prix_moyen} DT</td>
+                    <td>${a.recommandation}</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            document.getElementById('anomaliesResult').innerHTML = html;
+        }
+    });
+</script>
+
+<style>
+.stat-card.stat-orange .stat-icon { background: #fff3e0; color: #ff9800; }
+.alert-success { background: #e8f5e9; padding: 15px; border-radius: 8px; color: #2e7d32; text-align: center; }
+.alert-info { background: #e3f2fd; padding: 12px; border-radius: 8px; color: #1565c0; }
+</style>
+{% endblock %}

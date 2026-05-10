@@ -1,0 +1,100 @@
+{# templates/front/exchange.html.twig #}
+{% extends 'layout/front_base.html.twig' %}
+
+{% block title %}Taux de change - Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 40px auto; padding: 0 20px;">
+    
+    <!-- En-tête -->
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="font-size: 28px; color: #1a2a1a;">💱 Taux de change</h1>
+        <p style="color: #666;">Conversion des prix en temps réel</p>
+    </div>
+
+    <!-- Convertisseur -->
+    <div style="background: white; border-radius: 20px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <h2 style="font-size: 20px; margin-bottom: 20px;">🔄 Convertisseur de devises</h2>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Montant (TND)</label>
+                <input type="number" id="amount" class="form-control" value="100" step="10" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px;">
+            </div>
+            <div style="flex: 1;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Devise cible</label>
+                <select id="currency" class="form-control" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px;">
+                    <option value="EUR">🇪🇺 Euro (EUR)</option>
+                    <option value="USD">🇺🇸 Dollar US (USD)</option>
+                    <option value="GBP">🇬🇧 Livre Sterling (GBP)</option>
+                    <option value="CAD">🇨🇦 Dollar Canadien (CAD)</option>
+                    <option value="JPY">🇯🇵 Yen Japonais (JPY)</option>
+                    <option value="CHF">🇨🇭 Franc Suisse (CHF)</option>
+                </select>
+            </div>
+            <div>
+                <button id="convertBtn" style="padding: 12px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">
+                    Convertir
+                </button>
+            </div>
+        </div>
+        
+        <div id="result" style="margin-top: 25px; padding: 20px; background: #e8f5e9; border-radius: 12px; text-align: center; display: none;">
+            <h2 id="convertedAmount" style="font-size: 32px; margin: 0; color: #5a9814;">-</h2>
+            <p id="rateInfo" style="margin-top: 8px; color: #666;"></p>
+        </div>
+    </div>
+
+    <!-- Taux du jour -->
+    <div style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <h2 style="font-size: 20px; margin-bottom: 20px;">📊 Taux du jour</h2>
+        <div id="ratesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
+        <p id="updateDate" style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;"></p>
+    </div>
+</div>
+
+<script>
+const flags = { EUR: '🇪🇺', USD: '🇺🇸', GBP: '🇬🇧', CAD: '🇨🇦', JPY: '🇯🇵', CHF: '🇨🇭' };
+let currentRates = {};
+
+function fetchRates() {
+    fetch('/api/exchange/rates')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentRates = data.rates;
+                let html = '';
+                const currencies = ['EUR', 'USD', 'GBP', 'CAD', 'JPY', 'CHF'];
+                for (const currency of currencies) {
+                    const rate = currentRates[currency];
+                    if (rate) {
+                        html += `<div style="background: #f5f5f5; padding: 15px; border-radius: 12px; text-align: center;">
+                                    <span style="font-size: 28px;">${flags[currency]}</span>
+                                    <div style="font-weight: 700; margin: 5px 0;">${currency}</div>
+                                    <div style="font-size: 18px; color: #5a9814;">1 TND = ${rate.toFixed(4)} ${currency}</div>
+                                </div>`;
+                    }
+                }
+                document.getElementById('ratesList').innerHTML = html;
+                document.getElementById('updateDate').innerHTML = `Dernière mise à jour : ${data.date}`;
+            }
+        });
+}
+
+document.getElementById('convertBtn').addEventListener('click', function() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const currency = document.getElementById('currency').value;
+    const rate = currentRates[currency];
+    
+    if (rate) {
+        const converted = (amount / rate).toFixed(2);
+        document.getElementById('convertedAmount').innerHTML = `${flags[currency]} ${converted} ${currency}`;
+        document.getElementById('rateInfo').innerHTML = `${amount} TND = ${converted} ${currency} (1 TND = ${rate.toFixed(4)} ${currency})`;
+        document.getElementById('result').style.display = 'block';
+    }
+});
+
+fetchRates();
+setInterval(fetchRates, 3600000);
+</script>
+{% endblock %}

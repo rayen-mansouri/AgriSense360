@@ -1,0 +1,110 @@
+{# templates/ai/complete_analysis.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Analyse des produits - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">📊 Analyse des produits</h1>
+        <p class="page-subtitle">Qualité et rentabilité</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Produits analysés</div>
+        <div class="stat-value">{{ produits|length }}</div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fa-solid fa-tag"></i></div>
+        <div class="stat-label">Prix moyen</div>
+        <div class="stat-value">{{ prixMoyen }} DT</div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+        <div class="stat-label">Catégories</div>
+        <div class="stat-value">{{ categories|length }}</div>
+    </div>
+</div>
+
+<!-- Qualité des produits -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#4caf50;color:white">
+            <i class="fa-solid fa-star"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">⭐ Qualité des produits</h2>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Score</th>
+                    <th>Niveau</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for qualite in qualites %}
+                <tr>
+                    <td><strong>{{ qualite.produit }}</strong></td>
+                    <td>{{ qualite.score_global }}/100</td>
+                    <td>{{ qualite.niveau }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Rentabilité -->
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-coins"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">💰 Rentabilité</h2>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Prix vente</th>
+                    <th>Marge brute</th>
+                    <th>Performance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for renta in rentabilite %}
+                <tr>
+                    <td><strong>{{ renta.produit }}</strong></td>
+                    <td>{{ renta.prix_vente }} DT</td>
+                    <td>{{ renta.marge_brute }} DT</td>
+                    <td>{{ renta.performance }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Récupérer les anomalies via AJAX
+fetch('/api/ai/anomalies')
+    .then(res => res.json())
+    .then(data => {
+        if (data.anomalies.length > 0) {
+            console.log('Anomalies détectées:', data.anomalies);
+        }
+    });
+</script>
+{% endblock %}

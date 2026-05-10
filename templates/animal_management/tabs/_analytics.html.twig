@@ -1,0 +1,79 @@
+<div class="analytics-kpi-grid">
+    <div class="analytics-kpi-card">
+        <div class="analytics-kpi-value">{{ analyticsSummary.totalAnimals }}</div>
+        <div class="analytics-kpi-label">Animaux Total</div>
+    </div>
+    <div class="analytics-kpi-card">
+        <div class="analytics-kpi-value">{{ analyticsSummary.totalRecords }}</div>
+        <div class="analytics-kpi-label">Dossiers de Sante</div>
+    </div>
+    <div class="analytics-kpi-card">
+        <div class="analytics-kpi-value">{{ analyticsSummary.vaccinationRate }}%</div>
+        <div class="analytics-kpi-label">Taux de Vaccination</div>
+    </div>
+    <div class="analytics-kpi-card analytics-kpi-card-danger">
+        <div class="analytics-kpi-value analytics-kpi-value-danger">{{ analyticsSummary.atRiskCount }}</div>
+        <div class="analytics-kpi-label">Animaux a Risque</div>
+    </div>
+</div>
+
+<div class="analytics-chart-grid">
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Etat des Conditions</div>
+                <div class="mgmt-form-subtitle">Repartition des dossiers par condition de sante</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            {% if analyticsConditionChart and analyticsHasConditionData %}
+                <div class="analytics-chart-shell">
+                    {{ render_chart(analyticsConditionChart) }}
+                </div>
+            {% else %}
+                <div class="mgmt-form-subtitle">Aucune donnee de condition disponible.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mgmt-form-card">
+        <div class="mgmt-form-card-header">
+            <div>
+                <div class="mgmt-form-title">Repartition par Type</div>
+                <div class="mgmt-form-subtitle">Nombre d animaux par type</div>
+            </div>
+        </div>
+        <div class="mgmt-form-body">
+            {% if analyticsTypeChart and analyticsHasTypeData %}
+                <div class="analytics-chart-shell">
+                    {{ render_chart(analyticsTypeChart) }}
+                </div>
+            {% else %}
+                <div class="mgmt-form-subtitle">Aucune donnee de type disponible.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="mgmt-form-card">
+    <div class="mgmt-form-card-header">
+        <div>
+            <div class="mgmt-form-title">Animaux par Emplacement</div>
+            <div class="mgmt-form-subtitle">Vue rapide des emplacements les plus charges</div>
+        </div>
+    </div>
+    <div class="mgmt-form-body">
+        {% if analyticsLocations is not empty %}
+            <div class="analytics-location-grid">
+                {% for location in analyticsLocations %}
+                    <div class="analytics-location-card">
+                        <div class="analytics-location-count">{{ location.count }}</div>
+                        <div class="analytics-location-name">{{ location.name }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="mgmt-form-subtitle">Aucun emplacement disponible.</div>
+        {% endif %}
+    </div>
+</div>

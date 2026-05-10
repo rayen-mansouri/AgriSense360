@@ -1,0 +1,391 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Tableau de bord — Agrisens 360{% endblock %}
+
+{# Macro : lien de tri pour tables #}
+{% macro sort_link(label, field, currentSort, currentDir, extraParams = '') %}
+    {% set newDir = (currentSort == field and currentDir == 'asc') ? 'desc' : 'asc' %}
+    {% set icon = currentSort == field ? (currentDir == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort' %}
+    {% set active = currentSort == field ? 'sort-active ' ~ currentDir : '' %}
+
+    {% set queryString = extraParams %}
+    {% if queryString and not queryString starts with '?' %}
+        {% set queryString = '?' ~ queryString %}
+    {% endif %}
+
+    <a href="{{ queryString }}&sort={{ field }}&dir={{ newDir }}"
+       class="th-sort {{ active }}" style="color:inherit">
+        {{ label }}
+        <i class="fa-solid {{ icon }} sort-icon"></i>
+    </a>
+{% endmacro %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">🌾 Tableau de bord — Ma Ferme</h1>
+        <p class="page-subtitle">Monitoring complet de vos produits et stocks agricoles</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{{ path('produit_new') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nouveau Produit</a>
+        <a href="{{ path('stock_new') }}"   class="btn btn-secondary"><i class="fa-solid fa-plus"></i> Nouveau Stock</a>
+    </div>
+</div>
+
+<!-- STATISTIQUES -->
+<div class="stats-grid">
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fa-solid fa-box"></i></div>
+        <div class="stat-label">Produits Enregistrés</div>
+        <div class="stat-value">{{ totalProduits }}</div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fa-solid fa-warehouse"></i></div>
+        <div class="stat-label">Entrées de Stock</div>
+        <div class="stat-value">{{ totalStocks }}</div>
+    </div>
+    <div class="stat-card stat-red">
+        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-label">Alertes Actives</div>
+        <div class="stat-value">{{ totalAlertes }}</div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+        <div class="stat-label">Valeur Totale Inventaire</div>
+        <div class="stat-value">{{ valeurTotale }} DT</div>
+    </div>
+</div>
+
+<!-- CARTES D'ACCÈS RAPIDE (Boutons de la sidebar transformés en cartes) -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card" style="cursor: pointer; background: #e3f2fd; border-left: 4px solid #2196f3;" onclick="window.location.href='{{ path('export_produits_pdf') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-file-pdf" style="color:#ef9a9a"></i></div>
+        <div class="stat-label">Export PDF</div>
+        <div class="stat-value">Produits</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #e8f5e9; border-left: 4px solid #4caf50;" onclick="window.location.href='{{ path('export_excel_produits') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-file-excel" style="color:#4caf50"></i></div>
+        <div class="stat-label">Export Excel</div>
+        <div class="stat-value">Produits</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #fff3e0; border-left: 4px solid #ff9800;" onclick="window.location.href='{{ path('export_stocks_pdf') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-file-pdf" style="color:#ef9a9a"></i></div>
+        <div class="stat-label">Export PDF</div>
+        <div class="stat-value">Stocks</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #f3e5f5; border-left: 4px solid #9c27b0;" onclick="window.location.href='{{ path('export_excel_stocks') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-file-excel" style="color:#2196f3"></i></div>
+        <div class="stat-label">Export Excel</div>
+        <div class="stat-value">Stocks</div>
+    </div>
+</div>
+
+<!-- DEUXIÈME LIGNE DE CARTES -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card" style="cursor: pointer; background: #ffebee; border-left: 4px solid #f44336;" onclick="window.location.href='{{ path('export_alertes_pdf') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-file-pdf" style="color:#ef9a9a"></i></div>
+        <div class="stat-label">Export PDF</div>
+        <div class="stat-value">Alertes</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #e0f7fa; border-left: 4px solid #00bcd4;" onclick="window.location.href='{{ path('api_openfoodfacts_view') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-barcode"></i></div>
+        <div class="stat-label">Scanner</div>
+        <div class="stat-value">OpenFoodFacts</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #fff8e1; border-left: 4px solid #ffc107;" onclick="window.location.href='{{ path('api_exchange_view') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+        <div class="stat-label">Taux de change</div>
+        <div class="stat-value">Conversion</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #e8eaf6; border-left: 4px solid #3f51b5;" onclick="window.location.href='{{ path('api_commodity_view') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Prix matières</div>
+        <div class="stat-value">premières</div>
+    </div>
+</div>
+
+<!-- TROISIÈME LIGNE -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card" style="cursor: pointer; background: #fce4ec; border-left: 4px solid #e91e63;" onclick="window.location.href='{{ path('analyse_complete') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Analyse IA</div>
+        <div class="stat-value">Qualité & IA</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #e8f5e9; border-left: 4px solid #8bc34a;" onclick="window.location.href='{{ path('produit_scanner') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-camera"></i></div>
+        <div class="stat-label">Scanner</div>
+        <div class="stat-value">Code-barres</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #f3e5f5; border-left: 4px solid #ce93d8;" onclick="window.location.href='{{ path('home') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-chart-pie"></i></div>
+        <div class="stat-label">Dashboard</div>
+        <div class="stat-value">Retour</div>
+    </div>
+    <div class="stat-card" style="cursor: pointer; background: #e1f5fe; border-left: 4px solid #29b6f6;" onclick="window.location.href='{{ path('admin') }}'">
+        <div class="stat-icon"><i class="fa-solid fa-cog"></i></div>
+        <div class="stat-label">Administration</div>
+        <div class="stat-value">Paramètres</div>
+    </div>
+</div>
+
+<!-- GRAPHIQUE -->
+<div class="card">
+    <h2 class="section-title"><i class="fa-solid fa-chart-column"></i> Répartition par catégorie</h2>
+    <div class="chart-wrapper"><canvas id="chartCategories" height="110"></canvas></div>
+</div>
+
+<!-- SECTION PRODUITS -->
+<div class="card" id="produits">
+    <div class="section-header">
+        <h2 class="section-title"><i class="fa-solid fa-leaf"></i> Mes Produits</h2>
+        <div class="section-actions">
+            <span class="badge-count">{{ produits|length }} produit(s)</span>
+            <a href="{{ path('produit_new') }}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plus"></i> Ajouter
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres et tri -->
+    <div class="filter-bar">
+        <a href="{{ path('home', {q: search, psort: pSort, pdir: pDir, ssort: sSort, sdir: sDir}) }}" 
+           class="filter-chip {{ catFilter == '' ? 'active' : '' }}">Toutes</a>
+        {% for cat in categories %}
+            <a href="{{ path('home', {q: search, cat: cat, psort: pSort, pdir: pDir, ssort: sSort, sdir: sDir}) }}" 
+               class="filter-chip {{ catFilter == cat ? 'active' : '' }}">{{ cat }}</a>
+        {% endfor %}
+
+        <div style="flex: 1;"></div>
+
+        <div class="sort-select-wrap">
+            <label for="pSortSel">Trier par</label>
+            <select id="pSortSel" class="sort-select" onchange="applyProdSort()">
+                <option value="nom" {{ pSort=='nom' ? 'selected' : '' }}>Nom</option>
+                <option value="categorie" {{ pSort=='categorie' ? 'selected' : '' }}>Catégorie</option>
+                <option value="prixUnitaire" {{ pSort=='prixUnitaire' ? 'selected' : '' }}>Prix</option>
+            </select>
+            <select id="pDirSel" class="sort-select" onchange="applyProdSort()">
+                <option value="asc" {{ pDir=='asc' ? 'selected' : '' }}>↑ Croissant</option>
+                <option value="desc" {{ pDir=='desc' ? 'selected' : '' }}>↓ Décroissant</option>
+            </select>
+        </div>
+    </div>
+
+    {% if produits is empty %}
+        <div class="empty-state">
+            <i class="fa-solid fa-box-open"></i>
+            <p>Aucun produit trouvé.</p>
+        </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Photo</th>
+                    <th>Produit</th>
+                    <th>Catégorie</th>
+                    <th>Prix (DT)</th>
+                    <th>Stock actuel</th>
+                    <th>Statut</th>
+                    <th style="text-align:right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produit in produits %}
+                {% set s = produit.stockActuel %}
+                <tr id="produit-row-{{ produit.id }}">
+                    <td>
+                        {% if produit.photoUrl %}
+                            <img src="{{ asset(produit.photoUrl) }}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover">
+                        {% else %}
+                            <div style="width:48px;height:48px;border-radius:10px;background:var(--pale);display:flex;align-items:center;justify-content:center;color:var(--border-mid);font-size:20px">
+                                <i class="fa-solid fa-seedling"></i>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ produit.nom }}</strong></td>
+                    <td><span class="item-badge">{{ produit.categorie ?: 'Autre' }}</span></td>
+                    <td style="font-weight:700;color:var(--primary)">{{ produit.prixUnitaire }} DT</td>
+                    <td>
+                        {% if s %}
+                            <span style="font-weight:700;color:{{ s.isEnAlerte ? 'var(--red)' : 'var(--primary)' }}">
+                                {{ s.quantiteActuelle }} {{ s.uniteMesure }}
+                            </span>
+                            {% if s.seuilAlerte and s.seuilAlerte > 0 %}
+                                {% set ratio = (s.quantiteActuelle / s.seuilAlerte * 100) | round(0) %}
+                                {% set pct = ratio > 100 ? 100 : (ratio < 0 ? 0 : ratio) %}
+                                <div class="progress-bar" style="margin-top:6px">
+                                    <div class="progress-fill {{ pct < 50 ? 'fill-danger' : (pct < 100 ? 'fill-warning' : 'fill-ok') }}" style="width:{{ pct }}%"></div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">Aucun stock</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s %}
+                            <span class="statut-badge statut-{{ s.statut|lower }}">{{ s.statut }}</span>
+                        {% else %}
+                            <span class="statut-badge" style="background:#f5f5f5;color:#757575">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right">
+                        <a href="{{ path('produit_show', {id: produit.id}) }}" class="btn btn-sm btn-outline" title="Voir">Voir</a>
+                        <a href="{{ path('produit_edit', {id: produit.id}) }}" class="btn btn-sm btn-primary" title="Modifier">Modifier</a>
+                        <form method="POST" action="{{ path('produit_delete', {id: produit.id}) }}" style="display:inline-block" onsubmit="return confirm('⚠️ Supprimer ce produit ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ produit.id) }}">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Supprimer">
+                                <i class="fa-solid fa-trash"></i> Supprimer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<!-- SECTION STOCKS -->
+<div class="card" id="stocks">
+    <div class="section-header">
+        <h2 class="section-title"><i class="fa-solid fa-warehouse"></i> Mes Stocks</h2>
+        <div class="section-actions">
+            <span class="badge-count">{{ stocks|length }} entrée(s)</span>
+            <a href="{{ path('stock_new') }}" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-plus"></i> Ajouter
+            </a>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="sort-select-wrap">
+            <label for="sSortSel">Trier par</label>
+            <select id="sSortSel" class="sort-select" onchange="applyStockSort()">
+                <option value="produit" {{ sSort=='produit' ? 'selected' : '' }}>Produit</option>
+                <option value="quantiteActuelle" {{ sSort=='quantiteActuelle' ? 'selected' : '' }}>Quantité</option>
+                <option value="dateExpiration" {{ sSort=='dateExpiration' ? 'selected' : '' }}>Expiration</option>
+            </select>
+            <select id="sDirSel" class="sort-select" onchange="applyStockSort()">
+                <option value="asc" {{ sDir=='asc' ? 'selected' : '' }}>↑ Croissant</option>
+                <option value="desc" {{ sDir=='desc' ? 'selected' : '' }}>↓ Décroissant</option>
+            </select>
+        </div>
+    </div>
+
+    {% if stocks is empty %}
+        <div class="empty-state">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <p>Aucun stock enregistré.</p>
+        </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Seuil</th>
+                    <th>Unité</th>
+                    <th>Expiration</th>
+                    <th>Statut</th>
+                    <th style="text-align:right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stocks %}
+                <tr id="stock-row-{{ stock.id }}" class="{{ stock.isEnAlerte ? 'row-alert' : '' }}">
+                    <td><strong>{{ stock.produit.nom }}</strong></td>
+                    <td>
+                        <span style="font-weight:700;color:{{ stock.isEnAlerte ? 'var(--red)' : 'var(--primary)' }}">
+                            {{ stock.quantiteActuelle }}
+                        </span>
+                        {% if stock.seuilAlerte and stock.seuilAlerte > 0 %}
+                            {% set ratio = (stock.quantiteActuelle / stock.seuilAlerte * 100) | round(0) %}
+                            {% set pct = ratio > 100 ? 100 : (ratio < 0 ? 0 : ratio) %}
+                            <div class="progress-bar" style="margin-top:6px">
+                                <div class="progress-fill {{ pct < 50 ? 'fill-danger' : (pct < 100 ? 'fill-warning' : 'fill-ok') }}" style="width:{{ pct }}%"></div>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ stock.seuilAlerte ?? '—' }}</td>
+                    <td>{{ stock.uniteMesure }}</td>
+                    <td>
+                        {% if stock.dateExpiration %}
+                            {{ stock.dateExpiration|date('d/m/Y') }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td><span class="statut-badge statut-{{ stock.statut|lower }}">{{ stock.statut }}</span></td>
+                    <td style="text-align:right">
+                        <a href="{{ path('stock_edit', {id: stock.id}) }}" class="btn btn-icon btn-edit" title="Modifier">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <form method="POST" action="{{ path('stock_delete', {id: stock.id}) }}" style="display:inline-block" onsubmit="return confirm('⚠️ Supprimer ce stock ?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ stock.id) }}">
+                            <button type="submit" class="btn btn-icon btn-danger" title="Supprimer">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+// Graphique catégories
+const data = {{ categorieData|json_encode|raw }};
+const ctx = document.getElementById('chartCategories');
+if (ctx && Object.keys(data).length > 0) {
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: 'Nombre de produits',
+                data: Object.values(data),
+                backgroundColor: '#5a9814',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+// Fonctions de tri
+function applyProdSort() {
+    const sort = document.getElementById('pSortSel').value;
+    const dir = document.getElementById('pDirSel').value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('psort', sort);
+    url.searchParams.set('pdir', dir);
+    window.location = url;
+}
+
+function applyStockSort() {
+    const sort = document.getElementById('sSortSel').value;
+    const dir = document.getElementById('sDirSel').value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('ssort', sort);
+    url.searchParams.set('sdir', dir);
+    window.location = url;
+}
+</script>
+{% endblock %}

@@ -8,6 +8,11 @@
 
 {% block body %}
 <section class="crud-section profile-page">
+    {% for errors in app.flashes('errors') %}
+        {% for message in errors %}
+            <div class="form-warning">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
     {% for message in app.flashes('error') %}
         <div class="crud-card" style="border-color: rgba(216, 74, 74, 0.35);">
             <p style="color:#8c2121; font-weight:600;">{{ message }}</p>
@@ -43,7 +48,7 @@
                 </div>
                 <div class="crud-form profile-form-card">
                     <h3>Edit profile</h3>
-                    <form method="post" class="profile-form">
+                    <form method="post" class="profile-form" novalidate>
                         <div class="form-grid">
                             <label class="field">
                                 <span>Nom</span>

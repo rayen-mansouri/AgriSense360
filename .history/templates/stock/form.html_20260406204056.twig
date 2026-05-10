@@ -1,0 +1,302 @@
+{# templates/stock/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div><h1 class="page-title">{{ title }}</h1><p class="page-subtitle">{{ subtitle }}</p></div>
+    <a href="{{ path('home') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+</div>
+
+<div class="form-container">
+<form method="post" id="stockForm">
+    {{ form_widget(form._token) }}
+
+<div class="card" style="margin-bottom:22px">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#e3f2fd;color:var(--blue)"><i class="fa-solid fa-warehouse"></i></div>
+        <div><h2 class="form-card-title">📊 Informations du Stock</h2><p class="form-card-subtitle">{{ subtitle }}</p></div>
+    </div>
+    
+    <div class="form-grid">
+        {% if form.produit is defined %}
+        <div class="form-group form-group-full field-container" data-field="produit">
+            <label class="form-label"><i class="fa-solid fa-leaf"></i> Produit *</label>
+            {{ form_widget(form.produit, {'attr': {'class': 'form-control field-produit'}}) }}
+            <div class="error-container error-produit" style="margin-top: 6px;"></div>
+        </div>
+        {% endif %}
+        
+        <div class="form-group field-container" data-field="quantite">
+            <label class="form-label"><i class="fa-solid fa-cubes"></i> Quantité actuelle *</label>
+            {{ form_widget(form.quantiteActuelle, {'attr': {'class': 'form-control field-quantite'}}) }}
+            <div class="error-container error-quantite" style="margin-top: 6px;"></div>
+        </div>
+        
+        <div class="form-group field-container" data-field="seuil">
+            <label class="form-label"><i class="fa-solid fa-bell"></i> Seuil d'alerte</label>
+            {{ form_widget(form.seuilAlerte, {'attr': {'class': 'form-control field-seuil'}}) }}
+            <div class="error-container error-seuil" style="margin-top: 6px;"></div>
+        </div>
+        
+        <div class="form-group field-container" data-field="unite">
+            <label class="form-label"><i class="fa-solid fa-ruler"></i> Unité de mesure *</label>
+            {{ form_widget(form.uniteMesure, {'attr': {'class': 'form-control field-unite'}}) }}
+            <div class="error-container error-unite" style="margin-top: 6px;"></div>
+        </div>
+        
+        <div class="form-group field-container" data-field="emplacement">
+            <label class="form-label"><i class="fa-solid fa-location-dot"></i> Emplacement</label>
+            {{ form_widget(form.emplacement, {'attr': {'class': 'form-control field-emplacement'}}) }}
+            <div class="error-container error-emplacement" style="margin-top: 6px;"></div>
+        </div>
+        
+        <div class="form-group field-container" data-field="dateReception">
+            <label class="form-label"><i class="fa-solid fa-calendar-plus"></i> Date de réception</label>
+            {{ form_widget(form.dateReception, {'attr': {'class': 'form-control field-dateReception'}}) }}
+            <div class="error-container error-dateReception" style="margin-top: 6px;"></div>
+        </div>
+        
+        <div class="form-group field-container" data-field="dateExpiration">
+            <label class="form-label"><i class="fa-solid fa-calendar-xmark"></i> Date d'expiration</label>
+            {{ form_widget(form.dateExpiration, {'attr': {'class': 'form-control field-dateExpiration'}}) }}
+            <div class="error-container error-dateExpiration" style="margin-top: 6px;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card form-actions-card">
+    <a href="{{ path('home') }}" class="btn btn-ghost btn-lg"><i class="fa-solid fa-xmark"></i> Annuler</a>
+    <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-check"></i> {{ btnLabel }}</button>
+    <p class="required-hint">* Champs obligatoires</p>
+</div>
+
+</form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script type="text/javascript">
+(function() {
+    
+    var form = null;
+    
+    function trouverChamp(nomChamp) {
+        var elements = document.getElementsByClassName('field-' + nomChamp);
+        if (elements && elements.length > 0) {
+            return elements[0];
+        }
+        return null;
+    }
+    
+    function trouverErreurContainer(nomChamp) {
+        var elements = document.getElementsByClassName('error-' + nomChamp);
+        if (elements && elements.length > 0) {
+            return elements[0];
+        }
+        return null;
+    }
+    
+    function afficherErreur(nomChamp, message) {
+        var errorDiv = trouverErreurContainer(nomChamp);
+        if (errorDiv) {
+            var html = '<div style="';
+            html += 'background-color: #fee2e2;';
+            html += 'color: #b91c1c;';
+            html += 'padding: 8px 12px;';
+            html += 'border-radius: 6px;';
+            html += 'font-size: 13px;';
+            html += 'border-left: 4px solid #dc2626;';
+            html += '">';
+            html += '<strong>⚠️ ' + message + '</strong>';
+            html += '</div>';
+            errorDiv.innerHTML = html;
+        }
+        
+        var champ = trouverChamp(nomChamp);
+        if (champ) {
+            champ.style.borderColor = '#dc2626';
+            champ.style.backgroundColor = '#fef2f2';
+        }
+    }
+    
+    function masquerErreur(nomChamp) {
+        var errorDiv = trouverErreurContainer(nomChamp);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+        }
+        var champ = trouverChamp(nomChamp);
+        if (champ) {
+            champ.style.borderColor = '';
+            champ.style.backgroundColor = '';
+        }
+    }
+    
+    function masquerToutesErreurs() {
+        var champs = ['produit', 'quantite', 'seuil', 'unite', 'emplacement', 'dateReception', 'dateExpiration'];
+        for (var i = 0; i < champs.length; i++) {
+            masquerErreur(champs[i]);
+        }
+    }
+    
+    function getValeur(nomChamp) {
+        var champ = trouverChamp(nomChamp);
+        if (champ) {
+            return champ.value;
+        }
+        return '';
+    }
+    
+    function trim(str) {
+        if (!str) return '';
+        var result = str;
+        while (result.charAt(0) === ' ') {
+            result = result.substring(1);
+        }
+        while (result.length > 0 && result.charAt(result.length - 1) === ' ') {
+            result = result.substring(0, result.length - 1);
+        }
+        return result;
+    }
+    
+    function validerFormulaire() {
+        var estValide = true;
+        var erreurs = [];
+        
+        masquerToutesErreurs();
+        
+        // Produit (si présent)
+        var produitChamp = trouverChamp('produit');
+        if (produitChamp) {
+            var produitVal = getValeur('produit');
+            if (!produitVal || produitVal === '') {
+                afficherErreur('produit', 'Le produit est obligatoire');
+                erreurs.push('produit');
+                estValide = false;
+            }
+        }
+        
+        // Quantité
+        var quantiteVal = getValeur('quantite');
+        if (!quantiteVal || quantiteVal === '') {
+            afficherErreur('quantite', 'La quantité est obligatoire');
+            erreurs.push('quantite');
+            estValide = false;
+        } else {
+            var quantiteNum = parseFloat(quantiteVal);
+            if (isNaN(quantiteNum)) {
+                afficherErreur('quantite', 'La quantité doit être un nombre valide');
+                erreurs.push('quantite');
+                estValide = false;
+            } else if (quantiteNum < 0) {
+                afficherErreur('quantite', 'La quantité ne peut pas être négative');
+                erreurs.push('quantite');
+                estValide = false;
+            }
+        }
+        
+        // Seuil (optionnel mais doit être valide si rempli)
+        var seuilVal = getValeur('seuil');
+        if (seuilVal && seuilVal !== '') {
+            var seuilNum = parseFloat(seuilVal);
+            if (isNaN(seuilNum)) {
+                afficherErreur('seuil', 'Le seuil doit être un nombre valide');
+                erreurs.push('seuil');
+                estValide = false;
+            } else if (seuilNum < 0) {
+                afficherErreur('seuil', 'Le seuil ne peut pas être négatif');
+                erreurs.push('seuil');
+                estValide = false;
+            }
+        }
+        
+        // Unité
+        var uniteVal = getValeur('unite');
+        if (!uniteVal || uniteVal === '') {
+            afficherErreur('unite', 'L\'unité de mesure est obligatoire');
+            erreurs.push('unite');
+            estValide = false;
+        }
+        
+        // Emplacement (optionnel, mais longueur max si rempli)
+        var emplacementVal = trim(getValeur('emplacement'));
+        if (emplacementVal && emplacementVal.length > 255) {
+            afficherErreur('emplacement', 'L\'emplacement ne peut pas dépasser 255 caractères');
+            erreurs.push('emplacement');
+            estValide = false;
+        }
+        
+        // Dates
+        var dateReceptionVal = getValeur('dateReception');
+        var dateExpirationVal = getValeur('dateExpiration');
+        
+        if (dateReceptionVal && dateReceptionVal !== '' && dateExpirationVal && dateExpirationVal !== '') {
+            var dateR = new Date(dateReceptionVal);
+            var dateE = new Date(dateExpirationVal);
+            
+            if (dateE.getTime() < dateR.getTime()) {
+                afficherErreur('dateExpiration', 'La date d\'expiration doit être postérieure à la date de réception');
+                erreurs.push('dateExpiration');
+                estValide = false;
+            }
+        }
+        
+        // Scroll vers première erreur
+        if (erreurs.length > 0) {
+            var premiereErreur = trouverErreurContainer(erreurs[0]);
+            if (premiereErreur && premiereErreur.scrollIntoView) {
+                premiereErreur.scrollIntoView();
+            }
+        }
+        
+        return estValide;
+    }
+    
+    function initialiser() {
+        form = document.getElementById('stockForm');
+        
+        if (!form) return;
+        
+        form.onsubmit = function(e) {
+            var valide = validerFormulaire();
+            if (!valide) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                } else {
+                    e.returnValue = false;
+                }
+                return false;
+            }
+            return true;
+        };
+        
+        // Validation temps réel
+        var champsAValider = ['produit', 'quantite', 'seuil', 'unite'];
+        for (var i = 0; i < champsAValider.length; i++) {
+            (function(nomChamp) {
+                var champ = trouverChamp(nomChamp);
+                if (champ) {
+                    champ.onfocus = function() {
+                        masquerErreur(nomChamp);
+                    };
+                }
+            })(champsAValider[i]);
+        }
+    }
+    
+    var tentatives = 0;
+    var interval = setInterval(function() {
+        tentatives++;
+        var formTest = document.getElementById('stockForm');
+        if (formTest || tentatives > 100) {
+            clearInterval(interval);
+            if (formTest) {
+                initialiser();
+            }
+        }
+    }, 50);
+    
+})();
+</script>
+{% endblock %}

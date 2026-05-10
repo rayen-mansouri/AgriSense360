@@ -1,0 +1,96 @@
+{# templates/produit/scanner.html.twig #}
+
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#4caf50;color:white">
+            <i class="fa-solid fa-camera"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">📷 Scanner un code-barres</h2>
+            <p class="form-card-subtitle">Utilisez la caméra pour scanner un produit</p>
+        </div>
+    </div>
+    
+    <div style="text-align: center; padding: 20px;">
+        <div id="scanner-container" style="width: 100%; max-width: 500px; margin: 0 auto;">
+            <video id="scanner-video" style="width: 100%; border-radius: 12px;"></video>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button id="start-scanner" class="btn btn-primary">
+                <i class="fa-solid fa-play"></i> Démarrer le scan
+            </button>
+            <button id="stop-scanner" class="btn btn-secondary" style="display:none;">
+                <i class="fa-solid fa-stop"></i> Arrêter
+            </button>
+        </div>
+        
+        <div id="scan-result" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; display: none;">
+            <strong>✅ Produit scanné :</strong>
+            <span id="scanned-product"></span>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
+<script>
+const startBtn = document.getElementById('start-scanner');
+const stopBtn = document.getElementById('stop-scanner');
+const scanResult = document.getElementById('scan-result');
+const scannedProduct = document.getElementById('scanned-product');
+
+startBtn.addEventListener('click', function() {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#scanner-container'),
+            constraints: {
+                width: 640,
+                height: 480,
+                facingMode: "environment"
+            }
+        },
+        decoder: {
+            readers: ["code_128_reader", "ean_reader", "ean_8_reader"]
+        }
+    }, function(err) {
+        if (err) {
+            console.error(err);
+            alert("Erreur d'accès à la caméra");
+            return;
+        }
+        Quagga.start();
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+    });
+    
+    Quagga.onDetected(function(data) {
+        var code = data.codeResult.code;
+        scannedProduct.innerHTML = code + ' - Recherche en cours...';
+        scanResult.style.display = 'block';
+        
+        // Appel AJAX vers votre API
+        fetch('/api/produit/recherche?code=' + encodeURIComponent(code))
+            .then(response => response.json())
+            .then(product => {
+                if (product.id) {
+                    scannedProduct.innerHTML = `<a href="/produit/${product.id}">${product.nom}</a> - ${product.sku}`;
+                    // Option : redirection automatique
+                    // window.location.href = '/produit/' + product.id;
+                } else {
+                    scannedProduct.innerHTML = 'Produit non trouvé (Code: ' + code + ')';
+                }
+            })
+            .catch(error => {
+                scannedProduct.innerHTML = 'Erreur de recherche';
+            });
+    });
+});
+
+stopBtn.addEventListener('click', function() {
+    Quagga.stop();
+    startBtn.style.display = 'inline-block';
+    stopBtn.style.display = 'none';
+});
+</script>

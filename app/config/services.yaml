@@ -22,3 +22,24 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # External API Services
+    App\Service\OpenWeatherService:
+        arguments:
+            $apiKey: '%env(OPENWEATHER_API_KEY)%'
+
+    App\Service\GoogleMapsService:
+        arguments:
+            $apiKey: '%env(GOOGLE_MAPS_API_KEY)%'
+
+    App\Service\GroqAIService:
+        arguments:
+            $apiKey: '%env(GROQ_API_KEY)%'
+
+    App\Service\DiscordWebhookService:
+        arguments:
+            $webhookUrl: '%env(DISCORD_WEBHOOK_URL)%'
+
+    App\Service\AgromonitoringAdviceService:
+        arguments:
+            $apiKey: '%env(AGROMONITORING_API_KEY)%'

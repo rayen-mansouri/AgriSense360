@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ user.name }} — Détails{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    .profile-grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 992px) { .profile-grid { grid-template-columns: 1fr; } }
+
+    .avatar-card { background: var(--cb); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 32px 24px; text-align: center; border: 1px solid var(--cbr); }
+    .avatar-big { width: 96px; height: 96px; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--g), var(--gm)); overflow: hidden; }
+    .avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+    .av-name  { font-size: 1.25rem; font-weight: 800; color: var(--ch3); margin-bottom: 6px; }
+    .av-email { font-size: .85rem; color: var(--cp); margin-bottom: 16px; }
+    .av-divider { border: none; border-top: 1px solid var(--cbr); margin: 20px 0; }
+    .av-row { display: flex; justify-content: space-between; font-size: .85rem; color: var(--cp); margin-bottom: 10px; }
+    .av-row strong { color: var(--ch3); font-weight: 700; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-label { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--cp); }
+    .form-input, .form-select { padding: 12px 16px; border: 1px solid var(--cbr); border-radius: 12px; background: var(--cb); color: var(--ch3); outline: none; transition: all .2s; width: 100%; }
+    .form-input:focus, .form-select:focus { border-color: var(--g); box-shadow: 0 0 0 3px rgba(76,175,80,0.1); }
+    .form-input[readonly] { background: var(--surface2); opacity: 0.7; cursor: not-allowed; }
+
+    .status-row { display: flex; gap: 12px; margin-top: 8px; }
+    .status-opt input { display: none; }
+    .status-opt label { padding: 10px 24px; border: 2px solid var(--cbr); border-radius: 50px; cursor: pointer; font-size: .85rem; font-weight: 700; color: var(--cp); background: var(--surface2); transition: all .2s; }
+    .status-opt input:checked + label { border-color: var(--g); background: rgba(90,181,90,0.1); color: var(--g); }
+    .status-opt.blocked input:checked + label { border-color: var(--danger); background: rgba(198,40,40,0.1); color: var(--danger); }
+
+    .section-sep { font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--cp); margin: 32px 0 16px; padding-top: 24px; border-top: 1px solid var(--cbr); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div class="content-wrapper">
+            <div class="page-header" style="margin-bottom: 30px;">
+                <div class="page-header-left">
+                    <p class="page-breadcrumb">👥 Utilisateurs / {{ user.name }}</p>
+                    <h1 class="page-title">Détails de l'utilisateur</h1>
+                </div>
+            </div>
+
+            {% for msg in app.flashes('success') %}<div style="padding:15px 20px;background:rgba(76,175,80,0.1);border-left:4px solid #4caf50;color:#4caf50;border-radius:8px;margin-bottom:20px;font-weight:600;">✓ {{ msg }}</div>{% endfor %}
+            {% for msg in app.flashes('error') %}<div style="padding:15px 20px;background:rgba(244,67,54,0.1);border-left:4px solid #f44336;color:#f44336;border-radius:8px;margin-bottom:20px;font-weight:600;">⚠ {{ msg }}</div>{% endfor %}
+
+            <div class="profile-grid">
+                <!-- Avatar card -->
+                <div class="avatar-card">
+                    <div class="avatar-big">
+                        {% if user.profilePicture %}
+                            <img src="{{ asset('uploads/profiles/' ~ user.profilePicture) }}" alt="Photo">
+                        {% else %}
+                            {{ user.name|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="av-name">{{ user.name }}</div>
+                    <div class="av-email">{{ user.email }}</div>
+
+                    {% set r = user.getRoles() %}
+                    {% if 'ROLE_ADMIN' in r %}<span class="badge badge-blue">Administrateur</span>
+                    {% elseif 'ROLE_GERANT' in r %}<span class="badge badge-green">Gérant</span>
+                    {% else %}<span class="badge badge-orange">Ouvrier</span>{% endif %}
+
+                    <hr class="av-divider">
+                    <div class="av-row">
+                        <span>Statut</span>
+                        <strong class="{{ user.status == 'active' ? 'st-active' : 'st-blocked' }}" style="padding: 4px 10px; border-radius: 50px;">
+                            {{ user.status == 'active' ? '✓ Actif' : '✗ Bloqué' }}
+                        </strong>
+                    </div>
+                    {% if user.phone %}
+                    <div class="av-row"><span>📞 Téléphone</span><strong>{{ user.phone }}</strong></div>
+                    {% endif %}
+                    <div class="av-row"><span>Créé le</span><strong>{{ user.createdAt ? user.createdAt|date('d/m/Y') : '—' }}</strong></div>
+                    {% if user.updatedAt %}
+                    <div class="av-row"><span>Modifié le</span><strong>{{ user.updatedAt|date('d/m/Y') }}</strong></div>
+                    {% endif %}
+                </div>
+
+                <!-- Edit form -->
+                <div class="card">
+                    <div class="card-head"><span class="card-title">✏️ Modifier l'utilisateur</span></div>
+
+                    <form method="post" action="{{ path('admin_user_edit', {id: user.id}) }}">
+                        <div class="card-body">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Nom complet</label>
+                                    <input type="text" name="name" class="form-input" value="{{ user.name }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Email (non modifiable)</label>
+                                    <input type="email" class="form-input" value="{{ user.email }}" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Téléphone</label>
+                                    <input type="tel" name="phone" class="form-input" value="{{ user.phone }}" placeholder="Ex : 55 123 456">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rôle</label>
+                                    <select name="role" class="form-select">
+                                        <option value="ROLE_ADMIN"   {{ 'ROLE_ADMIN'   in user.getRoles() ? 'selected' : '' }}>🛡️ Administrateur</option>
+                                        <option value="ROLE_GERANT"  {{ 'ROLE_GERANT'  in user.getRoles() ? 'selected' : '' }}>🧑‍💼 Gérant</option>
+                                        <option value="ROLE_OUVRIER" {{ 'ROLE_OUVRIER' in user.getRoles() ? 'selected' : '' }}>👷 Ouvrier</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <p class="section-sep" style="border-top: 1px solid var(--cbr);">Statut du compte</p>
+                            <div class="status-row">
+                                <div class="status-opt">
+                                    <input type="radio" name="status" id="st_active" value="active" {{ user.status == 'active' ? 'checked' : '' }}>
+                                    <label for="st_active">✓ Actif</label>
+                                </div>
+                                <div class="status-opt blocked">
+                                    <input type="radio" name="status" id="st_blocked" value="blocked" {{ user.status == 'blocked' ? 'checked' : '' }}>
+                                    <label for="st_blocked">✗ Bloqué</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer" style="padding: 20px 30px; background: var(--surface2); border-top: 1px solid var(--cbr); display: flex; gap: 12px; align-items: center;">
+                            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">← Retour</a>
+                            <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+
+                            {% if app.user.id != user.id %}
+                                <div style="margin-left:auto;">
+                                    <button type="button" class="btn btn-danger" onclick="if(confirm('Supprimer définitivement « {{ user.name }} » ?')) document.getElementById('delete-form-{{ user.id }}').submit();">🗑 Supprimer</button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                    {% if app.user.id != user.id %}
+                        <form id="delete-form-{{ user.id }}" method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" style="display:none;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

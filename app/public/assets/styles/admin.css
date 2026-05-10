@@ -624,9 +624,50 @@ body.admin-panel {
     align-items: start;
 }
 
+.admin-panel .animals-page .animals-entry-row {
+    grid-template-columns: minmax(360px, 0.95fr) minmax(0, 1.35fr);
+    gap: 18px;
+}
+
+.admin-panel .animals-page .animals-entry-row .crud-form,
+.admin-panel .animals-page .animals-entry-row .crud-list {
+    min-width: 0;
+}
+
+.admin-panel .animals-page .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-panel .animals-page .data-table {
+    min-width: 980px;
+}
+
 .admin-panel .crud-card,
 .admin-panel .crud-list {
     padding: 22px;
+}
+
+.form-warning {
+    border: 1px solid rgba(205, 86, 86, 0.28);
+    background: rgba(205, 86, 86, 0.1);
+    color: #7f2222;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    animation: adminWarnFade 0.28s ease;
+}
+
+@keyframes adminWarnFade {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .admin-panel .crud-form {

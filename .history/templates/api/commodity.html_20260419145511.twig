@@ -1,0 +1,174 @@
+{# templates/api/commodity.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Prix des matières premières - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">🌾 Prix des matières premières</h1>
+        <p class="page-subtitle">Suivi des cours internationaux</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">Cotations internationales</h2>
+            <p class="form-card-subtitle">Prix en USD - Source: Banque Mondiale & marchés internationaux</p>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; padding: 24px;">
+        
+        <!-- Blé -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 20px; padding: 20px; border: 1px solid #e0e0e0; transition: transform 0.2s;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-wheat-awn" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Blé</h3>
+            </div>
+            <div id="wheat-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">---</div>
+            <div id="wheat-unit" style="font-size: 13px; color: #666; margin-top: 5px;">USD/tonne</div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <span class="badge" style="background: #e8f5e9; color: #5a9814; padding: 4px 8px; border-radius: 20px; font-size: 11px;">Dernière mise à jour: aujourd'hui</span>
+            </div>
+        </div>
+        
+        <!-- Maïs -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 20px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-corn" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Maïs</h3>
+            </div>
+            <div id="corn-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">---</div>
+            <div id="corn-unit" style="font-size: 13px; color: #666; margin-top: 5px;">USD/tonne</div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <span class="badge" style="background: #e8f5e9; color: #5a9814; padding: 4px 8px; border-radius: 20px; font-size: 11px;">Dernière mise à jour: aujourd'hui</span>
+            </div>
+        </div>
+        
+        <!-- Soja -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 20px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #ff9800; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-seedling" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Soja</h3>
+            </div>
+            <div id="soybean-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">---</div>
+            <div id="soybean-unit" style="font-size: 13px; color: #666; margin-top: 5px;">USD/tonne</div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <span class="badge" style="background: #e8f5e9; color: #5a9814; padding: 4px 8px; border-radius: 20px; font-size: 11px;">Dernière mise à jour: aujourd'hui</span>
+            </div>
+        </div>
+        
+        <!-- Café -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 20px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #795548; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-mug-hot" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Café</h3>
+            </div>
+            <div id="coffee-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">---</div>
+            <div id="coffee-unit" style="font-size: 13px; color: #666; margin-top: 5px;">USD/livre</div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <span class="badge" style="background: #e8f5e9; color: #5a9814; padding: 4px 8px; border-radius: 20px; font-size: 11px;">Dernière mise à jour: aujourd'hui</span>
+            </div>
+        </div>
+        
+        <!-- Sucre -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 20px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #9c27b0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-cube" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Sucre</h3>
+            </div>
+            <div id="sugar-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">---</div>
+            <div id="sugar-unit" style="font-size: 13px; color: #666; margin-top: 5px;">USD/livre</div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <span class="badge" style="background: #e8f5e9; color: #5a9814; padding: 4px 8px; border-radius: 20px; font-size: 11px;">Dernière mise à jour: aujourd'hui</span>
+            </div>
+        </div>
+        
+        <!-- Pétrole -->
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 20px; padding: 20px; border: 1px solid #e0e0e0;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; background: #2196f3; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-oil-can" style="font-size: 24px; color: white;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 20px;">Pétrole</h3>
+            </div>
+            <div id="oil-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">---</div>
+            <div id="oil-unit" style="font-size: 13px; color: #666; margin-top: 5px;">USD/baril</div>
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;">
+                <span class="badge" style="background: #e8f5e9; color: #5a9814; padding: 4px 8px; border-radius: 20px; font-size: 11px;">Dernière mise à jour: aujourd'hui</span>
+            </div>
+        </div>
+        
+    </div>
+    
+    <div style="text-align: center; padding: 20px; border-top: 1px solid #eee;">
+        <p class="text-muted" style="font-size: 12px;">
+            <i class="fa-solid fa-info-circle"></i> Prix indicatifs - Source: Banque Mondiale & marchés internationaux
+        </p>
+        <button onclick="location.reload()" class="btn btn-sm btn-secondary">
+            <i class="fa-solid fa-refresh"></i> Actualiser
+        </button>
+    </div>
+</div>
+
+<script>
+// Données des matières premières (intégrées)
+const commodityData = {
+    'WHEAT': { price: 245.50, unit: 'USD/tonne', name: 'Blé' },
+    'CORN': { price: 198.30, unit: 'USD/tonne', name: 'Maïs' },
+    'SOYBEAN': { price: 425.80, unit: 'USD/tonne', name: 'Soja' },
+    'COFFEE': { price: 1.85, unit: 'USD/livre', name: 'Café' },
+    'SUGAR': { price: 0.22, unit: 'USD/livre', name: 'Sucre' },
+    'OIL': { price: 78.50, unit: 'USD/baril', name: 'Pétrole' }
+};
+
+// Afficher les prix
+function displayPrices() {
+    for (const [key, data] of Object.entries(commodityData)) {
+        const priceElement = document.getElementById(`${key.toLowerCase()}-price`);
+        const unitElement = document.getElementById(`${key.toLowerCase()}-unit`);
+        if (priceElement) {
+            priceElement.innerHTML = `${data.price.toFixed(2)} ${data.unit.split('/')[0]}`;
+        }
+        if (unitElement) {
+            unitElement.innerHTML = data.unit;
+        }
+    }
+}
+
+displayPrices();
+
+// Animation au survol
+document.querySelectorAll('.commodity-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+        card.style.transform = 'translateY(-5px)';
+        card.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+    });
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+    });
+});
+</script>
+
+<style>
+.commodity-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+</style>
+{% endblock %}

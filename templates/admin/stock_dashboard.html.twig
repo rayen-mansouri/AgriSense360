@@ -1,0 +1,399 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'stockes' %}
+{% set activeSection = 'main' %}
+
+{% block title %}📦 Gestion des Stocks (Vue Admin) — Agrisens 360{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    /* ── CUSTOM OVERRIDES ── */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 15px; }
+    .page-title { font-size: 1.75rem; font-weight: 800; color: var(--ch3); margin-bottom: 4px; }
+    .page-subtitle { color: var(--cp); font-size: 0.9rem; }
+
+    /* Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: var(--cb); border: 1px solid var(--cbr); padding: 24px; border-radius: 20px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s; box-shadow: var(--sh); }
+    .stat-card:hover { transform: translateY(-4px); border-color: var(--g); box-shadow: var(--sh-lg); }
+    .stat-icon { font-size: 1.5rem; color: var(--g); margin-bottom: 4px; }
+    .stat-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--cp); letter-spacing: 0.05em; }
+    .stat-value { font-size: 1.8rem; font-weight: 900; color: var(--ch3); }
+
+    /* Action Sections */
+    .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 40px; }
+    .action-section { background: rgba(255,255,255,0.02); border: 1px solid var(--cbr); border-radius: 20px; padding: 20px; }
+    .action-section-title { font-size: 0.75rem; font-weight: 800; color: var(--cp); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .btn-group-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn-tool { background: var(--cb); border: 1px solid var(--cbr); color: var(--ch3); padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; text-decoration: none; }
+    .btn-tool:hover { background: rgba(90,181,90,0.1); border-color: var(--g); color: var(--g); }
+    .btn-export { background: rgba(90,181,90,0.1); color: var(--g); border-color: rgba(90,181,90,0.2); }
+
+    /* Filters & Chips */
+    .filter-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-chip { padding: 6px 14px; border-radius: 50px; background: var(--cb); border: 1px solid var(--cbr); color: var(--cp); font-size: 0.8rem; font-weight: 600; text-decoration: none; transition: all 0.2s; }
+    .filter-chip:hover { border-color: var(--g); color: var(--g); }
+    .filter-chip.active { background: var(--g); color: white; border-color: var(--g); }
+
+    /* Tables */
+    .data-table-wrapper { overflow-x: auto; margin-top: 10px; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .data-table th { text-align: left; padding: 12px 16px; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase; border-bottom: 1px solid var(--cbr); }
+    .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--cbr); color: var(--pc); font-size: 0.9rem; vertical-align: middle; }
+    .data-table tr:hover { background: rgba(255,255,255,0.02); }
+    
+    .item-badge { background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; color: var(--cp); }
+    .statut-badge { padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .statut-normal { background: rgba(16,185,129,0.1); color: #10b981; }
+    .statut-critique { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .statut-rupture { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+    .progress-mini { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; width: 60px; margin-top: 4px; }
+    .progress-fill { height: 100%; border-radius: 3px; }
+    .fill-ok { background: #10b981; }
+    .fill-warning { background: #f59e0b; }
+    .fill-danger { background: #ef4444; }
+
+    /* Chart */
+    .chart-card { margin-bottom: 40px; padding: 24px; background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; }
+    .chart-container { height: 250px; position: relative; }
+
+    /* Sort dropdowns */
+    .sort-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 0.8rem; color: var(--cp); }
+    .sort-select { background: var(--cb); border: 1px solid var(--cbr); color: var(--ch3); border-radius: 8px; padding: 4px 8px; font-family: inherit; font-size: 0.8rem; outline: none; }
+
+    /* Fix spacing */
+    .content-wrapper { padding-top: 20px !important; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <form action="{{ path('admin_stock_index') }}" method="GET" style="position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--cp); font-size: 0.9rem;"></i>
+                    <input type="text" name="q" placeholder="Rechercher un produit, stock..." value="{{ search }}" 
+                           style="background: rgba(0,0,0,0.2); border: 1px solid var(--cbr); border-radius: 50px; padding: 8px 16px 8px 36px; color: var(--ch3); outline: none; width: 300px;">
+                    {% if catFilter %}<input type="hidden" name="cat" value="{{ catFilter }}">{% endif %}
+                </form>
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">📦 Gestion des Stocks (Vue Admin)</h1>
+                    <p class="page-subtitle">Consultation des produits et stocks de la ferme</p>
+                </div>
+                <!-- Boutons d'ajout supprimés -->
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-box"></i></div>
+                    <div class="stat-label">Produits Enregistrés</div>
+                    <div class="stat-value">{{ totalProduits }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-warehouse"></i></div>
+                    <div class="stat-label">Entrées de Stock</div>
+                    <div class="stat-value">{{ totalStocks }}</div>
+                </div>
+                <div class="stat-card" style="{{ totalAlertes > 0 ? 'border-color: var(--danger);' : '' }}">
+                    <div class="stat-icon" style="{{ totalAlertes > 0 ? 'color: var(--danger);' : '' }}"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-label">Alertes Actives</div>
+                    <div class="stat-value">{{ totalAlertes }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                    <div class="stat-label">Valeur Totale Inventaire</div>
+                    <div class="stat-value">{{ valeurTotale }} <span style="font-size:0.9rem; color:var(--cp);">DT</span></div>
+                </div>
+            </div>
+
+                <!-- Scanners & Outils -->
+                <div class="action-section">
+                    <div class="action-section-title"><i class="fas fa-camera"></i> Scanners & Outils</div>
+                    <div class="btn-group-wrap">
+                        <a href="{{ path('produit_scanner') }}" class="btn-tool"><i class="fas fa-barcode"></i> Scanner Interne</a>
+                        <a href="{{ path('produit_scanner_off') }}" class="btn-tool" style="border-color:#e67e22; color:#e67e22;"><i class="fas fa-globe"></i> OpenFoodFacts</a>
+                        <a href="{{ path('api_exchange_view') }}" class="btn-tool"><i class="fas fa-money-bill-wave"></i> Taux de change</a>
+                        <a href="{{ path('api_commodity_view') }}" class="btn-tool"><i class="fas fa-chart-area"></i> Prix Matières</a>
+                        <a href="{{ path('analyse_complete') }}" class="btn-tool"><i class="fas fa-brain"></i> Analyse IA</a>
+                    </div>
+                </div>
+                <!-- Exports -->
+                <div class="action-section">
+                    <div class="action-section-title"><i class="fas fa-download"></i> Exports de données</div>
+                    <div class="btn-group-wrap">
+                        <a href="{{ path('export_produits_pdf') }}" class="btn-tool btn-export"><i class="fas fa-file-pdf"></i> Produits (PDF)</a>
+                        <a href="{{ path('export_excel_produits') }}" class="btn-tool btn-export"><i class="fas fa-file-excel"></i> Produits (Excel)</a>
+                        <a href="{{ path('export_stocks_pdf') }}" class="btn-tool btn-export"><i class="fas fa-file-pdf"></i> Stocks (PDF)</a>
+                        <a href="{{ path('export_excel_stocks') }}" class="btn-tool btn-export"><i class="fas fa-file-excel"></i> Stocks (Excel)</a>
+                        <a href="{{ path('export_alertes_pdf') }}" class="btn-tool btn-export" style="color:var(--danger); border-color:var(--danger-bg);"><i class="fas fa-exclamation-triangle"></i> Alertes (PDF)</a>
+                    </div>
+                </div>
+
+
+            <!-- Chart -->
+            <div class="chart-card">
+                <div class="action-section-title" style="margin-bottom: 24px;"><i class="fa-solid fa-chart-column"></i> Répartition par Catégorie</div>
+                <div class="chart-container">
+                    <canvas id="chartCategories"></canvas>
+                </div>
+            </div>
+
+            <!-- SECTION PRODUITS -->
+            <div class="card" id="produits">
+                <div class="card-head">
+                    <h2 class="card-title"><i class="fa-solid fa-leaf"></i> Produits de la ferme</h2>
+                    <div class="item-badge">{{ produits|length }} affichés</div>
+                </div>
+                <div class="card-body">
+                    <div class="filter-bar">
+                        <a href="{{ path('admin_stock_index', {q: search, psort: pSort, pdir: pDir, ssort: sSort, sdir: sDir}) }}" 
+                           class="filter-chip {{ catFilter == '' ? 'active' : '' }}">Toutes</a>
+                        {% for cat in categories %}
+                            <a href="{{ path('admin_stock_index', {q: search, cat: cat, psort: pSort, pdir: pDir, ssort: sSort, sdir: sDir}) }}" 
+                               class="filter-chip {{ catFilter == cat ? 'active' : '' }}">{{ cat }}</a>
+                        {% endfor %}
+
+                        <div class="sort-wrap">
+                            <span>Trier :</span>
+                            <select id="pSortSel" class="sort-select" onchange="applyProdSort()">
+                                <option value="nom" {{ pSort=='nom' ? 'selected' : '' }}>Nom</option>
+                                <option value="categorie" {{ pSort=='categorie' ? 'selected' : '' }}>Catégorie</option>
+                                <option value="prixUnitaire" {{ pSort=='prixUnitaire' ? 'selected' : '' }}>Prix</option>
+                            </select>
+                            <select id="pDirSel" class="sort-select" onchange="applyProdSort()">
+                                <option value="asc" {{ pDir=='asc' ? 'selected' : '' }}>↑</option>
+                                <option value="desc" {{ pDir=='desc' ? 'selected' : '' }}>↓</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Photo</th>
+                                    <th>Produit</th>
+                                    <th>Catégorie</th>
+                                    <th>Prix unitaire</th>
+                                    <th>Stock actuel</th>
+                                    <th>Statut</th>
+                                    <th style="text-align:right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in produits %}
+                                    {% set s = p.stockActuel %}
+                                    <tr>
+                                        <td>
+                                            {% if p.photoUrl %}
+                                                <img src="{{ asset(p.photoUrl) }}" style="width:40px;height:40px;border-radius:8px;object-fit:cover">
+                                            {% else %}
+                                                <div style="width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:var(--cp);">
+                                                    <i class="fa-solid fa-seedling"></i>
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong style="color:var(--ch3);">{{ p.nom }}</strong></td>
+                                        <td><span class="item-badge">{{ p.categorie ?: 'Autre' }}</span></td>
+                                        <td style="font-weight:700;color:var(--g);">{{ p.prixUnitaire }} DT</td>
+                                        <td>
+                                            {% if s %}
+                                                <span style="font-weight:700;color:{{ s.isEnAlerte ? 'var(--danger)' : 'var(--g)' }}">
+                                                    {{ s.quantiteActuelle }} {{ s.uniteMesure }}
+                                                </span>
+                                            {% else %}
+                                                <span style="color:var(--cp); font-size:0.8rem;">Aucun stock</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if s %}
+                                                <span class="statut-badge statut-{{ s.statut|lower }}">{{ s.statut }}</span>
+                                            {% else %}
+                                                <span class="statut-badge" style="background:rgba(255,255,255,0.05);color:var(--cp);">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align:right">
+                                            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                                                <a href="{{ path('produit_show', {id: p.id}) }}" class="btn-tool" style="padding:6px 10px;" title="Voir"><i class="fas fa-eye"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION STOCKS -->
+            <div class="card" id="stocks" style="margin-top: 40px;">
+                <div class="card-head">
+                    <h2 class="card-title"><i class="fa-solid fa-warehouse"></i> État des Stocks</h2>
+                    <div class="item-badge">{{ stocks|length }} entrées</div>
+                </div>
+                <div class="card-body">
+                    <div class="filter-bar">
+                        <div class="sort-wrap">
+                            <span>Trier :</span>
+                            <select id="sSortSel" class="sort-select" onchange="applyStockSort()">
+                                <option value="produit" {{ sSort=='produit' ? 'selected' : '' }}>Produit</option>
+                                <option value="quantiteActuelle" {{ sSort=='quantiteActuelle' ? 'selected' : '' }}>Quantité</option>
+                                <option value="dateExpiration" {{ sSort=='dateExpiration' ? 'selected' : '' }}>Expiration</option>
+                            </select>
+                            <select id="sDirSel" class="sort-select" onchange="applyStockSort()">
+                                <option value="asc" {{ sDir=='asc' ? 'selected' : '' }}>↑</option>
+                                <option value="desc" {{ sDir=='desc' ? 'selected' : '' }}>↓</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Quantité</th>
+                                    <th>Seuil Alerte</th>
+                                    <th>Unité</th>
+                                    <th>Expiration</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in stocks %}
+                                    <tr class="{{ s.isEnAlerte ? 'row-alert' : '' }}">
+                                        <td><strong style="color:var(--ch3);">{{ s.produit.nom }}</strong></td>
+                                        <td>
+                                            <span style="font-weight:700;color:{{ s.isEnAlerte ? 'var(--danger)' : 'var(--g)' }}">
+                                                {{ s.quantiteActuelle }}
+                                            </span>
+                                        </td>
+                                        <td>{{ s.seuilAlerte ?? '—' }}</td>
+                                        <td>{{ s.uniteMesure }}</td>
+                                        <td>{{ s.dateExpiration ? s.dateExpiration|date('d/m/Y') : '—' }}</td>
+                                        <td><span class="statut-badge statut-{{ s.statut|lower }}">{{ s.statut }}</span></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('open');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            }
+        });
+    }
+
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+
+    // Graphique catégories
+    const data = {{ categorieData|json_encode|raw }};
+    const ctx = document.getElementById('chartCategories');
+    if (ctx && Object.keys(data).length > 0) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Nombre de produits',
+                    data: Object.values(data),
+                    backgroundColor: '#5ab55a',
+                    borderRadius: 8,
+                    borderWidth: 0,
+                    barThickness: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0a0f0a',
+                        titleColor: '#fff',
+                        bodyColor: '#e8f5e4',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1, color: 'rgba(232,245,228,0.5)' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    x: {
+                        ticks: { color: 'rgba(232,245,228,0.5)' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Fonctions de tri
+    function applyProdSort() {
+        const sort = document.getElementById('pSortSel').value;
+        const dir = document.getElementById('pDirSel').value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('psort', sort);
+        url.searchParams.set('pdir', dir);
+        window.location = url;
+    }
+
+    function applyStockSort() {
+        const sort = document.getElementById('sSortSel').value;
+        const dir = document.getElementById('sDirSel').value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('ssort', sort);
+        url.searchParams.set('sdir', dir);
+        window.location = url;
+    }
+</script>
+{% endblock %}

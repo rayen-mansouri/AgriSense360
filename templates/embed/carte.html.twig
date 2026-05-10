@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carte des Parcelles</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+    </style>
+</head>
+<body>
+    {# The iframe loads the static file from public/map/map.html #}
+    <iframe id="map-frame" src="{{ asset('map/map.html') }}" onload="injectData()"></iframe>
+
+    <script>
+        // The parcelles JSON built by PHP from the real DB
+        var PARCELLES_FROM_DB = {{ parcellesJson|raw }};
+
+        function injectData() {
+            var frame = document.getElementById('map-frame');
+            try {
+                var win = frame.contentWindow;
+                // setParcelles() is the exact function map.html exposes (same as Java called it)
+                if (win && typeof win.setParcelles === 'function') {
+                    win.setParcelles(JSON.stringify(PARCELLES_FROM_DB));
+                } else {
+                    setTimeout(function() {
+                        if (typeof win.setParcelles === 'function') {
+                            win.setParcelles(JSON.stringify(PARCELLES_FROM_DB));
+                        }
+                    }, 500);
+                }
+            } catch(e) {
+                console.warn('Map inject error:', e);
+            }
+        }
+    </script>
+</body>
+</html>

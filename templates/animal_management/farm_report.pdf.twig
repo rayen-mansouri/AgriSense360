@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:10px}.section-title{font-weight:bold;margin:12px 0 6px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4px;text-align:left}th{background:#43a047;color:#fff}</style></head><body>
+<h2>AgriSense 360 - Rapport General de la Ferme</h2>
+<p>Date : {{ generatedAt|date('Y-m-d') }} | Animaux : {{ animalRows|length }}</p>
+{% if includeSummary %}<div class="section-title">Resume</div><p>Total: {{ summary.totalAnimals }}, Vaccines: {{ summary.vaccinated }} ({{ summary.vaccinatedPercent }}%), Dossiers: {{ summary.recordsCount }}</p>{% endif %}
+{% if includeAllAnimals %}<div class="section-title">Tous les animaux</div><table><thead><tr><th>#Boucle</th><th>Type</th><th>Poids</th><th>Sante</th><th>Emplacement</th><th>Vaccine</th></tr></thead><tbody>{% for animal in animalRows %}<tr><td>{{ animal.earTag }}</td><td>{{ animal.type }}</td><td>{{ animal.weight }}</td><td>{{ animal.healthStatus }}</td><td>{{ animal.location }}</td><td>{{ animal.vaccinated }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+{% if includeAtRisk %}<div class="section-title">Animaux a risque</div><table><thead><tr><th>#Boucle</th><th>Type</th><th>Sante</th></tr></thead><tbody>{% for animal in atRiskRows %}<tr><td>{{ animal.earTag }}</td><td>{{ animal.type }}</td><td>{{ animal.healthStatus }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+{% if includeRecentRecords %}<div class="section-title">Dossiers recents</div><table><thead><tr><th>#Boucle</th><th>Date</th><th>Condition</th><th>Notes</th></tr></thead><tbody>{% for record in recentRecordRows %}<tr><td>{{ record.earTag }}</td><td>{{ record.recordDate }}</td><td>{{ record.condition }}</td><td>{{ record.notes }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+</body></html>

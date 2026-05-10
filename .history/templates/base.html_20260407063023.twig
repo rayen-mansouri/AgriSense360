@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agrisens 360 - Gestion Agricole{% endblock %}</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="{{ asset('css/agrisens.css') }}">
+    
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="main-header">
+        <div class="header-container">
+            <!-- Logo -->
+            <div class="logo">
+                <i class="fa-solid fa-seedling"></i>
+                <span>Agrisens 360</span>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="main-nav">
+                <a href="{{ path('gestion_home') }}" class="{{ app.request.attributes.get('_route') in ['gestion_home', 'admin'] ? 'active' : '' }}">
+                    <i class="fa-solid fa-chart-pie"></i> Tableau de bord
+                </a>
+                <a href="{{ path('produit_index') }}" class="{{ app.request.attributes.get('_route') == 'produit_index' ? 'active' : '' }}">
+                    <i class="fa-solid fa-leaf"></i> Mes Produits
+                </a>
+                <a href="{{ path('produit_new') }}" class="{{ app.request.attributes.get('_route') == 'produit_new' ? 'active' : '' }}">
+                    <i class="fa-solid fa-plus"></i> Nouveau Produit
+                </a>
+                <a href="{{ path('stock_new') }}" class="{{ app.request.attributes.get('_route') == 'stock_new' ? 'active' : '' }}">
+                    <i class="fa-solid fa-boxes-stacked"></i> Nouveau Stock
+                </a>
+            </nav>
+
+            <!-- Recherche + Utilisateur -->
+            <div class="header-right">
+                <form action="{{ path('produit_index') }}" method="GET" class="search-form">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" name="q" placeholder="Rechercher un produit..." value="{{ app.request.query.get('q') }}">
+                </form>
+                
+                <div class="user-profile">
+                    <i class="fa-solid fa-user-circle"></i>
+                    <span>Agriculteur</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="main-content">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash-{{ label }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <p>&copy; 2026 Agrisens 360 - Gestion Intelligente des Produits et Stocks Agricoles</p>
+        </div>
+    </footer>
+
+    {% block javascripts %}{% endblock %}
+</body>
+</html>

@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Service\OracleSqlPlusCrudService;
+use App\Service\PdoCrudService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,57 +25,59 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/auth/login', name: 'auth_login', methods: ['GET', 'POST'])]
-    public function login(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
+    public function login(Request $request, PdoCrudService $crudService): Response
     {
         $mode = $this->normalizeMode((string) $request->query->get('mode', 'user'));
 
         if ($request->isMethod('POST')) {
             $email = trim((string) $request->request->get('email'));
             $password = (string) $request->request->get('password');
+            $fieldErrors = $this->validateLoginInput($email, $password);
 
-            if ($email === '' || $password === '') {
+            if ($fieldErrors !== []) {
                 return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
                     'email' => $email,
-                ], 'Email and password are required.');
+                ], 'Please fix the highlighted fields.', $fieldErrors);
             }
 
             try {
-                $user = $oracleCrud->findUserByEmail($email);
+                $user = $crudService->findUserByEmail($email);
             } catch (\Throwable $e) {
                 return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
                     'email' => $email,
-                ], 'Unable to access user database: ' . $e->getMessage());
+                ], 'Unable to access user database: ' . $e->getMessage(), []);
             }
 
             if (!$user || !password_verify($password, (string) ($user['passwordHash'] ?? ''))) {
                 return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
                     'email' => $email,
-                ], 'Invalid credentials.');
+                ], 'Invalid credentials.', []);
             }
 
             if (strtolower((string) ($user['status'] ?? 'active')) !== 'active') {
                 return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
                     'email' => $email,
-                ], 'Account is not active.');
+                ], 'Account is not active.', []);
             }
 
             $isAdmin = $this->isAdminRole((string) ($user['roleName'] ?? 'user'));
             if ($mode === 'admin' && !$isAdmin) {
                 return $this->renderAuthForm($mode, 'login', 'Admin Login', 'User Login', 'Log In', [
                     'email' => $email,
-                ], 'This account is not an admin account.');
+                ], 'This account is not an admin account.', []);
             }
 
             if ($mode === 'user' && $isAdmin) {
                 return $this->renderAuthForm('admin', 'login', 'Admin Login', 'User Login', 'Log In', [
                     'email' => $email,
-                ], 'Use admin mode for this account.');
+                ], 'Use admin mode for this account.', []);
             }
 
             $session = $request->getSession();
             $session->set('auth_user_id', (int) $user['id']);
             $session->set('auth_role', $isAdmin ? 'admin' : 'user');
             $session->set('auth_user_name', trim((string) ($user['firstName'] . ' ' . $user['lastName'])));
+            $session->set('auth_transition', true);
 
             return $this->redirectToRoute($isAdmin ? 'admin_home' : 'home');
         }
@@ -83,7 +86,7 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/auth/signup', name: 'auth_signup', methods: ['GET', 'POST'])]
-    public function signup(Request $request, OracleSqlPlusCrudService $oracleCrud): Response
+    public function signup(Request $request, PdoCrudService $crudService): Response
     {
         $mode = $this->normalizeMode((string) $request->query->get('mode', 'user'));
 
@@ -92,27 +95,28 @@ final class AuthController extends AbstractController
             $lastName = trim((string) $request->request->get('last_name'));
             $email = trim((string) $request->request->get('email'));
             $password = (string) $request->request->get('password');
+            $fieldErrors = $this->validateSignupInput($firstName, $lastName, $email, $password);
 
-            if ($firstName === '' || $lastName === '' || $email === '' || $password === '') {
+            if ($fieldErrors !== []) {
                 return $this->renderAuthForm($mode, 'signup', 'Admin Sign Up', 'User Sign Up', 'Sign Up', [
                     'firstName' => $firstName,
                     'lastName' => $lastName,
                     'email' => $email,
-                ], 'All fields are required.');
+                ], 'Please fix the highlighted fields.', $fieldErrors);
             }
 
             try {
-                $existingUser = $oracleCrud->findUserByEmail($email);
+                $existingUser = $crudService->findUserByEmail($email);
                 if ($existingUser) {
                     return $this->renderAuthForm($mode, 'signup', 'Admin Sign Up', 'User Sign Up', 'Sign Up', [
                         'firstName' => $firstName,
                         'lastName' => $lastName,
                         'email' => $email,
-                    ], 'Email already exists.');
+                    ], 'Email already exists.', ['email' => 'Use a different email address.']);
                 }
 
                 $roleName = $mode === 'admin' ? 'ADMIN' : 'USER';
-                $oracleCrud->createUser([
+                $crudService->createUser([
                     'lastName' => $lastName,
                     'firstName' => $firstName,
                     'email' => $email,
@@ -121,7 +125,7 @@ final class AuthController extends AbstractController
                     'roleName' => $roleName,
                 ]);
 
-                $newUser = $oracleCrud->findUserByEmail($email);
+                $newUser = $crudService->findUserByEmail($email);
                 if (!$newUser) {
                     throw new \RuntimeException('Unable to load newly created account.');
                 }
@@ -131,6 +135,7 @@ final class AuthController extends AbstractController
                 $session->set('auth_user_id', (int) $newUser['id']);
                 $session->set('auth_role', $isAdmin ? 'admin' : 'user');
                 $session->set('auth_user_name', trim((string) ($newUser['firstName'] . ' ' . $newUser['lastName'])));
+                $session->set('auth_transition', true);
 
                 return $this->redirectToRoute($isAdmin ? 'admin_home' : 'home');
             } catch (\Throwable $e) {
@@ -138,7 +143,7 @@ final class AuthController extends AbstractController
                     'firstName' => $firstName,
                     'lastName' => $lastName,
                     'email' => $email,
-                ], 'Unable to create account: ' . $e->getMessage());
+                ], 'Unable to create account: ' . $e->getMessage(), []);
             }
         }
 
@@ -165,6 +170,7 @@ final class AuthController extends AbstractController
 
     /**
      * @param array{firstName?:string,lastName?:string,email?:string} $formValues
+     * @param array<string, string> $fieldErrors
      */
     private function renderAuthForm(
         string $mode,
@@ -173,7 +179,8 @@ final class AuthController extends AbstractController
         string $userTitle,
         string $submitLabel,
         array $formValues = [],
-        ?string $errorMessage = null
+        ?string $errorMessage = null,
+        array $fieldErrors = []
     ): Response {
         return $this->render('auth/form.html.twig', [
             'mode' => $mode,
@@ -182,6 +189,57 @@ final class AuthController extends AbstractController
             'submitLabel' => $submitLabel,
             'formValues' => $formValues,
             'errorMessage' => $errorMessage,
+            'fieldErrors' => $fieldErrors,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function validateLoginInput(string $email, string $password): array
+    {
+        $errors = [];
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Use a valid email format, for example name@example.com.';
+        }
+
+        if ($password === '') {
+            $errors['password'] = 'Password is required.';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function validateSignupInput(string $firstName, string $lastName, string $email, string $password): array
+    {
+        $errors = [];
+        $namePattern = '/^[a-zA-Z][a-zA-Z\s\-\']{1,59}$/';
+
+        if ($firstName === '' || !preg_match($namePattern, $firstName)) {
+            $errors['first_name'] = 'First name must be 2-60 letters and may include spaces or hyphens.';
+        }
+
+        if ($lastName === '' || !preg_match($namePattern, $lastName)) {
+            $errors['last_name'] = 'Last name must be 2-60 letters and may include spaces or hyphens.';
+        }
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 180) {
+            $errors['email'] = 'Use a valid email under 180 characters.';
+        }
+
+        if (strlen($password) < 8 || strlen($password) > 72
+            || !preg_match('/[A-Z]/', $password)
+            || !preg_match('/[a-z]/', $password)
+            || !preg_match('/\d/', $password)
+            || !preg_match('/[^a-zA-Z\d]/', $password)
+        ) {
+            $errors['password'] = 'Password must be 8-72 chars with upper, lower, number, and symbol.';
+        }
+
+        return $errors;
     }
 }

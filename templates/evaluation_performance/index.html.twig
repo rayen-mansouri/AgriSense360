@@ -1,0 +1,285 @@
+{% extends 'management/layout.html.twig' %}
+
+{% block title %}Gestion des Évaluations de Performance{% endblock %}
+{% block eyebrow %}Gestion d'Ouvrier{% endblock %}
+{% block heading %}Gestion des Évaluations de Performance{% endblock %}
+{% block subhead %}Évaluez et suivez la performance des ouvriers.{% endblock %}
+
+{% set active_tab = 'evaluation' %}
+
+{% block topbar_actions %}
+    <a href="{{ path('evaluation_performance_new') }}" class="primary">+ Nouvelle Évaluation</a>
+{% endblock %}
+
+{% block management_content %}
+<section class="worker-management">
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">✓ {{ message }}</div>
+    {% endfor %}
+
+    <div class="list-section">
+        <h2>Liste des évaluations</h2>
+
+        <div class="list-controls">
+            <div class="search-box">
+                <input type="search" id="searchInput" placeholder="🔍 Rechercher..." class="form-control">
+            </div>
+            <div class="filter-controls">
+                <label>Trier par:</label>
+                <select id="sortSelect" class="form-control">
+                    <option value="">Récent au plus ancien</option>
+                    <option value="asc">Plus ancien au récent</option>
+                </select>
+                <button class="btn btn-reset">↻ Réinitialiser</button>
+            </div>
+        </div>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID Eval</th>
+                    <th>ID Affect.</th>
+                    <th>Note</th>
+                    <th>Qualité</th>
+                    <th>Commentaire</th>
+                    <th>Date eval.</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% if evaluations|length > 0 %}
+                    {% for evaluation in evaluations %}
+                    <tr class="data-row">
+                        <td><strong>#{{ evaluation.id_evaluation }}</strong></td>
+                        <td>
+                            {% if evaluation.affectationTravail %}
+                                {{ evaluation.affectationTravail.id_affectation }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ evaluation.note }}/5</strong>
+                            {% if evaluation.note >= 4 %}
+                                <span class="status-badge status-done">Bon</span>
+                            {% elseif evaluation.note >= 3 %}
+                                <span class="status-badge status-active">Moyen</span>
+                            {% else %}
+                                <span class="status-badge status-error">Faible</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ evaluation.qualite ?? '-' }}</td>
+                        <td>{{ evaluation.commentaire ? evaluation.commentaire|slice(0, 30) ~ (evaluation.commentaire|length > 30 ? '...' : '') : '-' }}</td>
+                        <td>{{ evaluation.dateEvaluation ? evaluation.dateEvaluation|date('Y-m-d') : '-' }}</td>
+                        <td class="actions-cell">
+                            <a href="{{ path('evaluation_performance_show', {'id_evaluation': evaluation.id_evaluation}) }}" class="action-link action-view" title="Voir">👁️</a>
+                            <a href="{{ path('evaluation_performance_edit', {'id_evaluation': evaluation.id_evaluation}) }}" class="action-link action-edit" title="Modifier">✏️</a>
+                            <form method="POST" action="{{ path('evaluation_performance_delete', {'id_evaluation': evaluation.id_evaluation}) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette évaluation ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ evaluation.id_evaluation) }}">
+                                <button type="submit" class="action-link action-delete" title="Supprimer">🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: #999;">
+                            <p>Aucune évaluation trouvée</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<style>
+.worker-management {
+    padding: 20px;
+    max-width: 1400px;
+}
+
+.list-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.list-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.list-controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 250px;
+}
+
+.search-box input {
+    width: 100%;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-controls label {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.filter-controls select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.data-table thead {
+    background: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+}
+
+.data-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.actions-cell {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.action-link {
+    display: inline-block;
+    padding: 6px 10px;
+    margin: 0 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.action-view:hover, .action-edit:hover, .action-delete:hover {
+    transform: scale(1.2);
+    opacity: 0.8;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+.status-active { background: #d1ecf1; color: #0c5460; }
+.status-done { background: #d4edda; color: #155724; }
+.status-error { background: #f8d7da; color: #721c24; }
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-reset {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.btn-reset:hover {
+    background: #d0d0d0;
+}
+
+.form-control {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #9C27B0;
+    box-shadow: 0 0 5px rgba(156, 39, 176, 0.2);
+}
+</style>
+
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#tableBody .data-row');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+document.getElementById('sortSelect').addEventListener('change', function() {
+    const rows = Array.from(document.querySelectorAll('#tableBody .data-row'));
+    const tbody = document.getElementById('tableBody');
+    if (this.value === 'asc') {
+        rows.reverse();
+    }
+    rows.forEach(row => tbody.appendChild(row));
+});
+
+document.querySelector('.btn-reset').addEventListener('click', function() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('sortSelect').value = '';
+    document.querySelectorAll('#tableBody .data-row').forEach(row => {
+        row.style.display = '';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="{{ app.request.locale }}">
+<head>
+<meta charset="UTF-8">
+<style>
+    body{margin:0;padding:0;background:#f4f9f1;font-family:Arial,sans-serif;}
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f9f1;padding:40px 16px;">
+<tr><td align="center">
+<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(46,107,46,.10);max-width:520px;width:100%;">
+    <tr><td style="height:5px;background:linear-gradient(90deg,#2d6a2d,#3e8e3e,#81c784);font-size:0;">&nbsp;</td></tr>
+    <tr>
+        <td align="center" style="background:#2d6a2d;padding:28px 40px;">
+            <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#fff;">🌱 AgriSense 360</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:4px;">{{ 'Agriculture Intelligente'|trans }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:36px 44px 32px;">
+            <p style="font-size:16px;font-weight:700;color:#1e3a1e;margin:0 0 14px;">{{ 'reset_password.email.hello'|trans({'%userName%': userName}) }}</p>
+            <p style="font-size:14px;color:#4a6741;line-height:1.7;margin:0 0 28px;">
+                {{ 'reset_password.email.requested'|trans }}<br>
+                {{ 'reset_password.email.code_is'|trans }}
+            </p>
+
+            <!-- BIG CODE BOX -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+                <tr><td align="center">
+                    <div style="display:inline-block;background:#f4f9f1;border:2px solid #3e8e3e;border-radius:16px;padding:20px 40px;">
+                        <div style="font-size:42px;font-weight:900;letter-spacing:10px;color:#2d6a2d;font-family:Georgia,serif;">
+                            {{ code }}
+                        </div>
+                    </div>
+                </td></tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                <tr><td style="background:#fff8ec;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:12px 16px;">
+                    <p style="font-size:13px;color:#92400e;margin:0;">{{ 'reset_password.email.expires'|trans }}</p>
+                </td></tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+                <tr><td style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;">
+                    <p style="font-size:13px;color:#1e40af;margin:0;">{{ 'reset_password.email.ignore'|trans }}</p>
+                </td></tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td style="background:#f4f9f1;border-top:1px solid #dde8d8;padding:18px 44px;text-align:center;">
+            <p style="font-size:12px;color:#9bb79b;margin:0;">{{ 'reset_password.email.footer'|trans({'%year%': "now"|date("Y")}) }}</p>
+        </td>
+    </tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

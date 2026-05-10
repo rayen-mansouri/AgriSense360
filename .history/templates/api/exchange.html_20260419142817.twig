@@ -1,0 +1,212 @@
+{# templates/api/exchange.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Taux de Change & Prix - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">💱 Taux de Change & Prix des produits</h1>
+        <p class="page-subtitle">Conversion des prix en devises étrangères</p>
+    </div>
+</div>
+
+<!-- SECTION 1 : CONVERTISSEUR -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#2196f3;color:white">
+            <i class="fa-solid fa-money-bill-wave"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">Convertisseur de devises</h2>
+            <p class="form-card-subtitle">Convertissez un montant en TND vers une autre devise</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;">
+            <div>
+                <label>Montant (TND)</label>
+                <input type="number" id="amount" class="form-control" value="100" step="10" style="width: 180px;">
+            </div>
+            <div>
+                <label>Devise cible</label>
+                <select id="currency" class="form-control" style="width: 200px;">
+                    <option value="EUR">🇪🇺 EUR - Euro</option>
+                    <option value="USD">🇺🇸 USD - Dollar US</option>
+                    <option value="GBP">🇬🇧 GBP - Livre Sterling</option>
+                    <option value="CAD">🇨🇦 CAD - Dollar Canadien</option>
+                    <option value="JPY">🇯🇵 JPY - Yen Japonais</option>
+                    <option value="CHF">🇨🇭 CHF - Franc Suisse</option>
+                    <option value="CNY">🇨🇳 CNY - Yuan Chinois</option>
+                    <option value="DZD">🇩🇿 DZD - Dinar Algérien</option>
+                    <option value="MAD">🇲🇦 MAD - Dirham Marocain</option>
+                </select>
+            </div>
+            <div>
+                <button id="convertBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-calculator"></i> Convertir
+                </button>
+            </div>
+        </div>
+        
+        <div id="result" style="margin-top: 25px; padding: 20px; background: #e8f5e9; border-radius: 12px; text-align: center;">
+            <h2 id="convertedAmount" style="font-size: 32px; margin: 0;">-</h2>
+            <p id="rateInfo" style="margin-top: 8px; color: #666;"></p>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2 : TAUX DE CHANGE -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">Taux de change du jour</h2>
+            <p class="form-card-subtitle">1 TND = ?</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div id="ratesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;"></div>
+    </div>
+</div>
+
+<!-- SECTION 3 : PRIX DES PRODUITS CONVERTIS -->
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#5a9814;color:white">
+            <i class="fa-solid fa-tags"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">Prix des produits</h2>
+            <p class="form-card-subtitle">Prix en TND, EUR et USD</p>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table" id="productsTable">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Catégorie</th>
+                    <th>Prix (TND)</th>
+                    <th>Prix (EUR)</th>
+                    <th>Prix (USD)</th>
+                    <th>Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produit in produits %}
+                <tr>
+                    <td><strong>{{ produit.nom }}</strong></td>
+                    <td>{{ produit.categorie }}</td>
+                    <td style="font-weight: bold; color: #5a9814;">{{ produit.prixUnitaire }} DT</td>
+                    <td class="price-eur" data-price="{{ produit.prixUnitaire }}">-</td>
+                    <td class="price-usd" data-price="{{ produit.prixUnitaire }}">-</td>
+                    <td>
+                        {% set stock = produit.stockActuel %}
+                        {% if stock %}
+                            {{ stock.quantiteActuelle }} {{ stock.uniteMesure }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Drapeaux par devise
+const flags = {
+    'EUR': '🇪🇺', 'USD': '🇺🇸', 'GBP': '🇬🇧', 'CAD': '🇨🇦', 'JPY': '🇯🇵',
+    'CHF': '🇨🇭', 'CNY': '🇨🇳', 'DZD': '🇩🇿', 'MAD': '🇲🇦', 'TND': '🇹🇳'
+};
+
+let currentRates = {};
+
+// Récupérer les taux de change
+function fetchRates() {
+    fetch('/api/exchange/rates')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentRates = data.rates;
+                
+                // Afficher les taux
+                let html = '';
+                const currencies = ['EUR', 'USD', 'GBP', 'CAD', 'JPY', 'CHF', 'CNY', 'DZD', 'MAD'];
+                
+                for (const currency of currencies) {
+                    const rate = currentRates[currency];
+                    if (rate) {
+                        html += `
+                            <div style="background: #f5f5f5; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 28px;">${flags[currency] || '🌍'}</span>
+                                <div style="flex: 1;">
+                                    <strong>${currency}</strong>
+                                    <div style="font-size: 12px; color: #666;">1 TND = ${rate.toFixed(4)} ${currency}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                document.getElementById('ratesList').innerHTML = html;
+                document.getElementById('rateInfo').innerHTML = `Taux mis à jour le ${data.date} | Source: ExchangeRate-API`;
+                
+                // Mettre à jour les prix des produits
+                updateProductPrices();
+            }
+        });
+}
+
+// Mettre à jour les prix des produits
+function updateProductPrices() {
+    if (!currentRates.EUR || !currentRates.USD) return;
+    
+    document.querySelectorAll('.price-eur').forEach(el => {
+        const priceTND = parseFloat(el.getAttribute('data-price'));
+        const priceEUR = (priceTND / currentRates.EUR).toFixed(2);
+        el.innerHTML = `${priceEUR} €`;
+    });
+    
+    document.querySelectorAll('.price-usd').forEach(el => {
+        const priceTND = parseFloat(el.getAttribute('data-price'));
+        const priceUSD = (priceTND / currentRates.USD).toFixed(2);
+        el.innerHTML = `${priceUSD} $`;
+    });
+}
+
+// Conversion
+document.getElementById('convertBtn').addEventListener('click', function() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const currency = document.getElementById('currency').value;
+    const flag = flags[currency] || '🌍';
+    const rate = currentRates[currency];
+    
+    if (rate) {
+        const converted = (amount / rate).toFixed(2);
+        document.getElementById('convertedAmount').innerHTML = `${flag} ${converted} ${currency}`;
+    } else {
+        document.getElementById('convertedAmount').innerHTML = 'Taux non disponible';
+    }
+});
+
+// Initialisation
+fetchRates();
+
+// Rafraîchir toutes les heures
+setInterval(fetchRates, 3600000);
+</script>
+
+<style>
+.data-table td, .data-table th {
+    padding: 12px;
+}
+</style>
+{% endblock %}

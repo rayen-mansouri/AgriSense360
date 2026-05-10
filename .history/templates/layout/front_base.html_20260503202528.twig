@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agrisens 360 — Agriculture Intelligente{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- CSS principal -->
+    <!--link rel="stylesheet" href="/css/agrisens.css"-->
+        <link rel="stylesheet" href="/assets//agrisens.css">
+
+    
+    <style>
+        /* Styles pour les menus déroulants */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #e8f5e9;
+            color: #5a9814;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-btn {
+            background: none;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        
+        .dropdown-btn:hover {
+            background: #e8f5e9;
+            color: #5a9814;
+        }
+        
+        /* Menu principal */
+        .front-nav {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Séparateur */
+        .nav-divider {
+            width: 1px;
+            height: 30px;
+            background: #e0e0e0;
+            margin: 0 5px;
+        }
+    </style>
+    
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+
+<!-- HEADER FRONT -->
+<header class="front-header">
+    <div class="front-header-container">
+        <a href="{{ path('front_accueil') }}" class="front-logo">
+            <i class="fa-solid fa-seedling"></i>
+            <span>Agrisens 360</span>
+        </a>
+
+        <nav class="front-nav">
+            <!-- ACCUEIL - lien direct -->
+            <a href="{{ path('front_accueil') }}" class="{{ app.request.attributes.get('_route') == 'front_accueil' ? 'active' : '' }}">
+                <i class="fa-solid fa-house"></i> Accueil
+            </a>
+            
+            <div class="nav-divider"></div>
+            
+            <!-- DROPDOWN : Mes Stocks & Mes Produits -->
+            <div class="dropdown">
+                <button class="dropdown-btn">
+                    <i class="fa-solid fa-box"></i> Mon espace <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-content">
+                    <a href="{{ path('front_stock_list') }}">
+                        <i class="fa-solid fa-warehouse"></i> Mes Stocks
+                    </a>
+                    <a href="{{ path('front_catalogue') }}">
+                        <i class="fa-solid fa-leaf"></i> Mes Produits
+                    </a>
+                </div>
+            </div>
+            
+            <!-- DROPDOWN : Outils -->
+            <div class="dropdown">
+                <button class="dropdown-btn">
+                    <i class="fa-solid fa-tools"></i> Outils <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-content">
+                    <a href="{{ path('front_scanner') }}">
+                        <i class="fa-solid fa-camera"></i> Scanner code-barres
+                    </a>
+                    <a href="{{ path('front_exchange') }}">
+                        <i class="fa-solid fa-money-bill-wave"></i> Taux de change
+                    </a>
+                    <a href="{{ path('front_commodity') }}">
+                        <i class="fa-solid fa-chart-line"></i> Prix matières premières
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="front-header-right">
+            <form action="{{ path('front_catalogue') }}" method="GET" class="front-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="q" placeholder="Rechercher...">
+            </form>
+            <div class="front-user">
+                <i class="fa-solid fa-user"></i>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- FLASH MESSAGES -->
+<div class="flash-container">
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="flash flash-{{ label }}">
+                <i class="fa-solid {{ label == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
+                {{ message }}
+                <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="front-main">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- FOOTER -->
+<footer class="front-footer">
+    <div class="front-footer-container">
+        <div class="front-footer-logo">
+            <i class="fa-solid fa-seedling"></i>
+            <span>Agrisens 360</span>
+        </div>
+        <p>© {{ "now"|date("Y") }} — Solutions agricoles intelligentes</p>
+    </div>
+</footer>
+
+<script>
+// Auto-dismiss flash messages
+setTimeout(() => {
+    document.querySelectorAll('.flash').forEach(flash => {
+        flash.style.opacity = '0';
+        setTimeout(() => flash.remove(), 300);
+    });
+}, 5000);
+
+// Fermer les dropdowns quand on clique ailleurs
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-content').forEach(dropdown => {
+            dropdown.style.display = 'none';
+        });
+    }
+});
+
+// Garder les dropdowns ouverts au survol (optionnel)
+document.querySelectorAll('.dropdown').forEach(dropdown => {
+    dropdown.addEventListener('mouseenter', function() {
+        this.querySelector('.dropdown-content').style.display = 'block';
+    });
+    dropdown.addEventListener('mouseleave', function() {
+        this.querySelector('.dropdown-content').style.display = 'none';
+    });
+});
+</script>
+
+{% block javascripts %}{% endblock %}
+
+</body>
+</html>

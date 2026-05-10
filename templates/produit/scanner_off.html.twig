@@ -1,0 +1,169 @@
+{% extends 'base.html.twig' %}
+{% set activePage = 'scanner_off' %}
+{% set activeSection = 'main' %}
+
+{% block title %}Scanner OpenFoodFacts — Agrisens 360{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+<style>
+    .scanner-card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; padding: 32px; text-align: center; max-width: 600px; margin: 0 auto; }
+    .scanner-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--cbr); text-align: left; }
+    .scanner-icon { width: 44px; height: 44px; background: rgba(90,181,90,0.1); color: var(--g); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .scanner-title { font-size: 1.1rem; font-weight: 800; color: var(--ch3); margin: 0; }
+    .scanner-subtitle { font-size: 0.85rem; color: var(--cp); margin: 4px 0 0; }
+
+    #scanner-container { width: 100%; border-radius: 20px; overflow: hidden; border: 4px solid var(--cbr); background: #000; position: relative; aspect-ratio: 4/3; }
+    #scanner-container video { width: 100%; height: 100%; object-fit: cover; }
+    
+    .scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
+    .scanner-laser { position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: #e67e22; box-shadow: 0 0 10px #e67e22; animation: laser 2s infinite ease-in-out; }
+
+    @keyframes laser {
+        0%, 100% { transform: translateY(-100px); opacity: 0.2; }
+        50% { transform: translateY(100px); opacity: 1; }
+    }
+
+    .result-box { margin-top: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--cbr); border-radius: 16px; display: none; text-align: left; }
+    .result-box.active { display: block; animation: slideIn 0.3s ease; }
+
+    .off-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #e67e22; color: white; font-size: 0.7rem; font-weight: 800; margin-bottom: 8px; }
+    .product-img { width: 100px; height: 100px; border-radius: 12px; object-fit: cover; margin-bottom: 12px; border: 1px solid var(--cbr); }
+    
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .content-wrapper { padding-top: 20px !important; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <a href="{{ path('admin_stock_index') }}" class="btn btn-pale btn-sm" style="border-radius: 50px; padding: 6px 16px;"><i class="fa-solid fa-arrow-left"></i> Retour</a>
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            <div class="scanner-card">
+                <div class="scanner-header">
+                    <div class="scanner-icon" style="color: #e67e22; background: rgba(230,126,34,0.1);"><i class="fa-solid fa-globe"></i></div>
+                    <div>
+                        <h2 class="scanner-title">Scanner OpenFoodFacts</h2>
+                        <p class="scanner-subtitle">Recherchez des produits dans la base mondiale</p>
+                    </div>
+                </div>
+
+                <div id="scanner-container">
+                    <div class="scanner-overlay"></div>
+                    <div class="scanner-laser"></div>
+                </div>
+
+                <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: center;">
+                    <button id="start-scanner" class="btn btn-save" style="padding: 12px 32px; border-radius: 50px; background: #e67e22; border-color: #e67e22;">
+                        <i class="fa-solid fa-play"></i> Démarrer le Scan
+                    </button>
+                    <button id="stop-scanner" class="btn btn-danger" style="display:none; padding: 12px 32px; border-radius: 50px;">
+                        <i class="fa-solid fa-stop"></i> Arrêter
+                    </button>
+                </div>
+
+                <div id="scan-result" class="result-box">
+                    <div class="off-badge">OPENFOODFACTS DATA</div>
+                    <div id="scanned-info">
+                        <div id="loading-msg" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i> Recherche sur OpenFoodFacts...</div>
+                        <div id="product-details" style="display:none;">
+                            <div style="display:flex; gap:16px; align-items:flex-start;">
+                                <img id="prod-img" src="" class="product-img">
+                                <div>
+                                    <h3 id="prod-name" style="margin:0; font-size:1.1rem; color:var(--ch3);"></h3>
+                                    <p id="prod-brand" style="margin:4px 0; color:var(--cp); font-size:0.9rem;"></p>
+                                    <p id="prod-cat" style="margin:4px 0; color:var(--g); font-size:0.85rem; font-weight:700;"></p>
+                                </div>
+                            </div>
+                            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--cbr);">
+                                <button class="btn btn-save btn-sm" onclick="alert('Fonctionnalité d\'import bientôt disponible')">➕ Importer dans mon stock</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
+<script>
+    // Sidebar logic (reuse existing patterns)
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    toggleBtn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) sidebar.classList.toggle('open');
+        else { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded'); }
+    });
+
+    const html = document.documentElement;
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('agri-theme', next);
+    });
+
+    const startBtn = document.getElementById('start-scanner');
+    const stopBtn = document.getElementById('stop-scanner');
+    const scanResult = document.getElementById('scan-result');
+    const loadingMsg = document.getElementById('loading-msg');
+    const productDetails = document.getElementById('product-details');
+
+    startBtn.addEventListener('click', function() {
+        Quagga.init({
+            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#scanner-container'), constraints: { width: 640, height: 480, facingMode: "environment" } },
+            decoder: { readers: ["ean_reader", "ean_8_reader", "upc_reader", "code_128_reader"] }
+        }, function(err) {
+            if (err) { console.error(err); alert("Erreur caméra"); return; }
+            Quagga.start();
+            startBtn.style.display = 'none'; stopBtn.style.display = 'inline-block';
+        });
+
+        Quagga.onDetected(function(data) {
+            const code = data.codeResult.code;
+            scanResult.classList.add('active');
+            loadingMsg.style.display = 'block';
+            productDetails.style.display = 'none';
+
+            fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
+                .then(r => r.json())
+                .then(res => {
+                    loadingMsg.style.display = 'none';
+                    if (res.status === 1) {
+                        productDetails.style.display = 'block';
+                        document.getElementById('prod-img').src = res.product.image_front_small_url || 'https://via.placeholder.com/100?text=No+Image';
+                        document.getElementById('prod-name').innerText = res.product.product_name || 'Inconnu';
+                        document.getElementById('prod-brand').innerText = res.product.brands || 'Marque inconnue';
+                        document.getElementById('prod-cat').innerText = res.product.categories ? res.product.categories.split(',')[0] : 'Catégorie inconnue';
+                    } else {
+                        loadingMsg.innerHTML = '<span style="color:var(--danger);">Produit non trouvé sur OpenFoodFacts</span>';
+                        loadingMsg.style.display = 'block';
+                    }
+                })
+                .catch(() => {
+                    loadingMsg.innerHTML = '<span style="color:var(--danger);">Erreur de connexion</span>';
+                });
+        });
+    });
+
+    stopBtn.addEventListener('click', () => { Quagga.stop(); startBtn.style.display = 'inline-block'; stopBtn.style.display = 'none'; scanResult.classList.remove('active'); });
+</script>
+{% endblock %}
