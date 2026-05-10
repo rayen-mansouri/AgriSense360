@@ -10,6 +10,9 @@
         <ini name="error_reporting" value="-1"/>
         <server name="APP_ENV" value="test"/>
         <server name="KERNEL_CLASS" value="App\Kernel"/>
+        <server name="APP_SECRET" value="testsecretkey"/>
+        <server name="DATABASE_URL" value="mysql://root:@localhost:3306/agrisense-360"/>
+        <server name="DEFAULT_URI" value="http://localhost:8000"/>
     </php>
     <testsuites>
         <testsuite name="Project Test Suite">
