@@ -1,0 +1,46 @@
+{% extends 'layout/front_base.html.twig' %}
+
+{% block title %}{{ produit.nom }} - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="front-product-detail">
+    <div class="front-product-breadcrumb">
+        <a href="{{ path('front_accueil') }}">Accueil</a> >
+        <a href="{{ path('front_catalogue') }}">Catalogue</a> >
+        <span>{{ produit.nom }}</span>
+    </div>
+
+    <div class="front-product-card">
+        <div class="front-product-gallery">
+            {% if produit.photoUrl %}
+                <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}" class="front-product-image">
+            {% else %}
+                <div class="front-product-placeholder">
+                    <i class="fa-solid fa-seedling"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="front-product-info">
+            <h1 class="front-product-title">{{ produit.nom }}</h1>
+            <span class="front-product-category"><i class="fa-solid fa-tag"></i> {{ produit.categorie }}</span>
+            
+            <div class="front-product-description">
+                <h3>Description</h3>
+                <p>{{ produit.description|default('Aucune description disponible.') }}</p>
+            </div>
+
+            <div class="front-product-price">
+                <span class="price-label">Prix unitaire</span>
+                <span class="price-value">{{ produit.prixUnitaire }} DT</span>
+            </div>
+
+            
+
+            
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

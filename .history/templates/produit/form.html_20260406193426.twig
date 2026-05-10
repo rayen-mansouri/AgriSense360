@@ -1,0 +1,297 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h1>{{ title }}</h1>
+        <p class="page-subtitle">{{ subtitle }}</p>
+    </div>
+
+    {{ form_start(form, {'attr': {'id': 'produitForm', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+
+    <div class="card">
+        <div class="form-card-header">
+            <div class="form-card-icon"><i class="fa-solid fa-box"></i></div>
+            <div>
+                <h2 class="form-card-title">📦 Informations Produit</h2>
+                <p class="form-card-subtitle">Renseignez les détails du produit agricole</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group" id="group-categorie">
+                {{ form_label(form.produit.categorie, 'Catégorie *') }}
+                {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie'}}) }}
+                <div class="error-message" id="error-categorie"></div>
+            </div>
+
+            <div class="form-group" id="group-nom">
+                {{ form_label(form.produit.nom, 'Nom du produit *') }}
+                {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom'}}) }}
+                <div class="error-message" id="error-nom"></div>
+            </div>
+
+            <div class="form-group full" id="group-description">
+                {{ form_label(form.produit.description, 'Description') }}
+                {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'id': 'description', 'rows': 4}}) }}
+            </div>
+
+            <div class="form-group" id="group-prix">
+                {{ form_label(form.produit.prixUnitaire, 'Prix unitaire (DT) *') }}
+                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix', 'step': '0.01'}}) }}
+                <div class="error-message" id="error-prix"></div>
+            </div>
+
+            <div class="form-group" id="group-photo">
+                {{ form_label(form.produit.photoFile, 'Photo du produit *') }}
+                <div class="file-upload-area" id="uploadArea">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Cliquez ou glissez une image ici</p>
+                    {{ form_widget(form.produit.photoFile, {'attr': {'class': 'file-input', 'id': 'photo_input', 'accept': 'image/*'}}) }}
+                </div>
+                <div id="image_preview" class="image-preview" style="display:none;">
+                    <img id="preview_img" src="" alt="Aperçu">
+                    <button type="button" class="preview-remove" id="removeBtn">×</button>
+                </div>
+                <div class="error-message" id="error-photo"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="form-card-header">
+            <div class="form-card-icon" style="background:#e3f2fd;color:#2196f3">
+                <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div>
+                <h2 class="form-card-title">📊 Stock Initial</h2>
+                <p class="form-card-subtitle">Configurez les informations de stock</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group" id="group-quantite">
+                {{ form_label(form.stock.quantiteActuelle, 'Quantité actuelle *') }}
+                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite', 'step': '0.01'}}) }}
+                <div class="error-message" id="error-quantite"></div>
+            </div>
+
+            <div class="form-group" id="group-seuil">
+                {{ form_label(form.stock.seuilAlerte, "Seuil d'alerte *") }}
+                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil', 'step': '0.01'}}) }}
+                <div class="error-message" id="error-seuil"></div>
+            </div>
+
+            <div class="form-group" id="group-unite">
+                {{ form_label(form.stock.uniteMesure, "Unité de mesure *") }}
+                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite'}}) }}
+                <div class="error-message" id="error-unite"></div>
+            </div>
+
+            <div class="form-group" id="group-dateReception">
+                {{ form_label(form.stock.dateReception, "Date de réception") }}
+                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control', 'id': 'dateReception'}}) }}
+            </div>
+
+            <div class="form-group" id="group-dateExpiration">
+                {{ form_label(form.stock.dateExpiration, "Date d'expiration") }}
+                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control', 'id': 'dateExpiration'}}) }}
+                <div class="error-message" id="error-dates"></div>
+            </div>
+
+            <div class="form-group full" id="group-emplacement">
+                {{ form_label(form.stock.emplacement, "Emplacement") }}
+                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control', 'id': 'emplacement', 'placeholder': 'Ex: Entrepôt A, Rayon 3'}}) }}
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a href="{{ path('home') }}" class="btn btn-secondary btn-lg">Annuler</a>
+        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+            <i class="fa-solid fa-check"></i> {{ btnLabel }}
+        </button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:9999;"></div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('produitForm');
+    const fileInput = document.getElementById('photo_input');
+    const uploadArea = document.getElementById('uploadArea');
+    const imagePreview = document.getElementById('image_preview');
+    const previewImg = document.getElementById('preview_img');
+    const removeBtn = document.getElementById('removeBtn');
+    let imageLoaded = false;
+
+    function showToast(message, type = 'error') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `background: ${type === 'error' ? '#dc3545' : '#28a745'}; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 10px; animation: slideIn 0.3s ease;`;
+        toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> ${message}`;
+        document.getElementById('toastContainer').appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    function showError(fieldId, message) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        const groupDiv = document.getElementById('group-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = `<div class="alert-bubble"><i class="fa-solid fa-circle-exclamation"></i> ${message}</div>`;
+            errorDiv.style.display = 'block';
+        }
+        if (groupDiv) {
+            const input = groupDiv.querySelector('input, select');
+            if (input) input.classList.add('input-error');
+        }
+    }
+
+    function clearError(fieldId) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        const groupDiv = document.getElementById('group-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+        }
+        if (groupDiv) {
+            const input = groupDiv.querySelector('input, select');
+            if (input) input.classList.remove('input-error');
+        }
+    }
+
+    // Upload image
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showError('photo', 'Format d\'image invalide');
+                this.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showError('photo', 'L\'image ne doit pas dépasser 5MB');
+                this.value = '';
+                return;
+            }
+            imageLoaded = true;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                clearError('photo');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            imageLoaded = false;
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+            showError('photo', 'La photo est obligatoire');
+        });
+    }
+
+    // Validation
+    function validateForm() {
+        let isValid = true;
+
+        // Catégorie
+        const categorie = document.getElementById('categorie');
+        if (!categorie.value) {
+            showError('categorie', 'Veuillez sélectionner une catégorie');
+            isValid = false;
+        } else {
+            clearError('categorie');
+        }
+
+        // Nom
+        const nom = document.getElementById('nom');
+        if (!nom.value.trim()) {
+            showError('nom', 'Le nom est obligatoire');
+            isValid = false;
+        } else if (nom.value.trim().length < 3) {
+            showError('nom', 'Minimum 3 caractères');
+            isValid = false;
+        } else {
+            clearError('nom');
+        }
+
+        // Prix
+        const prix = document.getElementById('prix');
+        const prixVal = parseFloat(prix.value);
+        if (!prix.value) {
+            showError('prix', 'Le prix est obligatoire');
+            isValid = false;
+        } else if (prixVal <= 0) {
+            showError('prix', 'Le prix doit être > 0');
+            isValid = false;
+        } else {
+            clearError('prix');
+        }
+
+        // Photo
+        if (!imageLoaded && (!fileInput.files || fileInput.files.length === 0)) {
+            showError('photo', 'La photo est obligatoire');
+            isValid = false;
+        } else {
+            clearError('photo');
+        }
+
+        // Stock
+        const quantite = parseFloat(document.getElementById('quantite').value || 0);
+        const unite = document.getElementById('unite').value;
+        if (quantite > 0 && !unite) {
+            showError('unite', 'Unité requise si quantité > 0');
+            isValid = false;
+        } else {
+            clearError('unite');
+        }
+
+        // Dates
+        const dateRec = document.getElementById('dateReception').value;
+        const dateExp = document.getElementById('dateExpiration').value;
+        if (dateRec && dateExp && new Date(dateExp) < new Date(dateRec)) {
+            showError('dates', 'La date d\'expiration doit être après la date de réception');
+            isValid = false;
+        } else {
+            clearError('dates');
+        }
+
+        if (!isValid) {
+            showToast('❌ Veuillez corriger les erreurs', 'error');
+        }
+
+        return isValid;
+    }
+
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            const firstError = document.querySelector('.input-error');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+
+    // Validation temps réel
+    document.getElementById('nom')?.addEventListener('input', () => clearError('nom'));
+    document.getElementById('prix')?.addEventListener('input', () => clearError('prix'));
+    document.getElementById('quantite')?.addEventListener('input', () => clearError('unite'));
+    document.getElementById('unite')?.addEventListener('change', () => clearError('unite'));
+});
+</script>
+{% endblock %}

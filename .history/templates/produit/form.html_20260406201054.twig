@@ -1,0 +1,276 @@
+{# templates/produit/form.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h1 style="font-size: 24px; margin: 0;">{{ title }}</h1>
+            <p style="color: #666; margin: 5px 0 0;">{{ subtitle }}</p>
+        </div>
+        <a href="{{ path('home') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Retour</a>
+    </div>
+
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'produitForm', enctype: 'multipart/form-data'}}) }}
+
+    <!-- Carte Produit -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+            <div style="width: 40px; height: 40px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 20px;">
+                <i class="fa-solid fa-box"></i>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; margin: 0;">📦 Informations Produit</h2>
+                <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Renseignez les détails du produit agricole</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Catégorie *</label>
+                {{ form_widget(form.produit.categorie, {'attr': {'class': 'form-control', 'id': 'categorie', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-categorie" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Nom du produit *</label>
+                {{ form_widget(form.produit.nom, {'attr': {'class': 'form-control', 'id': 'nom', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-nom" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div style="grid-column: span 2;">
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Description</label>
+                {{ form_widget(form.produit.description, {'attr': {'class': 'form-control', 'rows': 4, 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Prix unitaire (DT) *</label>
+                {{ form_widget(form.produit.prixUnitaire, {'attr': {'class': 'form-control', 'id': 'prix', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-prix" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Photo du produit *</label>
+                {{ form_widget(form.produit.photoFile, {'attr': {'id': 'photoInput', 'style': 'width:100%; padding:10px; border:1px solid #ddd; border-radius:10px;', 'accept': 'image/*'}}) }}
+                <div id="imagePreview" style="display: none; margin-top: 10px;">
+                    <img id="previewImg" style="max-width: 150px; border-radius: 8px; border: 2px solid #5a9814;">
+                    <button type="button" id="removeImageBtn" style="background: #dc3545; color: white; border: none; padding: 5px 12px; border-radius: 20px; cursor: pointer; margin-top: 8px; font-size: 12px;">✖ Supprimer</button>
+                </div>
+                <div id="error-photo" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte Stock -->
+    <div style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eef2f6;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+            <div style="width: 40px; height: 40px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 20px;">
+                <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div>
+                <h2 style="font-size: 18px; margin: 0;">📊 Stock Initial</h2>
+                <p style="font-size: 13px; color: #666; margin: 4px 0 0;">Optionnel</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Quantité actuelle</label>
+                {{ form_widget(form.stock.quantiteActuelle, {'attr': {'class': 'form-control', 'id': 'quantite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Seuil d'alerte</label>
+                {{ form_widget(form.stock.seuilAlerte, {'attr': {'class': 'form-control', 'id': 'seuil', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Unité de mesure</label>
+                {{ form_widget(form.stock.uniteMesure, {'attr': {'class': 'form-control', 'id': 'unite', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-unite" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Emplacement</label>
+                {{ form_widget(form.stock.emplacement, {'attr': {'class': 'form-control', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date de réception</label>
+                {{ form_widget(form.stock.dateReception, {'attr': {'class': 'form-control', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+            </div>
+
+            <div>
+                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px;">Date d'expiration</label>
+                {{ form_widget(form.stock.dateExpiration, {'attr': {'class': 'form-control', 'style': 'width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:10px;'}}) }}
+                <div id="error-dates" style="color: #dc3545; font-size: 12px; margin-top: 5px; min-height: 24px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+        <a href="{{ path('home') }}" style="padding: 10px 24px; background: #f0f2f5; border-radius: 30px; text-decoration: none; color: #4a5568; font-weight: 600;">Annuler</a>
+        <button type="submit" style="padding: 10px 24px; background: #5a9814; color: white; border: none; border-radius: 30px; font-weight: 600; cursor: pointer;">{{ btnLabel }}</button>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments
+    const photoInput = document.getElementById('photoInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const removeBtn = document.getElementById('removeImageBtn');
+    const form = document.getElementById('produitForm');
+    let hasImage = false;
+
+    console.log('Script chargé');
+
+    // Aperçu de l'image (l'input file est visible, pas besoin de clic spécial)
+    if (photoInput) {
+        photoInput.addEventListener('change', function() {
+            console.log('Fichier sélectionné');
+            const file = this.files[0];
+            if (file) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        hasImage = true;
+                        // Effacer l'erreur
+                        const errorDiv = document.getElementById('error-photo');
+                        if (errorDiv) errorDiv.innerHTML = '';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Veuillez sélectionner une image');
+                    this.value = '';
+                }
+            }
+        });
+    }
+
+    // Supprimer l'image
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            photoInput.value = '';
+            imagePreview.style.display = 'none';
+            hasImage = false;
+        });
+    }
+
+    // Afficher une erreur
+    function showError(fieldId, message) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '⚠️ ' + message;
+        }
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.style.borderColor = '#dc3545';
+            input.style.backgroundColor = '#fff8f8';
+        }
+    }
+
+    function clearError(fieldId) {
+        const errorDiv = document.getElementById('error-' + fieldId);
+        if (errorDiv) {
+            errorDiv.innerHTML = '';
+        }
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.style.borderColor = '';
+            input.style.backgroundColor = '';
+        }
+    }
+
+    // Validation
+    function validateForm() {
+        let isValid = true;
+
+        // Catégorie
+        const categorie = document.getElementById('categorie');
+        if (!categorie.value) {
+            showError('categorie', 'La catégorie est obligatoire');
+            isValid = false;
+        } else {
+            clearError('categorie');
+        }
+
+        // Nom
+        const nom = document.getElementById('nom');
+        if (!nom.value.trim()) {
+            showError('nom', 'Le nom est obligatoire');
+            isValid = false;
+        } else if (nom.value.trim().length < 3) {
+            showError('nom', 'Minimum 3 caractères');
+            isValid = false;
+        } else {
+            clearError('nom');
+        }
+
+        // Prix
+        const prix = document.getElementById('prix');
+        const prixVal = parseFloat(prix.value);
+        if (!prix.value) {
+            showError('prix', 'Le prix est obligatoire');
+            isValid = false;
+        } else if (prixVal <= 0) {
+            showError('prix', 'Le prix doit être > 0');
+            isValid = false;
+        } else {
+            clearError('prix');
+        }
+
+        // Photo
+        if (!hasImage && (!photoInput.files || photoInput.files.length === 0)) {
+            showError('photo', 'La photo est obligatoire');
+            isValid = false;
+        } else {
+            clearError('photo');
+        }
+
+        // Stock
+        const quantite = document.getElementById('quantite');
+        const unite = document.getElementById('unite');
+        if (quantite && parseFloat(quantite.value) > 0 && (!unite || !unite.value)) {
+            showError('unite', 'Unité requise');
+            isValid = false;
+        } else {
+            clearError('unite');
+        }
+
+        // Dates
+        const dateReception = document.getElementById('dateReception');
+        const dateExpiration = document.getElementById('dateExpiration');
+        if (dateReception && dateReception.value && dateExpiration && dateExpiration.value) {
+            if (new Date(dateExpiration.value) < new Date(dateReception.value)) {
+                showError('dates', 'Expiration après réception');
+                isValid = false;
+            } else {
+                clearError('dates');
+            }
+        }
+
+        return isValid;
+    }
+
+    // Soumission
+    form.addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+            alert('Veuillez corriger les erreurs');
+        }
+    });
+});
+</script>
+{% endblock %}

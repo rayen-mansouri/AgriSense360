@@ -1,0 +1,7 @@
+<div class="mgmt-tabs">
+    <a class="mgmt-tab {{ currentTab == 'animaux' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'animaux'}) }}">Animaux</a>
+    <a class="mgmt-tab {{ currentTab == 'dossiers' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'dossiers', animalId: selectedAnimal ? selectedAnimal.id : 0}|merge(visitLinkParams)) }}">Dossiers de Sante</a>
+    <a class="mgmt-tab {{ currentTab == 'options' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'options'}) }}">Options</a>
+    <a class="mgmt-tab {{ currentTab == 'predictor' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'predictor'}) }}">Condition Predictor</a>
+    <a class="mgmt-tab {{ currentTab == 'analytics' ? 'active' : '' }}" href="{{ path('animal_management_index', {tab: 'analytics'}) }}">Analytiques</a>
+</div>

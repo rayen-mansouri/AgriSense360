@@ -1,0 +1,55 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Modifier {{ produit.nom }} - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h1><i class="fa-solid fa-pen"></i> Modifier le Produit</h1>
+        <p>Produit : <strong>{{ produit.nom }}</strong></p>
+    </div>
+
+    {{ form_start(form, {'attr': {'class': 'beautiful-form'}}) }}
+
+    <div class="form-grid">
+        <div class="form-group">
+            {{ form_label(form.nom) }}
+            {{ form_widget(form.nom) }}
+            {{ form_errors(form.nom) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.categorie) }}
+            {{ form_widget(form.categorie) }}
+            {{ form_errors(form.categorie) }}
+        </div>
+
+        <div class="form-group full">
+            {{ form_label(form.description) }}
+            {{ form_widget(form.description) }}
+            {{ form_errors(form.description) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.prixUnitaire) }}
+            {{ form_widget(form.prixUnitaire) }}
+            {{ form_errors(form.prixUnitaire) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.photoFile, 'Nouvelle Photo (optionnel)') }}
+            {{ form_widget(form.photoFile) }}
+            {{ form_errors(form.photoFile) }}
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-save"></i> Enregistrer les Modifications
+        </button>
+        <a href="{{ path('produit_index') }}" class="btn btn-secondary btn-lg">Annuler</a>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}

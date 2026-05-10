@@ -1,0 +1,775 @@
+{% set activePage = 'parcelles' %}
+{% set activeSection = 'main' %}
+
+{% block title %}Historique — {{ parcelle.nom }}{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+
+    <main class="main">
+        <div style="padding: 30px;">
+
+
+{# ══════════════════════════════════════════════════════
+   PAGE HEADER
+   ══════════════════════════════════════════════════════ #}
+<div class="page-header">
+    <div class="page-header-left">
+        <p class="page-breadcrumb">
+            <a href="{{ path('app_home') }}">🏠 Accueil</a> /
+            <a href="{{ path('parcelle_index') }}">Parcelles</a> /
+            <a href="{{ path('parcelle_show', {id: parcelle.id}) }}">{{ parcelle.nom }}</a> /
+            Historique
+        </p>
+        <h1 class="page-title">📋 Historique — {{ parcelle.nom }}</h1>
+        <p class="page-subtitle">{{ historique|length }} événement(s) enregistré(s)</p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ path('parcelle_historique_export', {id: parcelle.id, type: typeFilter}) }}"
+           class="btn btn-export">
+            📥 Exporter Excel
+        </a>
+        <a href="{{ path('parcelle_show', {id: parcelle.id}) }}" class="btn btn-secondary">
+            ← Retour à la parcelle
+        </a>
+    </div>
+</div>
+
+{# ══════════════════════════════════════════════════════
+   STATS BAR
+   ══════════════════════════════════════════════════════ #}
+<div class="hist-stats-bar">
+    <a href="{{ path('parcelle_historique', {id: parcelle.id}) }}"
+       class="hist-stat-pill {% if typeFilter == '' %}active{% endif %}">
+        📋 Tous <span class="hist-stat-count">{{ stats.CULTURE_AJOUTEE + stats.CULTURE_MODIFIEE + stats.CULTURE_SUPPRIMEE + stats.RECOLTE }}</span>
+    </a>
+    <a href="{{ path('parcelle_historique', {id: parcelle.id, type: 'CULTURE_AJOUTEE'}) }}"
+       class="hist-stat-pill hist-green {% if typeFilter == 'CULTURE_AJOUTEE' %}active{% endif %}">
+        🌱 Ajouts <span class="hist-stat-count">{{ stats.CULTURE_AJOUTEE }}</span>
+    </a>
+    <a href="{{ path('parcelle_historique', {id: parcelle.id, type: 'CULTURE_MODIFIEE'}) }}"
+       class="hist-stat-pill hist-amber {% if typeFilter == 'CULTURE_MODIFIEE' %}active{% endif %}">
+        ✏️ Modifications <span class="hist-stat-count">{{ stats.CULTURE_MODIFIEE }}</span>
+    </a>
+    <a href="{{ path('parcelle_historique', {id: parcelle.id, type: 'CULTURE_SUPPRIMEE'}) }}"
+       class="hist-stat-pill hist-red {% if typeFilter == 'CULTURE_SUPPRIMEE' %}active{% endif %}">
+        🗑️ Suppressions <span class="hist-stat-count">{{ stats.CULTURE_SUPPRIMEE }}</span>
+    </a>
+    <a href="{{ path('parcelle_historique', {id: parcelle.id, type: 'RECOLTE'}) }}"
+       class="hist-stat-pill hist-teal {% if typeFilter == 'RECOLTE' %}active{% endif %}">
+        🌾 Récoltes <span class="hist-stat-count">{{ stats.RECOLTE }}</span>
+    </a>
+</div>
+
+{# ══════════════════════════════════════════════════════
+   IA RECOLTE SUMMARY — shown only when there are harvests
+   ══════════════════════════════════════════════════════ #}
+{% if stats.RECOLTE > 0 %}
+{% set recolteEntries = historique|filter(h => h.typeAction == 'RECOLTE') %}
+{% if recolteEntries|length > 0 %}
+<div class="ia-summary-banner">
+    <div class="ia-summary-icon">🤖</div>
+    <div class="ia-summary-content">
+        <div class="ia-summary-title">Synthèse IA des récoltes</div>
+        <div class="ia-summary-stats">
+            <div class="ia-summary-stat">
+                <span class="ia-summary-label">Total récolté</span>
+                <span class="ia-summary-value">
+                    {{ recolteEntries|map(h => h.quantiteRecolte ?? 0)|reduce((carry, v) => carry + v, 0)|number_format(1) }} kg
+                </span>
+            </div>
+            <div class="ia-summary-stat">
+                <span class="ia-summary-label">Récoltes effectuées</span>
+                <span class="ia-summary-value">{{ recolteEntries|length }}</span>
+            </div>
+            <div class="ia-summary-stat">
+                <span class="ia-summary-label">Superficie totale</span>
+                <span class="ia-summary-value">
+                    {{ recolteEntries|map(h => h.surface ?? 0)|reduce((carry, v) => carry + v, 0)|number_format(1) }} m²
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+{# ══════════════════════════════════════════════════════
+   HISTORIQUE TIMELINE
+   ══════════════════════════════════════════════════════ #}
+<div class="hist-timeline">
+
+    {% if historique is empty %}
+    <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">Aucun événement trouvé</div>
+        <div class="empty-subtitle">
+            {% if typeFilter %}
+                Aucun événement de type "{{ typeFilter }}" pour cette parcelle.
+                <a href="{{ path('parcelle_historique', {id: parcelle.id}) }}">Voir tous les événements</a>
+            {% else %}
+                Aucune action enregistrée pour cette parcelle.
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% for h in historique %}
+    <div class="hist-item {{ h.actionCssClass }}">
+
+        {# Timeline dot #}
+        <div class="hist-dot">{{ h.typeIcon }}</div>
+
+        {# Content card #}
+        <div class="hist-card {% if h.typeAction == 'RECOLTE' %}hist-card-recolte{% endif %}">
+
+            {# Card header #}
+            <div class="hist-card-header">
+                <div class="hist-card-left">
+                    <span class="hist-type-badge {{ h.actionCssClass }}">
+                        {{ h.typeIcon }} {{ h.typeLabelFr }}
+                    </span>
+                    {% if h.cultureNom %}
+                        <span class="hist-culture-name">{{ h.cultureNom }}</span>
+                    {% endif %}
+                    {% if h.typeCulture %}
+                        <span class="hist-type-culture">{{ h.typeCulture }}</span>
+                    {% endif %}
+                </div>
+                <div class="hist-card-date">
+                    <span class="hist-date-day">{{ h.dateAction|date('d/m/Y') }}</span>
+                    <span class="hist-date-time">{{ h.dateAction|date('H:i') }}</span>
+                </div>
+            </div>
+
+            {# ── RECOLTE special card ─────────────────────────────────── #}
+            {% if h.typeAction == 'RECOLTE' %}
+            <div class="hist-recolte-body">
+
+                {# Quantity highlight #}
+                <div class="hist-recolte-qty">
+                    <div class="hist-recolte-qty-icon">🌾</div>
+                    <div>
+                        <div class="hist-recolte-qty-label">Quantité récoltée (IA)</div>
+                        <div class="hist-recolte-qty-value">
+                            {{ h.quantiteRecolte is not null
+                                ? h.quantiteRecolte|number_format(2) ~ ' kg'
+                                : 'Non renseigné' }}
+                        </div>
+                    </div>
+                </div>
+
+                {# Meta grid #}
+                <div class="hist-recolte-meta">
+                    {% if h.surface %}
+                    <div class="hist-meta-item">
+                        <span class="hist-meta-label">Surface</span>
+                        <span class="hist-meta-value">{{ h.surface|number_format(1) }} m²</span>
+                    </div>
+                    {% endif %}
+                    {% if h.surface and h.quantiteRecolte %}
+                    <div class="hist-meta-item">
+                        <span class="hist-meta-label">Rendement/m²</span>
+                        <span class="hist-meta-value">
+                            {{ (h.quantiteRecolte / h.surface)|number_format(2) }} kg/m²
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if h.etatApres %}
+                    <div class="hist-meta-item">
+                        <span class="hist-meta-label">État final</span>
+                        <span class="hist-meta-value">{{ h.etatApres }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {# Description #}
+                {% if h.description %}
+                <div class="hist-description hist-description-recolte">
+                    {{ h.description }}
+                </div>
+                {% endif %}
+
+                {# ── IA Rapport button ─────────────────────────────────── #}
+                {% if h.rapport is defined and h.rapport %}
+                <button class="btn-rapport"
+                        onclick="openRapportModal(
+                            {{ h.cultureNom|json_encode }},
+                            {{ h.quantiteRecolte|json_encode }},
+                            {{ h.dateAction|date('d/m/Y')|json_encode }},
+                            {{ h.rapport|json_encode }}
+                        )">
+                    🤖 Voir le rapport IA
+                </button>
+                {% endif %}
+
+            </div>
+
+            {# ── All other event types ────────────────────────────────── #}
+            {% else %}
+            <div class="hist-standard-body">
+
+                {% if h.surface %}
+                <div class="hist-meta-row">
+                    <span class="hist-meta-label">Surface :</span>
+                    <span class="hist-meta-value">{{ h.surface|number_format(1) }} m²</span>
+                </div>
+                {% endif %}
+
+                {% if h.etatAvant or h.etatApres %}
+                <div class="hist-meta-row">
+                    <span class="hist-meta-label">État :</span>
+                    <span class="hist-meta-value">
+                        {% if h.etatAvant %}
+                            <span class="hist-etat-before">{{ h.etatAvant }}</span>
+                            <span class="hist-etat-arrow">→</span>
+                        {% endif %}
+                        {% if h.etatApres %}
+                            <span class="hist-etat-after">{{ h.etatApres }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+
+                {% if h.description %}
+                <div class="hist-description">{{ h.description }}</div>
+                {% endif %}
+
+            </div>
+            {% endif %}
+
+        </div>{# /hist-card #}
+    </div>{# /hist-item #}
+    {% endfor %}
+
+</div>{# /hist-timeline #}
+
+
+{# ══════════════════════════════════════════════════════
+   IA RAPPORT MODAL
+   ══════════════════════════════════════════════════════ #}
+<div id="rapportModal" class="rapport-modal-overlay" onclick="closeRapportModal(event)">
+    <div class="rapport-modal-box">
+
+        {# Header #}
+        <div class="rapport-modal-header">
+            <div class="rapport-modal-header-left">
+                <span class="rapport-modal-icon">🤖</span>
+                <div>
+                    <div class="rapport-modal-title">Rapport IA — Récolte</div>
+                    <div class="rapport-modal-subtitle" id="rapportSubtitle"></div>
+                </div>
+            </div>
+            <button class="rapport-modal-close" onclick="closeRapportModal()">✕</button>
+        </div>
+
+        {# Quantity badge #}
+        <div class="rapport-qty-badge">
+            <span class="rapport-qty-icon">🌾</span>
+            <div>
+                <div class="rapport-qty-label">Quantité estimée par l'IA</div>
+                <div class="rapport-qty-value" id="rapportQty">—</div>
+            </div>
+        </div>
+
+        {# Rapport text #}
+        <div class="rapport-body">
+            <div class="rapport-section-title">📋 Explication du résultat</div>
+            <div class="rapport-text" id="rapportText"></div>
+        </div>
+
+        {# Footer #}
+        <div class="rapport-modal-footer">
+            <span class="rapport-footer-note">
+                💡 Ce rapport est généré automatiquement par l'IA en fonction des données enregistrées pour cette culture.
+            </span>
+            <button class="btn-rapport-close" onclick="closeRapportModal()">Fermer</button>
+        </div>
+
+    </div>
+</div>
+
+
+{# ══════════════════════════════════════════════════════
+   CSS
+   ══════════════════════════════════════════════════════ #}
+<style>
+/* ── Stats bar ──────────────────────────────────────── */
+.hist-stats-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.hist-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: var(--cb);
+    border: 1px solid var(--cbr);
+    color: var(--ch3);
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.hist-stat-pill:hover, .hist-stat-pill.active {
+    background: var(--green-600, #3B6D11);
+    color: #fff;
+    border-color: var(--green-600, #3B6D11);
+}
+.hist-stat-pill.hist-amber { border-color: #fcd34d; }
+.hist-stat-pill.hist-red   { border-color: #fca5a5; }
+.hist-stat-pill.hist-teal  { border-color: #5DCAA5; }
+.hist-stat-count {
+    background: rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* ── Export button ──────────────────────────────────── */
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--green-600, #3B6D11);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.btn-export:hover {
+    background: var(--green-700, #27500A);
+    transform: translateY(-1px);
+}
+
+/* ── IA Summary banner ──────────────────────────────── */
+.ia-summary-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--cb);
+    border: 1px solid var(--cbr);
+    border-radius: 20px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+}
+.ia-summary-icon { font-size: 2rem; flex-shrink: 0; }
+.ia-summary-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--green-600, #3B6D11);
+    margin-bottom: 10px;
+}
+.ia-summary-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+.ia-summary-stat  { display: flex; flex-direction: column; }
+.ia-summary-label { font-size: 0.75rem; color: var(--text-light); }
+.ia-summary-value { font-size: 1.3rem; font-weight: 700; color: var(--text-dark); }
+
+/* ── Timeline ───────────────────────────────────────── */
+.hist-timeline { position: relative; padding-left: 32px; }
+.hist-timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--green-200, #bbf7d0);
+}
+.hist-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+.hist-dot {
+    position: absolute;
+    left: -32px;
+    top: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--pg);
+    border: 2px solid var(--g);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    z-index: 1;
+}
+.hist-item.hist-teal  .hist-dot { border-color: #5DCAA5; background: #E1F5EE; }
+.hist-item.hist-red   .hist-dot { border-color: #fca5a5; background: #fff5f5; }
+.hist-item.hist-amber .hist-dot { border-color: #fcd34d; background: #fffbeb; }
+
+/* ── History cards ──────────────────────────────────── */
+.hist-card {
+    background: var(--cb);
+    border: 1px solid var(--cbr);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.hist-card-recolte {
+    border-color: #5DCAA5;
+    box-shadow: 0 2px 8px rgba(29,158,117,0.12);
+}
+.hist-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--cbr);
+}
+.hist-card-recolte .hist-card-header {
+    background: #E1F5EE;
+    border-bottom-color: #5DCAA5;
+}
+.hist-card-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hist-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: rgba(0,0,0,0.05);
+}
+.hist-type-badge.hist-green  { background: #dcfce7; color: #166534; }
+.hist-type-badge.hist-amber  { background: #fef9c3; color: #854d0e; }
+.hist-type-badge.hist-red    { background: #fee2e2; color: #991b1b; }
+.hist-type-badge.hist-teal   { background: #ccfbf1; color: #134e4a; }
+.hist-culture-name {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+.hist-type-culture {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    padding: 2px 8px;
+    background: rgba(0,0,0,0.04);
+    border-radius: 10px;
+}
+.hist-card-date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+.hist-date-day  { font-size: 0.85rem; font-weight: 600; color: var(--text-dark); }
+.hist-date-time { font-size: 0.75rem; color: var(--text-light); }
+
+/* ── Récolte card body ──────────────────────────────── */
+.hist-recolte-body { padding: 16px; }
+.hist-recolte-qty {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--cbr);
+    border-radius: 15px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+.hist-recolte-qty-icon { font-size: 2rem; flex-shrink: 0; }
+.hist-recolte-qty-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-light);
+    margin-bottom: 2px;
+}
+.hist-recolte-qty-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--green-600, #3B6D11);
+    line-height: 1;
+}
+.hist-recolte-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+.hist-meta-item {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface2);
+    border: 1px solid var(--cbr);
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-width: 90px;
+}
+.hist-meta-label { font-size: 0.7rem; color: var(--text-light); font-weight: 600; }
+.hist-meta-value { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); margin-top: 2px; }
+
+/* ── Standard card body ─────────────────────────────── */
+.hist-standard-body { padding: 12px 16px; }
+.hist-meta-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.88rem;
+}
+.hist-etat-before { color: var(--text-light); }
+.hist-etat-arrow  { color: var(--text-light); }
+.hist-etat-after  { color: var(--green-600, #3B6D11); font-weight: 600; }
+
+/* ── Description text ───────────────────────────────── */
+.hist-description {
+    font-size: 0.83rem;
+    color: var(--text-light);
+    line-height: 1.5;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.02);
+    border-radius: 6px;
+    border-left: 3px solid var(--green-300, #86efac);
+    margin-top: 6px;
+}
+.hist-description-recolte {
+    border-left-color: #5DCAA5;
+    background: rgba(29,158,117,0.04);
+    color: var(--text-dark);
+}
+
+/* ── Rapport button (on harvest card) ───────────────── */
+.btn-rapport {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #1D9E75, #3B6D11);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.83rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+}
+.btn-rapport:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════════════
+   IA RAPPORT MODAL
+   ══════════════════════════════════════════════════════ */
+.rapport-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(3px);
+}
+.rapport-modal-overlay.open {
+    display: flex;
+}
+
+.rapport-modal-box {
+    background: var(--pg);
+    border-radius: 24px;
+    border: 1px solid var(--cbr);
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.20);
+    overflow: hidden;
+    animation: rapportSlideIn 0.25s ease;
+}
+@keyframes rapportSlideIn {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Modal header */
+.rapport-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+    background: linear-gradient(135deg, #E1F5EE 0%, #f0fdf4 100%);
+    border-bottom: 1px solid #b6f0d8;
+}
+.rapport-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.rapport-modal-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+.rapport-modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #134e4a;
+}
+.rapport-modal-subtitle {
+    font-size: 0.78rem;
+    color: #1D9E75;
+    margin-top: 2px;
+}
+.rapport-modal-close {
+    background: rgba(0,0,0,0.06);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.rapport-modal-close:hover { background: rgba(0,0,0,0.14); }
+
+/* Quantity badge */
+.rapport-qty-badge {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 20px 22px 0;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1px solid #86efac;
+    border-radius: 12px;
+}
+.rapport-qty-icon { font-size: 2rem; flex-shrink: 0; }
+.rapport-qty-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1D9E75;
+    margin-bottom: 3px;
+}
+.rapport-qty-value {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #3B6D11;
+    line-height: 1;
+}
+
+/* Rapport body */
+.rapport-body {
+    padding: 18px 22px;
+}
+.rapport-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1D9E75;
+    margin-bottom: 10px;
+}
+.rapport-text {
+    font-size: 0.93rem;
+    color: #2d3748;
+    line-height: 1.75;
+    background: #fafafa;
+    border: 1px solid #e9f5f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+/* Modal footer */
+.rapport-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 22px 18px;
+    border-top: 1px solid #e9f5f0;
+    background: #f9fefb;
+}
+.rapport-footer-note {
+    font-size: 0.75rem;
+    color: #888;
+    flex: 1;
+    min-width: 160px;
+}
+.btn-rapport-close {
+    padding: 8px 20px;
+    background: #3B6D11;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+.btn-rapport-close:hover { background: #27500A; }
+</style>
+
+{# ══════════════════════════════════════════════════════
+   JS — Modal logic
+   ══════════════════════════════════════════════════════ #}
+<script>
+function openRapportModal(cultureNom, quantite, dateRecolte, rapport) {
+    document.getElementById('rapportSubtitle').textContent =
+        cultureNom + ' — ' + dateRecolte;
+
+    var qtyEl = document.getElementById('rapportQty');
+    qtyEl.textContent = quantite !== null && quantite !== undefined
+        ? Number(quantite).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' kg'
+        : 'Non renseigné';
+
+    document.getElementById('rapportText').textContent = rapport || 'Aucun rapport disponible.';
+
+    document.getElementById('rapportModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRapportModal(event) {
+    // Close only if clicking the overlay background (not the box itself)
+    if (event && event.target !== document.getElementById('rapportModal')) return;
+    document.getElementById('rapportModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Also allow closing with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('rapportModal').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+});
+</script>
+
+    </div>{# end .content-wrapper #}
+    </main>
+</div>{# end .layout #}
+{% endblock %}

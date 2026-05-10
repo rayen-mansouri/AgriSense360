@@ -1,0 +1,9 @@
+<div class="mgmt-form-card"><div class="mgmt-form-body">
+<form method="post" action="{{ path('analytics_predict') }}" class="inline-form">
+<select class="mgmt-input" name="animalId" style="flex:1;"><option value="">Select animal</option>{% for animal in analyticsAnimals %}<option value="{{ animal.id }}" {{ selectedAiAnimalId == animal.id ? 'selected' : '' }}>#{{ animal.earTag }} - {{ animal.type }}</option>{% endfor %}</select>
+<label><input type="radio" name="model" value="general" {{ selectedAiModel != 'custom' ? 'checked' : '' }}> General</label>
+<label><input type="radio" name="model" value="custom" {{ selectedAiModel == 'custom' ? 'checked' : '' }} {% if not customModelAvailable %}disabled{% endif %}> Custom</label>
+<button class="mgmt-btn-primary" type="submit">Analyze</button>
+<button class="mgmt-btn-ghost-link" type="submit" formaction="{{ path('analytics_predict_all') }}">Analyze all</button>
+</form></div></div>
+{% if predictionResult %}<div class="mgmt-form-card"><div class="mgmt-form-body"><strong>{{ predictionResult.conditionLabel }}</strong> ({{ (predictionResult.confidence * 100)|number_format(0) }}%)</div></div>{% endif %}

@@ -1,0 +1,314 @@
+{# templates/ai/complete_analysis.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Analyse des produits - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">📊 Analyse des produits</h1>
+        <p class="page-subtitle">Qualité, rentabilité et détection d'anomalies</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card stat-green">
+        <div class="stat-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="stat-label">Produits analysés</div>
+        <div class="stat-value">{{ produits|length }}</div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon"><i class="fa-solid fa-tag"></i></div>
+        <div class="stat-label">Prix moyen</div>
+        <div class="stat-value">{{ prixMoyen }} DT</div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+        <div class="stat-label">Catégories</div>
+        <div class="stat-value">{{ categories|length }}</div>
+    </div>
+</div>
+
+<!-- SECTION : ANOMALIES DE PRIX (IA) -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#f44336;color:white">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">⚠️ Détection d'anomalies (IA)</h2>
+            <p class="form-card-subtitle">Produits avec des prix anormaux par rapport à leur catégorie</p>
+        </div>
+    </div>
+    
+    <div id="anomaliesContainer">
+        <div style="text-align: center; padding: 40px;" id="loadingAnomalies">
+            <i class="fa-solid fa-spinner fa-spin"></i> Chargement des anomalies...
+        </div>
+    </div>
+</div>
+
+<!-- SECTION : QUALITÉ DES PRODUITS -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#4caf50;color:white">
+            <i class="fa-solid fa-star"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">⭐ Qualité des produits</h2>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Score</th>
+                    <th>Niveau</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for qualite in qualites %}
+                <tr>
+                    <td><strong>{{ qualite.produit }}</strong></td>
+                    <td>{{ qualite.score_global }}/100</td>
+                    <td>{{ qualite.niveau }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SECTION : RENTABILITÉ -->
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-coins"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">💰 Rentabilité</h2>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Prix vente</th>
+                    <th>Marge brute</th>
+                    <th>Performance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for renta in rentabilite %}
+                <tr>
+                    <td><strong>{{ renta.produit }}</strong></td>
+                    <td>{{ renta.prix_vente }} DT</td>
+                    <td>{{ renta.marge_brute }} DT</td>
+                    <td>{{ renta.performance }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Récupérer et afficher les anomalies
+fetch('/api/ai/anomalies')
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById('anomaliesContainer');
+        
+        if (data.anomalies.length === 0) {
+            container.innerHTML = `
+                <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; text-align: center;">
+                    <i class="fa-solid fa-check-circle" style="color: #4caf50; font-size: 48px; margin-bottom: 10px; display: block;"></i>
+                    ✅ Aucune anomalie détectée. Tous les prix sont cohérents !
+                </div>
+            `;
+            return;
+        }
+        
+        // Compter les anomalies par type
+        const prixEleves = data.anomalies.filter(a => a.type === 'Prix élevé').length;
+        const prixBas = data.anomalies.filter(a => a.type === 'Prix bas').length;
+        
+        let html = `
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <div style="background: #ffebee; padding: 15px; border-radius: 12px; text-align: center; flex: 1;">
+                    <div style="font-size: 28px; font-weight: bold; color: #f44336;">${prixEleves}</div>
+                    <div style="font-size: 12px;">Prix anormalement élevés</div>
+                </div>
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 12px; text-align: center; flex: 1;">
+                    <div style="font-size: 28px; font-weight: bold; color: #4caf50;">${prixBas}</div>
+                    <div style="font-size: 12px;">Prix anormalement bas</div>
+                </div>
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 12px; text-align: center; flex: 1;">
+                    <div style="font-size: 28px; font-weight: bold; color: #2196f3;">${data.total_anomalies}</div>
+                    <div style="font-size: 12px;">Total anomalies</div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Catégorie</th>
+                            <th>Prix actuel</th>
+                            <th>Prix moyen</th>
+                            <th>Écart</th>
+                            <th>Type</th>
+                            <th>Recommandation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        data.anomalies.forEach(a => {
+            const isHigh = a.type === 'Prix élevé';
+            const bgColor = isHigh ? '#ffebee' : '#e8f5e9';
+            const icon = isHigh ? '🔴' : '🟢';
+            
+            html += `
+                <tr style="background: ${bgColor};">
+                    <td><strong>${a.produit}</strong></td>
+                    <td>${a.categorie}</td>
+                    <td><strong>${a.prix} DT</strong></td>
+                    <td>${a.prix_moyen} DT</td>
+                    <td>${a.ecart > 0 ? '+' : ''}${a.ecart} DT</td>
+                    <td><span style="background: ${isHigh ? '#f44336' : '#4caf50'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;">${a.type}</span></td>
+                    <td>${a.recommandation}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    })
+    .catch(error => {
+        document.getElementById('anomaliesContainer').innerHTML = `
+            <div style="background: #ffebee; padding: 20px; border-radius: 12px; text-align: center; color: #f44336;">
+                ❌ Erreur lors du chargement des anomalies
+            </div>
+        `;
+    });
+</script>
+<!-- SECTION : CLASSIFICATION IA (KNN) -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#9c27b0;color:white">
+            <i class="fa-solid fa-brain"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">🤖 Classification automatique (IA - KNN)</h2>
+            <p class="form-card-subtitle">L'IA classe votre produit dans la bonne catégorie</p>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <input type="text" id="produitNom" class="form-control" placeholder="Nom du produit..." style="flex: 2;">
+            <input type="number" id="produitPrix" class="form-control" placeholder="Prix (DT)" style="width: 150px;">
+            <button id="btnClassifier" class="btn btn-primary">
+                <i class="fa-solid fa-microchip"></i> Classifier par IA
+            </button>
+        </div>
+        
+        <div id="classificationResult" style="margin-top: 20px; display: none;">
+            <!-- Résultat affiché ici -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Classification IA
+document.getElementById('btnClassifier').addEventListener('click', function() {
+    const nom = document.getElementById('produitNom').value;
+    const prix = document.getElementById('produitPrix').value;
+    
+    if (!nom) {
+        alert('Veuillez entrer un nom de produit');
+        return;
+    }
+    
+    document.getElementById('classificationResult').innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <i class="fa-solid fa-spinner fa-spin"></i> L'IA analyse le produit...
+        </div>
+    `;
+    document.getElementById('classificationResult').style.display = 'block';
+    
+    fetch('/api/ai/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            nom: nom, 
+            prix: prix || 50 
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        let votesHtml = '';
+        for (const [categorie, votes] of Object.entries(data.votes)) {
+            votesHtml += `<span style="background: #f0f0f0; padding: 4px 12px; border-radius: 20px; margin: 0 5px;">${categorie}: ${votes} vote(s)</span>`;
+        }
+        
+        const confidenceColor = data.confiance >= 70 ? '#4caf50' : (data.confiance >= 50 ? '#ff9800' : '#f44336');
+        
+        document.getElementById('classificationResult').innerHTML = `
+            <div style="background: linear-gradient(135deg, #f3e5f5, #fff); border-radius: 16px; padding: 20px;">
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 14px; color: #666;">Produit analysé</div>
+                        <div style="font-size: 20px; font-weight: bold;">"${nom}"</div>
+                        <div style="font-size: 12px; color: #666;">Prix: ${prix || 50} DT</div>
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <div style="font-size: 12px; color: #666;">🤖 Prédiction IA</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #9c27b0;">${data.categorie_predite}</div>
+                        <div style="margin-top: 10px;">
+                            <span style="background: ${confidenceColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                                Confiance: ${data.confiance}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">🎯 Votes des voisins (K=3):</div>
+                    <div>${votesHtml}</div>
+                </div>
+                <div style="margin-top: 15px; background: #f5f5f5; padding: 10px; border-radius: 8px; font-size: 12px;">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    L'IA a analysé ${data.votes ? Object.values(data.votes).reduce((a,b) => a+b, 0) : 0} produits similaires pour faire cette prédiction.
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        document.getElementById('classificationResult').innerHTML = `
+            <div style="background: #ffebee; padding: 20px; border-radius: 12px; color: #f44336; text-align: center;">
+                ❌ Erreur: ${error.message}
+            </div>
+        `;
+    });
+});
+</script>
+
+<style>
+.data-table td, .data-table th {
+    padding: 12px;
+    vertical-align: middle;
+}
+</style>
+
+{% endblock %}

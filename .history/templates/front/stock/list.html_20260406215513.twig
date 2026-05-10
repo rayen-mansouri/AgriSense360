@@ -1,0 +1,123 @@
+{# templates/front/stock/list.html.twig #}
+{% extends 'layout/front_base.html.twig' %}
+{% block title %}Mes Stocks — Agrisens 360{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 24px; margin: 0;">📊 Gestion des Stocks</h1>
+            <p style="color: #666; margin: 5px 0 0;">{{ stocks|length }} référence(s) en stock</p>
+        </div>
+        <a href="{{ path('front_catalogue') }}" style="padding: 8px 16px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #333;">← Catalogue</a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+    <div style="background: #dcfce7; color: #16a34a; padding: 14px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #16a34a; font-weight: 600;">
+        {{ message }}
+    </div>
+    {% endfor %}
+
+    {% if stocks is empty %}
+    <div style="text-align: center; padding: 60px; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <i class="fa-solid fa-warehouse" style="font-size: 48px; color: #ccc; margin-bottom: 16px; display: block;"></i>
+        <p style="color: #666; font-size: 16px;">Aucun stock enregistré.</p>
+        <a href="{{ path('front_catalogue') }}" style="padding: 10px 24px; background: #5a9814; color: white; border-radius: 30px; text-decoration: none; font-weight: 600; margin-top: 16px; display: inline-block;">Voir le catalogue</a>
+    </div>
+    {% else %}
+
+    {# Résumé #}
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+        {% set enAlerte = stocks|filter(s => s.isEnAlerte and s.quantiteActuelle > 0)|length %}
+        {% set enRupture = stocks|filter(s => s.quantiteActuelle == 0)|length %}
+        {% set ok = stocks|length - enAlerte - enRupture %}
+
+        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #4caf50; text-align: center;">
+            <div style="font-size: 28px; font-weight: 700; color: #4caf50;">{{ ok }}</div>
+            <div style="color: #666; font-size: 13px; margin-top: 4px;">En stock</div>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #ff9800; text-align: center;">
+            <div style="font-size: 28px; font-weight: 700; color: #ff9800;">{{ enAlerte }}</div>
+            <div style="color: #666; font-size: 13px; margin-top: 4px;">En alerte</div>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid #f44336; text-align: center;">
+            <div style="font-size: 28px; font-weight: 700; color: #f44336;">{{ enRupture }}</div>
+            <div style="color: #666; font-size: 13px; margin-top: 4px;">En rupture</div>
+        </div>
+    </div>
+
+    {# Liste des stocks #}
+    <div style="background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
+        {% for stock in stocks %}
+        {% set produit = stock.produit %}
+        <div style="display: flex; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #f0f2f5; {% if loop.last %}border-bottom: none;{% endif %}">
+
+            {# Image produit #}
+            <div style="flex-shrink: 0;">
+                {% if produit.photoUrl %}
+                <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}" style="width: 52px; height: 52px; object-fit: cover; border-radius: 10px; border: 2px solid #e8f5e9;">
+                {% else %}
+                <div style="width: 52px; height: 52px; background: #e8f5e9; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #5a9814; font-size: 22px;">
+                    <i class="fa-solid fa-leaf"></i>
+                </div>
+                {% endif %}
+            </div>
+
+            {# Infos produit #}
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; font-size: 15px; margin-bottom: 3px;">{{ produit.nom }}</div>
+                <div style="font-size: 12px; color: #999;">{{ produit.categorie }} — {{ produit.prixUnitaire }} DT</div>
+            </div>
+
+            {# Quantité #}
+            <div style="text-align: center; min-width: 100px;">
+                <div style="font-size: 18px; font-weight: 700; color: #333;">{{ stock.quantiteActuelle }}</div>
+                <div style="font-size: 11px; color: #999;">{{ stock.uniteMesure }}</div>
+            </div>
+
+            {# Seuil #}
+            <div style="text-align: center; min-width: 80px;">
+                <div style="font-size: 13px; color: #666;">Seuil</div>
+                <div style="font-size: 15px; font-weight: 600;">{{ stock.seuilAlerte ?: '—' }}</div>
+            </div>
+
+            {# Statut #}
+            <div style="min-width: 120px; text-align: center;">
+                {% if stock.quantiteActuelle == 0 %}
+                    <span style="background: #fee2e2; color: #dc2626; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Rupture</span>
+                {% elseif stock.isEnAlerte %}
+                    <span style="background: #fff3cd; color: #d97706; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">⚠️ Alerte</span>
+                {% else %}
+                    <span style="background: #dcfce7; color: #16a34a; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">✓ OK</span>
+                {% endif %}
+            </div>
+
+            {# Dates #}
+            <div style="text-align: center; min-width: 110px; font-size: 11px; color: #999;">
+                {% if stock.dateReception %}
+                <div>Réception :</div>
+                <div style="color: #333; font-weight: 600;">{{ stock.dateReception|date('d/m/Y') }}</div>
+                {% endif %}
+                {% if stock.dateExpiration %}
+                <div style="margin-top: 4px;">Expiration :</div>
+                <div style="color: #f44336; font-weight: 600;">{{ stock.dateExpiration|date('d/m/Y') }}</div>
+                {% endif %}
+            </div>
+
+            {# Actions #}
+            <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                <a href="{{ path('front_stock_edit', {id: stock.id}) }}" style="padding: 6px 14px; background: #e3f2fd; color: #2196f3; border-radius: 20px; text-decoration: none; font-size: 12px; font-weight: 600;">
+                    <i class="fa-solid fa-pen"></i> Modifier
+                </a>
+                <a href="{{ path('front_produit_show', {id: produit.id}) }}" style="padding: 6px 14px; background: #e8f5e9; color: #5a9814; border-radius: 20px; text-decoration: none; font-size: 12px; font-weight: 600;">
+                    <i class="fa-solid fa-eye"></i> Produit
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{# templates/api/commodity.html.twig #}
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Prix des matières premières - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">🌾 Prix des matières premières</h1>
+        <p class="page-subtitle">Suivi des cours internationaux</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="form-card-header">
+        <div class="form-card-icon" style="background:#ff9800;color:white">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <h2 class="form-card-title">Cotations</h2>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px;">
+        
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 16px; padding: 20px; border: 1px solid #f0f0f0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <i class="fa-solid fa-wheat-awn" style="font-size: 32px; color: #ff9800;"></i>
+                <h3 style="margin: 0;">Blé</h3>
+            </div>
+            <div id="wheat-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">Chargement...</div>
+            <div id="wheat-unit" style="font-size: 12px; color: #666;"></div>
+            <div id="wheat-change" style="margin-top: 8px;"></div>
+        </div>
+        
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 16px; padding: 20px; border: 1px solid #f0f0f0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <i class="fa-solid fa-corn" style="font-size: 32px; color: #ff9800;"></i>
+                <h3 style="margin: 0;">Maïs</h3>
+            </div>
+            <div id="corn-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">Chargement...</div>
+            <div id="corn-unit" style="font-size: 12px; color: #666;"></div>
+            <div id="corn-change" style="margin-top: 8px;"></div>
+        </div>
+        
+        <div class="commodity-card" style="background: linear-gradient(135deg, #fff8e1, #fff); border-radius: 16px; padding: 20px; border: 1px solid #f0f0f0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <i class="fa-solid fa-seedling" style="font-size: 32px; color: #ff9800;"></i>
+                <h3 style="margin: 0;">Soja</h3>
+            </div>
+            <div id="soybean-price" style="font-size: 28px; font-weight: bold; color: #5a9814;">Chargement...</div>
+            <div id="soybean-unit" style="font-size: 12px; color: #666;"></div>
+            <div id="soybean-change" style="margin-top: 8px;"></div>
+        </div>
+        
+    </div>
+</div>
+
+<script>
+function fetchCommodityPrices() {
+    const commodities = ['WHEAT', 'CORN', 'SOYBEAN'];
+    
+    commodities.forEach(commodity => {
+        fetch(`/api/commodity/price?commodity=${commodity}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const id = commodity.toLowerCase();
+                    document.getElementById(`${id}-price`).innerHTML = `${data.price} ${data.unit.split('/')[0]}`;
+                    document.getElementById(`${id}-unit`).innerHTML = data.unit;
+                    
+                    const changeClass = data.change.startsWith('+') ? 'color: #4caf50;' : 'color: #f44336;';
+                    document.getElementById(`${id}-change`).innerHTML = `<span style="${changeClass}">${data.change}</span>`;
+                } else {
+                    document.getElementById(`${commodity.toLowerCase()}-price`).innerHTML = 'Non disponible';
+                }
+            })
+            .catch(() => {
+                document.getElementById(`${commodity.toLowerCase()}-price`).innerHTML = 'Erreur';
+            });
+    });
+}
+
+fetchCommodityPrices();
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'layout/front_base.html.twig' %}
+
+{% block title %}{{ produit.nom }} - Agrisens 360{% endblock %}
+
+{% block content %}
+<div class="front-product-detail">
+    <div class="front-product-breadcrumb">
+        <a href="{{ path('front_accueil') }}">Accueil</a> >
+        <a href="{{ path('front_catalogue') }}">Catalogue</a> >
+        <span>{{ produit.nom }}</span>
+    </div>
+
+    <div class="front-product-card">
+        <div class="front-product-gallery">
+            {% if produit.photoUrl %}
+                <img src="{{ asset(produit.photoUrl) }}" alt="{{ produit.nom }}" class="front-product-image">
+            {% else %}
+                <div class="front-product-placeholder">
+                    <i class="fa-solid fa-seedling"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="front-product-info">
+            <h1 class="front-product-title">{{ produit.nom }}</h1>
+            <span class="front-product-category"><i class="fa-solid fa-tag"></i> {{ produit.categorie }}</span>
+            
+            <div class="front-product-description">
+                <h3>Description</h3>
+                <p>{{ produit.description|default('Aucune description disponible.') }}</p>
+            </div>
+
+            <div class="front-product-price">
+                <span class="price-label">Prix unitaire</span>
+                <span class="price-value">{{ produit.prixUnitaire }} DT</span>
+            </div>
+
+            {% if stock %}
+            <div class="front-product-stock">
+                <h3>Disponibilité</h3>
+                <div class="stock-status">
+                    {% if stock.quantiteActuelle == 0 %}
+                        <div class="stock-badge rupture"><i class="fa-solid fa-circle-exclamation"></i> Rupture de stock</div>
+                    {% elseif stock.isEnAlerte %}
+                        <div class="stock-badge alerte"><i class="fa-solid fa-triangle-exclamation"></i> Stock limité ({{ stock.quantiteActuelle }} {{ stock.uniteMesure }})</div>
+                    {% else %}
+                        <div class="stock-badge ok"><i class="fa-solid fa-circle-check"></i> En stock ({{ stock.quantiteActuelle }} {{ stock.uniteMesure }})</div>
+                    {% endif %}
+                </div>
+                
+                {% if stock.quantiteActuelle > 0 %}
+                <div class="front-quantity-selector">
+                    <label>Quantité souhaitée</label>
+                    <div class="quantity-controls">
+                        <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
+                        <input type="number" id="quantity" value="1" min="1" max="{{ stock.quantiteActuelle }}">
+                        <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                        <button class="front-btn front-btn-primary" onclick="addToCart()">
+                            <i class="fa-solid fa-cart-plus"></i> Commander
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+                <div class="front-product-stock">
+                    <div class="stock-badge rupture"><i class="fa-solid fa-circle-exclamation"></i> Produit non disponible</div>
+                </div>
+            {% endif %}
+
+            <div class="front-product-actions">
+                <button class="front-btn front-btn-outline" onclick="window.history.back()">
+                    <i class="fa-solid fa-arrow-left"></i> Retour
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification toast -->
+<div id="frontToast" class="front-toast" style="display:none">
+    <div class="front-toast-content">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMessage">Produit ajouté au panier</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+function changeQty(delta) {
+    const input = document.getElementById('quantity');
+    let newVal = parseInt(input.value) + delta;
+    const max = parseInt(input.max);
+    if (newVal < 1) newVal = 1;
+    if (newVal > max) newVal = max;
+    input.value = newVal;
+}
+
+function showNotification(message, type = 'success') {
+    const toast = document.getElementById('frontToast');
+    const toastMessage = document.getElementById('toastMessage');
+    toastMessage.innerHTML = message;
+    toast.className = 'front-toast front-toast-' + type;
+    toast.style.display = 'flex';
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.style.display = 'none';
+            toast.style.opacity = '1';
+        }, 300);
+    }, 3000);
+}
+
+function addToCart() {
+    const quantity = document.getElementById('quantity').value;
+    showNotification('✅ {{ produit.nom }} ajouté au panier (x' + quantity + ')');
+}
+</script>
+{% endblock %}
