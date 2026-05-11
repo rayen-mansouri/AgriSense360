@@ -2,16 +2,19 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use App\Repository\AffectationTravailRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: AffectationTravailRepository::class)]
 #[ORM\Table(name: 'affectation_travail')]
 class AffectationTravail
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(name: 'id_affectation')]
     private ?int $id_affectation = null;
 
     #[ORM\Column(type: Types::STRING, nullable: false)]
@@ -29,9 +32,23 @@ class AffectationTravail
     #[ORM\Column(type: Types::STRING, nullable: true)]
     private ?string $statut = null;
 
+    /** @var Collection<int, EvaluationPerformance> */
+    #[ORM\OneToMany(mappedBy: 'affectationTravail', targetEntity: EvaluationPerformance::class)]
+    private Collection $evaluations;
+
+    public function __construct()
+    {
+        $this->evaluations = new ArrayCollection();
+    }
+
     public function getIdAffectation(): ?int
     {
         return $this->id_affectation;
+    }
+
+    public function getId_affectation(): ?int
+    {
+        return $this->getIdAffectation();
     }
 
     public function getTypeTravail(): ?string
@@ -94,4 +111,9 @@ class AffectationTravail
         return $this;
     }
 
+    /** @return Collection<int, EvaluationPerformance> */
+    public function getEvaluations(): Collection
+    {
+        return $this->evaluations;
+    }
 }

@@ -2,16 +2,17 @@
 
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use App\Repository\EvaluationPerformanceRepository;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: EvaluationPerformanceRepository::class)]
 #[ORM\Table(name: 'evaluation_performance')]
 class EvaluationPerformance
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(name: 'id_evaluation')]
     private ?int $id_evaluation = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: false)]
@@ -26,12 +27,18 @@ class EvaluationPerformance
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $date_evaluation = null;
 
-    #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    private ?int $id_affectation = null;
+    #[ORM\ManyToOne(targetEntity: AffectationTravail::class, inversedBy: 'evaluations')]
+    #[ORM\JoinColumn(name: 'id_affectation', referencedColumnName: 'id_affectation', nullable: true)]
+    private ?AffectationTravail $affectationTravail = null;
 
     public function getIdEvaluation(): ?int
     {
         return $this->id_evaluation;
+    }
+
+    public function getId_evaluation(): ?int
+    {
+        return $this->getIdEvaluation();
     }
 
     public function getNote(): ?int
@@ -82,16 +89,20 @@ class EvaluationPerformance
         return $this;
     }
 
-    public function getIdAffectation(): ?int
+    public function getAffectationTravail(): ?AffectationTravail
     {
-        return $this->id_affectation;
+        return $this->affectationTravail;
     }
 
-    public function setIdAffectation(?int $id_affectation): static
+    public function setAffectationTravail(?AffectationTravail $affectationTravail): static
     {
-        $this->id_affectation = $id_affectation;
+        $this->affectationTravail = $affectationTravail;
 
         return $this;
     }
 
+    public function getIdAffectation(): ?int
+    {
+        return $this->affectationTravail?->getIdAffectation();
+    }
 }
