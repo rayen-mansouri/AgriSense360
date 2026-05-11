@@ -243,9 +243,8 @@
                                         </div>
 
                                         <div style="display: flex; gap: 10px; margin-top: auto;">
-                                            <a href="{{ path('culture_details', {id: culture.id}) }}" class="btn" style="flex: 1; background: rgba(255,255,255,0.05); color: var(--ch3); border: 1px solid var(--cbr); font-size: 0.8rem; padding: 10px;">Explorer</a>
                                             {% if culture.isReadyToHarvest() %}
-                                                <button type="button" class="btn btn-save" style="flex: 2; font-size: 0.8rem; background: var(--harvest-gradient); border: none;" onclick="handleRecolteQuick('{{ culture.id }}', '{{ culture.nom|e('js') }}', '{{ path('culture_ia_preview', {id: culture.id}) }}')">🌾 Récolter</button>
+                                                <button type="button" class="btn btn-save" style="flex: 1; font-size: 0.8rem; background: var(--harvest-gradient); border: none;" onclick="handleRecolteQuick('{{ culture.id }}', '{{ culture.nom|e('js') }}', '{{ path('culture_ia_preview', {id: culture.id}) }}')">🌾 Récolter</button>
                                             {% endif %}
                                         </div>
                                     </div>
