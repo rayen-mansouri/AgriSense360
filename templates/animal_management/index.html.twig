@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Animal Management{% endblock %}
+
+{% block styles %}
+    {% include 'partials/sidebar_styles.html.twig' %}
+    <link rel="stylesheet" href="{{ asset('styles/animals-management.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' with { activePage: 'animal_management' } %}
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </header>
+        <div class="mgmt-page">
+            {% include 'animal_management/partials/_tabs.html.twig' %}
+            {% include 'animal_management/partials/_flashes.html.twig' %}
+
+            {% if currentTab == 'animaux' %}
+                {% include 'animal_management/tabs/_animals.html.twig' %}
+            {% endif %}
+
+            {% if currentTab == 'dossiers' %}
+                {% include 'animal_management/tabs/_records.html.twig' %}
+            {% endif %}
+
+            {% if currentTab == 'options' %}
+                {% include 'animal_management/tabs/_options.html.twig' %}
+            {% endif %}
+
+            {% if currentTab == 'predictor' %}
+                {% include 'animal_management/tabs/_predictor.html.twig' %}
+            {% endif %}
+
+            {% if currentTab == 'analytics' %}
+                {% include 'animal_management/tabs/_analytics.html.twig' %}
+            {% endif %}
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('mainContent');
+const toggleBtn = document.getElementById('sidebarToggle');
+if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+            sidebar.classList.toggle('open');
+        } else {
+            sidebar.classList.toggle('collapsed');
+            mainContent && mainContent.classList.toggle('expanded');
+        }
+    });
+}
+</script>
+{% endblock %}

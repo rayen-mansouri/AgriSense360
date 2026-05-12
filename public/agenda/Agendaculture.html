@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda des Cultures</title>
+    <base href="/agenda/">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,11 +13,20 @@
             --matur:#3b82f6; --matur-bg:#dbeafe;
             --rprev:#f97316; --rprev-bg:#ffedd5;
             --recol:#ef4444; --recol-bg:#fee2e2;
-            --bg:#faf7f2; --card:#fff; --border:#e8e0d5;
-            --txt:#1c1917; --txt2:#78716c;
+            --bg:#f8fafc; --card:#ffffff; --border:#e2e8f0;
+            --txt:#0f172a; --txt2:#64748b;
+            --expert-g: linear-gradient(135deg, #10b981, #059669);
+            --expert-sh: 0 10px 30px rgba(0,0,0,0.04);
         }
         *{box-sizing:border-box;margin:0;padding:0;}
-        body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+        body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+        /* GLASS EFFECT */
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
 
         /* HEADER */
         .header{background:#1c1917;background-image:radial-gradient(ellipse at top right,rgba(34,197,94,.12) 0%,transparent 60%);color:white;padding:26px 40px 20px;}
@@ -682,26 +692,46 @@ Réponds en français uniquement. Structure ta réponse ainsi :
 **⚠️ À surveiller** : risques spécifiques à cette phase`;
 
         try {
-            // Proxy Symfony — la clé Groq reste côté serveur dans .env
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 18000); // 18s client-side timeout
+
             const res = await fetch("/ai-conseil", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt })
+                body: JSON.stringify({ prompt }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
             if (!res.ok) {
-                const e2 = await res.json().catch(() => ({}));
-                throw new Error(e2.error || `Erreur HTTP ${res.status}`);
+                const eData = await res.json().catch(() => ({}));
+                throw new Error(eData.error || `Erreur serveur (${res.status})`);
             }
             const data = await res.json();
-            const raw  = data.content || 'Aucune réponse.';
+            const raw  = data.content || 'L\'IA n\'a pas pu générer de réponse.';
+            
             const html = raw
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\n\n/g, '<br><br>')
                 .replace(/\n/g, '<br>');
-            box.innerHTML = `<div class="ai-header">✨ Conseil IA — <em>${c.nom}</em> · Phase : ${tl.etat}</div><div class="ai-content">${html}</div>`;
+                
+            box.innerHTML = `
+                <div class="ai-header" style="background:var(--expert-g); color:white; padding:10px 14px; border-radius:8px 8px 0 0;">
+                    ✨ Conseil AgriSense — <em>${c.nom}</em>
+                    <span style="float:right; opacity:0.8; font-weight:400; font-size:10px;">Modèle Llama 3</span>
+                </div>
+                <div class="ai-content" style="border-radius:0 0 8px 8px;">${html}</div>
+            `;
         } catch(e) {
-            box.innerHTML = `<div class="ai-header">❌ Erreur IA</div><div class="ai-content">${e.message}</div>`;
-            toast('❌ ' + e.message, true);
+            const isTimeout = e.name === 'AbortError';
+            box.innerHTML = `
+                <div class="ai-header" style="color:#dc2626; border-bottom: 1px solid #fee2e2; padding-bottom: 8px;">❌ ${isTimeout ? 'Temps écoulé' : 'Erreur IA'}</div>
+                <div class="ai-content" style="border-left-color:#dc2626; color:#991b1b; background:#fef2f2;">
+                    ${isTimeout ? 'Le serveur met trop de temps à répondre. Réessayez dans un instant.' : e.message}<br>
+                    <small style="opacity:0.7;">Vérifiez votre configuration ou réessayez plus tard.</small>
+                </div>
+            `;
+            toast('❌ Échec de la consultation IA', true);
         }
         btn.disabled = false;
         btn.innerHTML = '✨ Conseil IA';

@@ -55,8 +55,15 @@ class AgriSense3D {
         this.camera.position.set(0, 2, 60);
         
         setTimeout(() => {
-            document.getElementById('loader').style.opacity = '0';
-            setTimeout(() => document.getElementById('loader').remove(), 1000);
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 1000);
+            }
+            // Signal parent that we are ready
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: '3D_READY' }, '*');
+            }
         }, 1000);
 
         this.animate();

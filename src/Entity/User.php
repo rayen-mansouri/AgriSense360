@@ -51,10 +51,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(name: 'updated_at', type: 'datetime', nullable: true)]
     private ?\DateTime $updatedAt = null;
-    //token 
+
     #[ORM\Column(name: 'reset_token', type: 'string', length: 255, nullable: true)]
     private ?string $resetToken = null;
- 
+
     #[ORM\Column(name: 'reset_token_expires_at', type: 'datetime', nullable: true)]
     private ?\DateTime $resetTokenExpiresAt = null;
 
@@ -70,12 +70,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?int $approvedBy = null;
 
-    // Link to the farm a worker applied to
     #[ORM\ManyToOne(targetEntity: Farm::class)]
     #[ORM\JoinColumn(name: 'farm_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Farm $farm = null;
 
-    // Toast notification shown once on next page load (cleared after display)
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $pendingNotification = null;
 
@@ -95,10 +93,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        if (!is_array($this->roles)) {
-            $this->roles = $this->roles ? [(string) $this->roles] : [];
-        }
-
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
 
@@ -110,6 +104,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->roles = array_values($roles);
         return $this;
     }
+
     public function getStatus(): string { return $this->status; }
     public function setStatus(string $status): self { $this->status = $status; return $this; }
 
@@ -133,14 +128,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUserIdentifier(): string { return $this->email; }
     public function eraseCredentials(): void {}
-    //token
+
     public function getResetToken(): ?string { return $this->resetToken; }
     public function setResetToken(?string $resetToken): self
     {
         $this->resetToken = $resetToken;
         return $this;
     }
- 
+
     public function getResetTokenExpiresAt(): ?\DateTime { return $this->resetTokenExpiresAt; }
     public function setResetTokenExpiresAt(?\DateTime $resetTokenExpiresAt): self
     {
@@ -148,57 +143,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // CV FILE
-public function getCvFile(): ?string
-{
-    return $this->cvFile;
+    public function getCvFile(): ?string { return $this->cvFile; }
+    public function setCvFile(?string $cvFile): self { $this->cvFile = $cvFile; return $this; }
+
+    public function getAiSuggestedRole(): ?string { return $this->aiSuggestedRole; }
+    public function setAiSuggestedRole(?string $aiSuggestedRole): self { $this->aiSuggestedRole = $aiSuggestedRole; return $this; }
+
+    public function getDecisionReason(): ?string { return $this->decisionReason; }
+    public function setDecisionReason(?string $decisionReason): self { $this->decisionReason = $decisionReason; return $this; }
+
+    public function getApprovedBy(): ?int { return $this->approvedBy; }
+    public function setApprovedBy(?int $approvedBy): self { $this->approvedBy = $approvedBy; return $this; }
+
+    public function getFarm(): ?Farm { return $this->farm; }
+    public function setFarm(?Farm $farm): self { $this->farm = $farm; return $this; }
+
+    public function getPendingNotification(): ?string { return $this->pendingNotification; }
+    public function setPendingNotification(?string $msg): self { $this->pendingNotification = $msg; return $this; }
 }
 
-public function setCvFile(?string $cvFile): self
-{
-    $this->cvFile = $cvFile;
-    return $this;
-}
-
-// AI ROLE
-public function getAiSuggestedRole(): ?string
-{
-    return $this->aiSuggestedRole;
-}
-
-public function setAiSuggestedRole(?string $aiSuggestedRole): self
-{
-    $this->aiSuggestedRole = $aiSuggestedRole;
-    return $this;
-}
-
-// DECISION REASON
-public function getDecisionReason(): ?string
-{
-    return $this->decisionReason;
-}
-
-public function setDecisionReason(?string $decisionReason): self
-{
-    $this->decisionReason = $decisionReason;
-    return $this;
-}
-
-// APPROVED BY
-public function getApprovedBy(): ?int
-{
-    return $this->approvedBy;
-}
-
-public function setApprovedBy(?int $approvedBy): self
-{
-    $this->approvedBy = $approvedBy;
-    return $this;
-}
-
-public function getFarm(): ?Farm { return $this->farm; }
-public function setFarm(?Farm $farm): self { $this->farm = $farm; return $this; }
-
-public function getPendingNotification(): ?string { return $this->pendingNotification; }
-public function setPendingNotification(?string $msg): self { $this->pendingNotification = $msg; return $this; }
-}

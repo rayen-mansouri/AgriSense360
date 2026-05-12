@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+
 {% set activePage = 'affectations' %}
 {% set activeSection = 'main' %}
 
@@ -7,101 +8,100 @@
 {% block navbar %}{% endblock %}
 
 {% block styles %}
-{% include 'partials/sidebar_styles.html.twig' %}
+{% include 'partials/home_nav_styles.html.twig' %}
 <style>
-    .affectations-container {
-        padding: 2rem;
-    }
-    .affectations-header {
-        margin-bottom: 2rem;
-    }
-    .affectations-header h1 {
-        color: var(--ch3);
-        font-size: 1.875rem;
-        margin-bottom: 0.5rem;
-    }
-    .affectations-table {
+    body { font-family: 'Inter', sans-serif; background: var(--pg); color: var(--pc); transition: background .3s, color .3s; margin: 0; min-height: 100vh; overflow-x: hidden; }
+
+    .front-main {
+        padding-top: 70px;
         width: 100%;
-        border-collapse: collapse;
-        background: var(--cb);
-        border: 1px solid var(--cbr);
-        border-radius: 8px;
-        overflow: hidden;
-        color: var(--pc);
     }
-    .affectations-table thead {
-        background: var(--cbr);
-        color: var(--ch3);
+    .front-main-container {
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 40px 60px;
     }
-    .affectations-table th {
-        padding: 1rem;
-        text-align: left;
-        font-weight: 600;
-        border-right: 1px solid var(--cbr);
-    }
-    .affectations-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--cbr);
-        border-right: 1px solid var(--cbr);
-    }
-    .affectations-table tr:hover {
-        background: var(--ch1);
-    }
-    .empty-state {
-        padding: 2rem;
-        text-align: center;
-        color: var(--ch2);
-    }
+
+    /* Page header refinement */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; flex-wrap: wrap; gap: 20px; }
+    .page-header-left { display: flex; flex-direction: column; gap: 8px; }
+    .page-title { font-size: 2.2rem; font-weight: 900; color: var(--ch3); margin: 0; letter-spacing: -1px; }
+    .page-subtitle { color: var(--cp); font-size: 1rem; font-weight: 500; }
+
+    /* Table Styling */
+    .table-container { background: var(--cb); border: 1px solid var(--cbr); border-radius: 28px; box-shadow: var(--sh-lg); overflow: hidden; }
+    .premium-table { width: 100%; border-collapse: collapse; }
+    .premium-table th { padding: 20px 25px; text-align: left; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--cp); border-bottom: 1px solid var(--cbr); background: rgba(0,0,0,0.05); }
+    .premium-table td { padding: 20px 25px; border-bottom: 1px solid var(--cbr); color: var(--ch3); font-weight: 600; font-size: 0.95rem; }
+    .premium-table tr:last-child td { border-bottom: none; }
+    .premium-table tbody tr:hover td { background: rgba(90,181,90,0.03); }
+
+    .status-badge { padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; }
+    .status-active { background: rgba(76,175,80,0.1); color: #4CAF50; border: 1px solid rgba(76,175,80,0.2); }
+
+    .empty-state { padding: 100px 40px; text-align: center; color: var(--cp); }
+    .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.3; }
 </style>
 {% endblock %}
 
 {% block body %}
-<div class="layout">
-    {% include 'partials/sidebar.html.twig' %}
+{% include 'partials/home_nav.html.twig' %}
 
-    <main class="main">
-        <div class="affectations-container">
-            <div class="affectations-header">
-                <h1>Affectations des Ouvriers</h1>
-                <p>Gérez l'affectation des ouvriers aux parcelles et tâches agricoles.</p>
-            </div>
+<main class="front-main">
+    <div class="front-main-container">
 
-            <table class="affectations-table">
-                <thead>
-                    <tr>
-                        <th>Ouvrier</th>
-                        <th>Parcelle</th>
-                        <th>Tâche</th>
-                        <th>Date Début</th>
-                        <th>Date Fin</th>
-                        <th>Statut</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="6" class="empty-state">
-                            Aucune affectation enregistrée
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </main>
+<div class="page-header">
+    <div class="page-header-left">
+        <h1 class="page-title">🤝 Affectations des Ouvriers</h1>
+        <p class="page-subtitle">Gérez l'affectation des ouvriers aux parcelles et tâches agricoles.</p>
+    </div>
 </div>
 
+<div class="table-container">
+    <table class="premium-table">
+        <thead>
+            <tr>
+                <th>Ouvrier</th>
+                <th>Parcelle</th>
+                <th>Tâche</th>
+                <th>Date Début</th>
+                <th>Date Fin</th>
+                <th>Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            {# Mock data or loop if available in future #}
+            <tr>
+                <td colspan="6">
+                    <div class="empty-state">
+                        <div class="empty-icon">📅</div>
+                        <h3 style="margin:0; font-size:1.2rem; color:var(--ch3);">Aucune affectation enregistrée</h3>
+                        <p style="margin:10px 0 0 0;">Les missions assignées apparaîtront ici.</p>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+    </div>
+</main>
+
 <script>
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.querySelector('.main');
-    document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('expanded');
-    });
-    const saved = localStorage.getItem('agri-theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    document.getElementById('themeToggle')?.addEventListener('click', function() {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('agri-theme', next);
-    });
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+    window.onclick = function(event) {
+        if (!event.target.closest('.gerant-profile')) {
+            const d = document.getElementById('gerant-dropdown-nav');
+            if (d && d.classList.contains('show')) d.classList.remove('show');
+        }
+    }
 </script>
 {% endblock %}

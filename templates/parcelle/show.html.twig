@@ -1,113 +1,59 @@
-{% set activePage = 'parcelles' %}
-{% set activeSection = 'main' %}
+{% extends 'base.html.twig' %}
 
-{% block title %}{{ parcelle.nom }} — Détails{% endblock %}
+{% block title %}{{ parcelle.nom }} — Détails — AgriSense 360{% endblock %}
 
 {% block navbar %}{% endblock %}
 
 {% block styles %}
+{% include 'partials/home_nav_styles.html.twig' %}
 {% include 'partials/sidebar_styles.html.twig' %}
 <link rel="stylesheet" href="{{ asset('css/culture_premium.css') }}">
+<link rel="stylesheet" href="{{ asset('css/expert_design.css') }}">
 <style>
-    /* Custom styles for this page to fix contrast and layout */
-    .detail-card {
-        background: var(--cb);
-        border: 1px solid var(--cbr);
-        border-radius: 28px;
-        padding: 32px;
-        margin-bottom: 32px;
-        box-shadow: var(--sh-lg);
-        backdrop-filter: blur(10px);
-    }
-    .stat-box {
-        background: var(--surface2);
-        border: 1px solid var(--cbr);
-        border-radius: 20px;
-        padding: 24px;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .stat-box:hover {
-        transform: translateY(-5px);
-        border-color: var(--g);
-    }
-    .stat-label {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: var(--cp);
-        margin-bottom: 12px;
-        letter-spacing: 1px;
-    }
-    .stat-value {
-        font-size: 1.6rem;
-        font-weight: 900;
-        color: var(--ch3);
-    }
-    .section-title {
-        font-size: 1.4rem;
-        font-weight: 900;
-        color: var(--ch3);
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    
-    /* Weather styles refined */
-    .weather-main-card { 
-        border-radius: 24px; 
-        padding: 0; 
-        overflow: hidden; 
-        box-shadow: var(--sh-lg); 
-        margin-bottom: 24px; 
-        border: 1px solid var(--cbr);
-        background: var(--cb);
-    }
-    .weather-hero { 
-        background: linear-gradient(135deg, var(--gd), var(--g)); 
-        padding: 32px; 
-        color: white; 
-        position: relative; 
-        overflow: hidden; 
-    }
-    
-    /* Animations */
-    .fade-in-up {
-        animation: fadeInUp 0.6s ease-out forwards;
-    }
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    body { font-family: 'Inter', sans-serif; background: var(--pg); color: var(--pc); transition: background .3s, color .3s; margin: 0; min-height: 100vh; overflow-x: hidden; }
 
-    /* Modal Styling */
-    .modal-backdrop {
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,0.8);
-        backdrop-filter: blur(15px);
-        z-index: 2000;
-        display: none;
-        align-items: center; justify-content: center;
-        padding: 20px;
-    }
-    .modal-content {
-        background: var(--sidebar-bg);
-        border: 1px solid var(--sidebar-border);
-        border-radius: 32px;
-        width: 100%; max-width: 550px;
-        max-height: 90vh; overflow-y: auto;
-        position: relative;
-        box-shadow: 0 50px 100px rgba(0,0,0,0.5);
-    }
+    .page-title { font-size: 2.2rem; font-weight: 950; color: var(--ch3); margin: 0; letter-spacing: -1px; }
+    .page-subtitle { color: var(--cp); font-size: 1rem; font-weight: 600; }
+    
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 12px; border: 1px solid transparent; font-family: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--g); color: #fff; border: none; box-shadow: 0 4px 15px rgba(90,181,90,0.3); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(90,181,90,0.4); }
+    .btn-secondary { background: var(--cb); color: var(--ch3); border: 1px solid var(--cbr); }
+    
+    .detail-card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 28px; padding: 32px; box-shadow: var(--sh-lg); margin-bottom: 32px; }
+    .stat-box { background: rgba(0,0,0,0.1); padding: 20px; border-radius: 20px; border: 1px solid var(--cbr); }
+    .stat-label { font-size: 0.75rem; font-weight: 700; color: var(--cp); text-transform: uppercase; margin-bottom: 8px; }
+    .stat-value { font-size: 1.5rem; font-weight: 900; color: var(--ch3); }
+
+    .weather-main-card { background: var(--cb); border: 1px solid var(--cbr); border-radius: 28px; overflow: hidden; margin-bottom: 32px; }
+    .weather-hero { padding: 32px; background: linear-gradient(135deg, var(--gd), var(--g)); color: #fff; }
+    [data-theme="light"] .weather-hero { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
 </style>
 {% endblock %}
 
 {% block body %}
+{% if is_granted('ROLE_GERANT') or is_granted('ROLE_ADMIN') %}
 <div class="layout">
     {% include 'partials/sidebar.html.twig' %}
-
-    <main class="main">
-        <div style="padding: 40px;">
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
+        <div class="content-wrapper" style="padding: 40px;">
+{% else %}
+    {% include 'partials/home_nav.html.twig' %}
+    <main class="front-main">
+        <div class="front-main-container">
+{% endif %}
 
             {# PAGE HEADER #}
             <div class="page-header fade-in-up" style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
@@ -120,17 +66,17 @@
                     <h1 class="page-title" style="font-size: 2.5rem; font-weight: 950; color: var(--ch3); margin: 0; letter-spacing: -1px;">🗺️ {{ parcelle.nom }}</h1>
                     <p class="page-subtitle" style="color: var(--cp); margin-top: 8px; font-weight: 600;">{{ cultures|length }} culture(s) active(s) sur cette parcelle</p>
                 </div>
-                <div style="display:flex; gap:12px; align-items:center;">
-                    <button type="button" class="btn" style="background: rgba(255,255,255,0.05); color: var(--ch3); border: 1px solid var(--cbr); padding: 12px 24px;" onclick="openVisualizer()">🎮 Vue 3D</button>
-                    <button type="button" class="btn btn-save" style="padding: 12px 28px; font-weight: 800; box-shadow: 0 10px 20px rgba(90, 181, 90, 0.2);" onclick="openAddCultureModal()">🌱 Ajouter Culture</button>
-                    <a href="{{ path('parcelle_index') }}" class="btn btn-pale" style="padding: 12px 20px;">← Retour</a>
+                <div style="display:flex; gap:16px; align-items:center;">
+                    <button type="button" class="btn-expert btn-expert-secondary" onclick="openVisualizer()">🎮 Vue 3D Immersive</button>
+                    <button type="button" class="btn-expert btn-expert-primary" onclick="openModal('addCultureModal')">🌱 Nouvelle Culture</button>
+                    <a href="{{ path('parcelle_index') }}" class="btn-expert btn-expert-secondary">← Retour</a>
                 </div>
             </div>
 
             {# FLASH MESSAGES #}
             {% for type, messages in app.flashes %}
                 {% for message in messages %}
-                    <div class="flash-{{ type == 'success' ? 'success' : 'error' }}" style="margin-bottom: 30px; border-radius: 20px; font-weight: 600;">
+                    <div class="flash-{{ type == 'success' ? 'success' : 'error' }}" style="margin-bottom: 30px; padding: 15px 25px; border-radius: 20px; font-weight: 600; background: {{ type == 'success' ? 'rgba(76,175,80,0.1)' : 'rgba(244,67,54,0.1)' }}; border: 1px solid {{ type == 'success' ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)' }}; color: {{ type == 'success' ? 'var(--g)' : 'var(--danger)' }};">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -148,7 +94,7 @@
                                 <span style="background: var(--badge-g); width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">📋</span>
                                 Fiche Technique
                             </h2>
-                            <span class="badge-{{ parcelle.statut == 'Libre' ? 'green' : 'orange' }}" style="padding: 8px 20px; font-size: 0.85rem; font-weight: 800; border-radius: 50px; text-transform: uppercase;">
+                            <span class="badge-{{ parcelle.statut == 'Libre' ? 'green' : 'orange' }}" style="padding: 8px 20px; font-size: 0.85rem; font-weight: 800; border-radius: 50px; text-transform: uppercase; background: {{ parcelle.statut == 'Libre' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)' }}; color: {{ parcelle.statut == 'Libre' ? '#22c55e' : '#f59e0b' }}; border: 1px solid rgba(0,0,0,0.1);">
                                 {{ parcelle.statut == 'Libre' ? '🟢 Disponible' : '🟠 En Exploitation' }}
                             </span>
                         </div>
@@ -189,27 +135,20 @@
                             <div style="font-size:4rem; margin-bottom:20px; filter: grayscale(1);">🌾</div>
                             <h3 style="color:var(--ch3); margin-bottom:12px; font-weight: 800;">Aucune culture sur cette parcelle</h3>
                             <p style="color:var(--cp); font-size:1rem; margin-bottom:30px; max-width: 400px; margin-left: auto; margin-right: auto;">Optimisez votre rendement en ajoutant une nouvelle culture dès maintenant.</p>
-                            <button onclick="openAddCultureModal()" class="btn btn-save" style="padding: 14px 32px;">+ Ajouter une culture</button>
+                            <button onclick="openModal('addCultureModal')" class="btn btn-primary" style="padding: 14px 32px;">+ Ajouter une culture</button>
                         </div>
                     {% else %}
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 40px;">
                             {% for culture in cultures %}
-                                <div class="culture-card-premium fade-in-up" style="animation-delay: {{ 0.2 + (loop.index * 0.1) }}s;">
+                                <div class="culture-card-premium fade-in-up" style="animation-delay: {{ 0.2 + (loop.index * 0.1) }}s; background: var(--cb); border: 1px solid var(--cbr); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; transition: all 0.3s;">
                                     
-                                    {# Harvest Badge #}
-                                    {% if culture.isReadyToHarvest() %}
-                                        <div class="harvest-ready-badge">
-                                            <span>🌾 Prêt à récolter</span>
-                                        </div>
-                                    {% endif %}
-
-                                    <div class="card-img-container">
+                                    <div class="card-img-container" style="height: 180px; position: relative; background: #000;">
                                         {% if culture.img %}
-                                            <img src="{{ asset('images/cultures/' ~ culture.img) }}" alt="{{ culture.nom }}">
+                                            <img src="{{ asset('images/cultures/' ~ culture.img) }}" alt="{{ culture.nom }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.7;">
                                         {% else %}
                                             <div style="width: 100%; height: 100%; background: var(--badge-g); display: flex; align-items: center; justify-content: center; font-size: 3.5rem;">🌱</div>
                                         {% endif %}
-                                        <div class="status-badge" style="background: rgba(0,0,0,0.6); color: white;">
+                                        <div class="status-badge" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: white; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800;">
                                             {{ culture.typeCulture }}
                                         </div>
                                     </div>
@@ -217,34 +156,38 @@
                                     <div style="padding: 24px; flex: 1;">
                                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                                             <h3 style="margin: 0; font-size: 1.3rem; font-weight: 900; color: var(--ch3);">{{ culture.nom }}</h3>
-                                            {% set eClass = culture.etat == 'Maturité' ? 'green' : (culture.etat == 'Croissance' ? 'blue' : 'orange') %}
-                                            <span class="badge-{{ eClass }}" style="font-size: 0.7rem; padding: 4px 12px; border-radius: 50px; font-weight: 800;">{{ culture.etat|upper }}</span>
+                                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                                                {% set eClass = culture.etat == 'Maturité' ? 'green' : (culture.etat == 'Croissance' ? 'blue' : 'orange') %}
+                                                <span class="badge-{{ eClass }}" style="font-size: 0.7rem; padding: 4px 12px; border-radius: 50px; font-weight: 800; background: {{ eClass == 'green' ? 'rgba(34, 197, 94, 0.1)' : (eClass == 'blue' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(245, 158, 11, 0.1)') }}; color: {{ eClass == 'green' ? '#22c55e' : (eClass == 'blue' ? '#3b82f6' : '#f59e0b') }};">{{ culture.etat|upper }}</span>
+                                                {% if culture.isReadyToHarvest %}
+                                                    <span style="font-size: 0.65rem; background: #ef4444; color: white; padding: 2px 10px; border-radius: 50px; font-weight: 900; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">PRÊT POUR RÉCOLTE</span>
+                                                {% endif %}
+                                            </div>
                                         </div>
 
-                                        <div class="card-data-grid" style="padding: 0; margin-bottom: 20px;">
+                                        <div class="card-data-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                                             <div class="data-item">
-                                                <span class="data-label">Plantation</span>
-                                                <span class="data-value">{{ culture.datePlantation ? culture.datePlantation|date('d M Y') : '—' }}</span>
+                                                <span class="data-label" style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase;">Plantation</span>
+                                                <span class="data-value" style="font-size: 0.9rem; font-weight: 700; color: var(--ch3);">{{ culture.datePlantation ? culture.datePlantation|date('d M Y') : '—' }}</span>
                                             </div>
                                             <div class="data-item">
-                                                <span class="data-label">Récolte Prévue</span>
-                                                <span class="data-value" style="color: {{ culture.isReadyToHarvest() ? '#f59e0b' : 'inherit' }};">
+                                                <span class="data-label" style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase;">Récolte Prévue</span>
+                                                <span class="data-value" style="font-size: 0.9rem; font-weight: 700; color: var(--ch3);">
                                                     {{ culture.dateRecolte ? culture.dateRecolte|date('d M Y') : '—' }}
                                                 </span>
                                             </div>
                                             <div class="data-item">
-                                                <span class="data-label">Surface Occupée</span>
-                                                <span class="data-value">{{ culture.surface }} <small>m²</small></span>
-                                            </div>
-                                            <div class="data-item">
-                                                <span class="data-label">Santé Culture</span>
-                                                <span class="data-value" style="color: var(--g);">Excellente ✨</span>
+                                                <span class="data-label" style="display: block; font-size: 0.7rem; font-weight: 800; color: var(--cp); text-transform: uppercase;">Surface</span>
+                                                <span class="data-value" style="font-size: 0.9rem; font-weight: 700; color: var(--ch3);">{{ culture.surface }} <small>m²</small></span>
                                             </div>
                                         </div>
 
                                         <div style="display: flex; gap: 10px; margin-top: auto;">
-                                            {% if culture.isReadyToHarvest() %}
-                                                <button type="button" class="btn btn-save" style="flex: 1; font-size: 0.8rem; background: var(--harvest-gradient); border: none;" onclick="handleRecolteQuick('{{ culture.id }}', '{{ culture.nom|e('js') }}', '{{ path('culture_ia_preview', {id: culture.id}) }}')">🌾 Récolter</button>
+                                            {% if culture.isReadyToHarvest %}
+                                                <button type="button" class="btn-expert btn-expert-harvest" style="flex: 1; padding: 12px; font-size: 0.9rem;" 
+                                                        onclick="handleRecolteQuick('{{ culture.id }}', '{{ culture.nom|e('js') }}', '{{ path('culture_ia_preview', {id: culture.id}) }}', '{{ csrf_token('harvest-culture-' ~ culture.id) }}')">
+                                                    🌾 Récolter avec l'IA
+                                                </button>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -313,122 +256,156 @@
                             <div class="stat-value" style="font-size: 1.2rem;">{{ parcelle.typeSol }}</div>
                         </div>
                         
-                        <a href="{{ path('parcelle_historique', {id: parcelle.id}) }}" class="btn" style="width: 100%; margin-top: 24px; background: var(--surface2); color: var(--ch3); border: 1px solid var(--cbr); padding: 14px; font-weight: 700;">📜 Historique d'exploitation</a>
+                        <a href="{{ path('parcelle_historique', {id: parcelle.id}) }}" class="btn-expert btn-expert-secondary" style="width: 100%; margin-top: 24px;">📜 Historique d'exploitation</a>
+                        <a href="{{ path('parcelle_historique_export', {id: parcelle.id}) }}" class="btn-expert btn-expert-primary" style="width: 100%; margin-top: 12px; background: linear-gradient(135deg, #1e3c2c, #2d6a4f);">📥 Exporter PDF Expert</a>
                     </div>
 
                 </div>
             </div>
 
-        </div>
+    </div>
+</main>
 
-        {# RAPPORT MODAL (PREMIUM STYLE) #}
-        <div id="rapportModal" class="modal-backdrop">
-            <div class="modal-content glass-modal animate-fade-in" style="max-width: 500px;">
-                <div style="padding: 32px;">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 24px;">
-                        <div style="width: 60px; height: 60px; border-radius: 20px; background: var(--harvest-gradient); display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">🌾</div>
-                        <div>
-                            <h2 style="margin: 0; font-size: 1.4rem; font-weight: 900; color: white;">Récolte IA</h2>
-                            <p id="rapportCultureName" style="margin: 5px 0 0; color: rgba(255,255,255,0.6); font-weight: 600;"></p>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 15px; margin-bottom: 24px;">
-                        <div style="flex: 1; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 800; margin-bottom: 8px;">Estimation Qty</div>
-                            <div id="rapportQty" style="font-size: 1.5rem; font-weight: 900; color: #f59e0b;">—</div>
-                        </div>
-                        <div style="flex: 1; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 800; margin-bottom: 8px;">Score Qualité</div>
-                            <div id="rapportScore" style="font-size: 1.5rem; font-weight: 900; color: var(--g);">—</div>
-                        </div>
-                    </div>
-
-                    <div id="rapportText" style="padding: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; color: rgba(255,255,255,0.8); font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px; min-height: 80px;">
-                        Chargement de l'analyse IA...
-                    </div>
-
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn btn-pale" style="flex: 1; padding: 14px; color: white;" onclick="cancelRecolte()">Annuler</button>
-                        <button class="btn btn-save" id="btnConfirmRecolte" style="flex: 2; padding: 14px; background: var(--harvest-gradient); border: none;" onclick="confirmRecolte()">✅ Confirmer la récolte</button>
-                    </div>
+{# ── Modal IA Rapport ── #}
+<div id="rapportModal" class="modal-backdrop" style="display:none;">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-header" style="background:linear-gradient(135deg, #1a6b3c, #2d5a42); color: white;">
+            <div style="display: flex; gap: 20px; align-items: center; flex: 1;">
+                <span style="font-size:2.5rem;">🌾</span>
+                <div>
+                    <div style="font-size:0.7rem;text-transform:uppercase;font-weight:800;opacity:0.8;letter-spacing:1px;margin-bottom:2px;">Rapport de récolte IA</div>
+                    <div id="rapportCultureName" style="font-size:1.3rem;font-weight:900;"></div>
                 </div>
+            </div>
+            <div id="rapportScoreBadge" style="text-align:center;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:15px;padding:8px 15px;">
+                <div id="rapportScore" style="font-size:1.4rem;font-weight:900;">—</div>
+                <div style="font-size:0.6rem;text-transform:uppercase;font-weight:800;opacity:0.8;">Score IA</div>
             </div>
         </div>
 
-        {# ADD CULTURE MODAL #}
-        <div id="addCultureModal" class="modal-backdrop">
-            <div class="modal-content glass-modal animate-fade-in" style="max-width: 600px;">
-                <div style="padding: 32px;">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
-                        <div style="width: 50px; height: 50px; border-radius: 16px; background: var(--g); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🌱</div>
-                        <h2 style="margin: 0; font-size: 1.6rem; font-weight: 950; color: white; letter-spacing: -1px;">Nouvelle Culture</h2>
-                    </div>
-
-                    <form action="{{ path('culture_new') }}" method="POST">
-                        {# PRE-FILLED PARCELLE #}
-                        <input type="hidden" name="parcelle_id" value="{{ parcelle.id }}">
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                            <div class="form-group">
-                                <label style="display: block; color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px;">TYPE DE CULTURE</label>
-                                <select name="type_culture" class="form-control" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: white;" required onchange="updateCropOptions(this.value)">
-                                    <option value="">Sélectionner</option>
-                                    <option value="Céréales">🌾 Céréales</option>
-                                    <option value="Légumes">🥕 Légumes</option>
-                                    <option value="Fruits">🍎 Fruits</option>
-                                    <option value="Ornementales">🌸 Ornementales</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label style="display: block; color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px;">NOM DE LA CULTURE</label>
-                                <select name="nom" id="culture_name_select" class="form-control" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: white;" required>
-                                    <option value="">Choisir un type</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                            <div class="form-group">
-                                <label style="display: block; color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px;">DATE DE PLANTATION</label>
-                                <input type="date" name="date_plantation" class="form-control" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: white;" value="{{ "now"|date("Y-m-d") }}" required>
-                            </div>
-                            <div class="form-group">
-                                <label style="display: block; color: rgba(255,255,255,0.6); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px;">SURFACE (m²)</label>
-                                <input type="number" name="surface" step="0.1" max="{{ parcelle.surfaceRestant }}" placeholder="Max: {{ parcelle.surfaceRestant }}" class="form-control" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: white;" required>
-                            </div>
-                        </div>
-
-                        <div style="background: rgba(90, 181, 90, 0.05); padding: 15px; border-radius: 16px; border: 1px solid rgba(90, 181, 90, 0.2); color: var(--g); font-size: 0.85rem; margin-bottom: 30px; display: flex; gap: 10px; align-items: center;">
-                            <span>💡</span>
-                            <span>La date de récolte et les phases de croissance seront calculées automatiquement par notre IA.</span>
-                        </div>
-
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button type="button" class="btn btn-pale" style="padding: 12px 24px; color: white;" onclick="closeAddCultureModal()">Annuler</button>
-                            <button type="submit" class="btn btn-save" style="padding: 12px 32px; font-weight: 800;">✓ Créer la culture</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+        <div style="padding:25px; background:rgba(0,0,0,0.02); border-bottom:1px solid var(--cbr);">
+            <div style="font-size:0.75rem;font-weight:800;color:var(--g);text-transform:uppercase;margin-bottom:4px;">Quantité estimée</div>
+            <div id="rapportQty" style="font-size:2.2rem;font-weight:900;color:var(--ch3);">—</div>
         </div>
 
-    </main>
-</div>
+        <div class="modal-body" style="padding:25px;">
+            <div style="font-size:0.75rem;font-weight:800;color:var(--cp);text-transform:uppercase;margin-bottom:12px;letter-spacing:1px;">📋 Analyse de l'IA</div>
+            <div id="rapportText" style="padding:15px;background:var(--surface2);border:1px solid var(--cbr);border-left:4px solid var(--g);border-radius:12px;line-height:1.6;color:var(--ch3);font-size:0.95rem;">Chargement...</div>
+        </div>
 
-{# 3D VISUALIZER MODAL #}
-<div id="v3dModal" class="modal-backdrop">
-    <div style="width: 95vw; height: 90vh; background: #000; border-radius: 32px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 50px 100px rgba(0,0,0,0.8);">
-        <button onclick="closeVisualizer()" style="position: absolute; top: 25px; right: 25px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: white; cursor: pointer; z-index: 100; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">✕</button>
-        <iframe id="v3dFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+        <div class="modal-footer" style="background:rgba(0,0,0,0.02);">
+            <button class="btn btn-secondary" onclick="cancelRecolte()">Annuler</button>
+            <button class="btn btn-primary" id="btnConfirmRecolte" onclick="confirmRecolte()">✓ Confirmer la récolte</button>
+        </div>
     </div>
 </div>
 
+{# ADD CULTURE MODAL #}
+<div id="addCultureModal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">🌱 Nouvelle Culture</h2>
+            <button class="modal-close" onclick="closeModal('addCultureModal')">✕</button>
+        </div>
+        <form action="{{ path('culture_new') }}" method="POST" onsubmit="return validateAddCulture()">
+            <input type="hidden" name="parcelle_id" value="{{ parcelle.id }}">
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">TYPE DE CULTURE</label>
+                        <select name="type_culture" id="add-type" class="form-control" required onchange="updateCropOptions(this.value)">
+                            <option value="">Sélectionner</option>
+                            <option value="Céréales">🌾 Céréales</option>
+                            <option value="Légumes">🥕 Légumes</option>
+                            <option value="Fruits">🍎 Fruits</option>
+                            <option value="Ornementales">🌸 Ornementales</option>
+                        </select>
+                        <span class="field-error" id="add-type-err"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">NOM DE LA CULTURE</label>
+                        <select name="nom" id="add-nom" class="form-control" required>
+                            <option value="">Choisir un type</option>
+                        </select>
+                        <span class="field-error" id="add-nom-err"></span>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">DATE DE PLANTATION</label>
+                        <input type="date" name="date_plantation" id="add-dp" class="form-control" value="{{ "now"|date("Y-m-d") }}" required>
+                        <span class="field-error" id="add-dp-err"></span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SURFACE (m²)</label>
+                        <input type="number" name="surface" id="add-surface" step="0.1" max="{{ parcelle.surfaceRestant }}" placeholder="Max: {{ parcelle.surfaceRestant }}" class="form-control" required>
+                        <span class="field-error" id="add-surface-err"></span>
+                    </div>
+                </div>
+                <div style="background: rgba(90, 181, 90, 0.05); padding: 15px; border-radius: 16px; border: 1px solid rgba(90, 181, 90, 0.2); color: var(--g); font-size: 0.85rem; margin-bottom: 10px; display: flex; gap: 10px; align-items: center;">
+                    <span>💡</span>
+                    <span>La date de récolte et les phases de croissance seront calculées automatiquement par notre IA.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addCultureModal')">Annuler</button>
+                <button type="submit" class="btn-premium">✓ Créer la culture</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# 3D VISUALIZER MODAL #}
+<div id="v3dModal" class="modal-backdrop" style="display:none; z-index: 9999;">
+    <div style="width: 95vw; height: 90vh; background: #000; border-radius: 32px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 50px 100px rgba(0,0,0,0.8); display: flex; flex-direction: column; margin: auto;">
+        <div style="padding: 15px 30px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin:0; color: white; font-weight: 800;">🎮 Visualisation 3D — {{ parcelle.nom }}</h3>
+            <button onclick="closeVisualizer()" style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
+        </div>
+        <div style="flex: 1; position: relative;">
+            <iframe id="v3dFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+    </div>
+</div>
+
+</main>
+</div>
 <script>
 var _pendingForm = null;
-var _harvestData = null;
 
-function handleRecolteQuick(id, nom, url) {
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent scroll
+    }
+}
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore scroll
+    }
+}
+
+function validateAddCulture() {
+    let isValid = true;
+    const fields = ['type', 'nom', 'dp', 'surface'];
+    fields.forEach(f => {
+        const el = document.getElementById('add-' + f);
+        const err = document.getElementById('add-' + f + '-err');
+        if (err) err.textContent = '';
+        if (!el || !el.value) {
+            if (err) err.textContent = 'Ce champ est obligatoire';
+            isValid = false;
+        }
+    });
+    return isValid;
+}
+
+function handleRecolteQuick(id, nom, url, tokenValue) {
     _pendingForm = document.createElement('form');
     _pendingForm.method = 'POST';
     _pendingForm.action = '/culture/' + id + '/harvest';
@@ -436,7 +413,7 @@ function handleRecolteQuick(id, nom, url) {
     var token = document.createElement('input');
     token.type = 'hidden';
     token.name = '_token';
-    token.value = '{{ csrf_token("harvest-culture-") }}' + id;
+    token.value = tokenValue;
     _pendingForm.appendChild(token);
     
     var qtyInput = document.createElement('input');
@@ -454,15 +431,14 @@ function handleRecolteQuick(id, nom, url) {
     document.body.appendChild(_pendingForm);
 
     document.getElementById('rapportCultureName').textContent = nom;
-    document.getElementById('rapportModal').style.display = 'flex';
+    openModal('rapportModal');
     document.getElementById('rapportText').textContent = 'Analyse des données en cours...';
     
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
         .then(d => {
-            _harvestData = d;
-            document.getElementById('rapportScore').textContent = d.iaScore + '%';
-            document.getElementById('rapportQty').textContent = parseFloat(d.quantite).toFixed(2) + ' kg';
+            document.getElementById('rapportScore').textContent = (d.iaScore || 0) + '%';
+            document.getElementById('rapportQty').textContent = d.quantite ? parseFloat(d.quantite).toLocaleString('fr-FR') + ' kg' : '—';
             document.getElementById('rapportText').innerHTML = d.rapport || 'Analyse IA terminée avec succès.';
             
             document.getElementById('hidden_qty').value = d.quantite;
@@ -477,15 +453,9 @@ function confirmRecolte() {
     if (_pendingForm) _pendingForm.submit();
 }
 function cancelRecolte() {
-    document.getElementById('rapportModal').style.display = 'none';
+    closeModal('rapportModal');
     if(_pendingForm) _pendingForm.remove();
-}
-
-function openAddCultureModal() {
-    document.getElementById('addCultureModal').style.display = 'flex';
-}
-function closeAddCultureModal() {
-    document.getElementById('addCultureModal').style.display = 'none';
+    _pendingForm = null;
 }
 
 const CROP_MAP = {
@@ -496,7 +466,7 @@ const CROP_MAP = {
 };
 
 function updateCropOptions(type) {
-    const select = document.getElementById('culture_name_select');
+    const select = document.getElementById('add-nom');
     select.innerHTML = '<option value="">Sélectionner</option>';
     if (CROP_MAP[type]) {
         CROP_MAP[type].forEach(c => {
@@ -509,18 +479,43 @@ function updateCropOptions(type) {
 }
 
 function openVisualizer() {
-    document.getElementById('v3dModal').style.display = 'flex';
-    document.getElementById('v3dFrame').src = "{{ path('parcelle_visualizer', {id: parcelle.id}) }}";
+    console.log("Attempting to open 3D Visualizer...");
+    openModal('v3dModal');
+    const frame = document.getElementById('v3dFrame');
+    if (frame) {
+        frame.src = "{{ path('parcelle_visualizer', {id: parcelle.id}) }}";
+    }
 }
 function closeVisualizer() {
-    document.getElementById('v3dModal').style.display = 'none';
-    document.getElementById('v3dFrame').src = "";
+    closeModal('v3dModal');
+    const frame = document.getElementById('v3dFrame');
+    if (frame) {
+        frame.src = "";
+    }
+}
+
+// Sidebar toggle logic
+const sidebarToggle = document.getElementById('sidebarToggle');
+if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('open');
+        } else {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+    });
 }
 
 // Close modals on backdrop click
 window.onclick = function(event) {
-    if (event.target.className === 'modal-backdrop') {
-        event.target.style.display = 'none';
+    if (event.target.classList.contains('modal-backdrop')) {
+        const id = event.target.id;
+        if (id === 'v3dModal') closeVisualizer();
+        else if (id === 'rapportModal') cancelRecolte();
+        else closeModal(id);
     }
 }
 </script>

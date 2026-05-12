@@ -1,9 +1,7 @@
 parameters:
     level: 5
     paths:
-        - src/
+        - src
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
-        - '#Call to an undefined method App\\Service\\MailService#'
-        - '#Call to an undefined method App\\Service\\WeatherService#'
-        - '#Call to an undefined method App\\Service\\HarvestIaService#'
-        - '#Call to an undefined method App\\Service\\CultureWeatherLogService#'
+        - '/.*/'

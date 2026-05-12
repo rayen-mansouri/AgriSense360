@@ -20,36 +20,37 @@
             nom: "{{ parcelle.nom|e('js') }}",
             surface: {{ parcelle.surface }},
             typeSol: "{{ parcelle.typeSol|e('js') }}",
-            cultures: [
-                {% for culture in cultures %}
-                {
-                    id: {{ culture.id }},
-                    nom: "{{ culture.nom|e('js') }}",
-                    typeCulture: "{{ culture.typeCulture|e('js') }}",
-                    surface: {{ culture.surface|default(0) }},
-                    growth: {{ culture.etat == 'Maturité' ? 90 : (culture.etat == 'Croissance' ? 60 : (culture.etat == 'Semis' ? 20 : 100)) }},
-                    etat: "{{ culture.etat|e('js') }}",
-                    dateRecolte: "{{ culture.dateRecolte ? culture.dateRecolte|date('d/m/Y') : '—' }}"
-                }{% if not loop.last %},{% endif %}
-                {% endfor %}
-            ]
+            cultures: {{ cultureData|json_encode|raw }}
         };
+
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === '3D_READY') {
+                console.log('3D Visualizer signaled READY');
+                injectData();
+            }
+        });
 
         function injectData() {
             var frame = document.getElementById('v3d-frame');
-            try {
-                var win = frame.contentWindow;
-                if (win && typeof win.setParcelleData === 'function') {
-                    win.setParcelleData(JSON.stringify(PARCELLE_DATA));
-                } else {
-                    // Retry once if not loaded
-                    setTimeout(function() {
-                        if (win.setParcelleData) win.setParcelleData(JSON.stringify(PARCELLE_DATA));
-                    }, 500);
+            var maxRetries = 5;
+            var retryCount = 0;
+
+            function attemptInject() {
+                try {
+                    var win = frame.contentWindow;
+                    if (win && typeof win.setParcelleData === 'function') {
+                        win.setParcelleData(JSON.stringify(PARCELLE_DATA));
+                        console.log('3D Data injected successfully');
+                    } else if (retryCount < maxRetries) {
+                        retryCount++;
+                        setTimeout(attemptInject, 300);
+                    }
+                } catch(e) {
+                    console.warn('3D Inject failed:', e);
                 }
-            } catch(e) {
-                console.warn('3D Inject error:', e);
             }
+            
+            attemptInject();
         }
     </script>
 </body>

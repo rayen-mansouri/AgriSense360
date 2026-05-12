@@ -3,7 +3,10 @@
 {% set activeSection = 'main' %}
 {% block title %}Tableau de bord — AgriSense 360{% endblock %}
 
+{% block navbar %}{% endblock %}
+
 {% block styles %}
+{% include 'partials/home_nav_styles.html.twig' %}
 {% include 'partials/sidebar_styles.html.twig' %}
 <link rel="stylesheet" href="{{ asset('css/culture_premium.css') }}">
 <style>
@@ -152,13 +155,26 @@
 </div>
 
 <script>
-(function(){
-  var key='gerant_sidebar_collapsed';
-  if(localStorage.getItem(key)!=='0') document.body.classList.add('sidebar-collapsed');
-  window._sbToggle=function(){
-    var c=document.body.classList.toggle('sidebar-collapsed');
-    localStorage.setItem(key,c?'1':'0');
-  };
-})();
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+
+    // Dropdown profile
+    window.onclick = function(event) {
+        if (!event.target.closest('.gerant-profile')) {
+            const dropdown = document.getElementById('gerant-dropdown-nav');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    }
 </script>
 {% endblock %}
+

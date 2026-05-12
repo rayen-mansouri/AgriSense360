@@ -42,8 +42,14 @@ class WeatherService
         private string $apiKey
     ) {}
 
+    private static array $requestCache = [];
+
     public function getWeatherForLocation(string $localisation): ?array
     {
+        if (isset(self::$requestCache[$localisation])) {
+            return self::$requestCache[$localisation];
+        }
+
         $coords = self::GOUVERNORAT_COORDS[$localisation] ?? null;
         if (!$coords || !$this->apiKey) {
             return null;
@@ -98,7 +104,9 @@ class WeatherService
             $daily = []; // Forecast unavailable, page still works
         }
 
-        return $this->formatCurrent($current, $daily, $localisation);
+        $result = $this->formatCurrent($current, $daily, $localisation);
+        self::$requestCache[$localisation] = $result;
+        return $result;
     }
 
     private function buildDailyForecast(array $list): array

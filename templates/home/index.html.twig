@@ -50,10 +50,11 @@
     background: var(--bg-card); border-radius: 16px; padding: 22px 20px;
     box-shadow: var(--shadow-sm); border: 1.5px solid var(--border);
     position: relative; overflow: hidden;
-    transition: transform 0.25s, box-shadow 0.25s;
-    opacity: 0; transform: translateY(28px);
+    transition: transform 0.25s, box-shadow 0.25s, opacity 0.5s ease;
+    opacity: 1 !important;
+    transform: none !important;
 }
-.kpi-card.visible { opacity: 1; transform: translateY(0); transition: opacity 0.5s ease, transform 0.5s ease; }
+.kpi-card.visible { transform: translateY(0); }
 .kpi-card::before {
     content: ''; position: absolute; top: -30px; right: -30px;
     width: 90px; height: 90px; border-radius: 50%; opacity: 0.12;
@@ -94,10 +95,10 @@
 .chart-card {
     background: var(--bg-card); border-radius: 16px; padding: 24px;
     box-shadow: var(--shadow-sm); border: 1.5px solid var(--border);
-    opacity: 0; transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 1 !important;
+    transform: none !important;
 }
-.chart-card.visible { opacity: 1; transform: translateY(0); }
+.chart-card.visible { transform: translateY(0); }
 .chart-card-title { font-size: 0.88rem; font-weight: 700; color: var(--text-dark); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.04em; }
 .chart-wrap { position: relative; height: 260px; }
 
@@ -182,10 +183,9 @@
     background: var(--bg-card); border-radius: 14px; overflow: hidden;
     box-shadow: var(--shadow-sm); border: 1.5px solid #86efac;
     display: flex; flex-direction: column;
-    opacity: 0; transform: translateY(22px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 1 !important;
+    transform: none !important;
 }
-.ia-h-card.visible { opacity: 1; transform: translateY(0); }
 .ia-h-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
 .ia-h-header {
     background: linear-gradient(135deg, #1e3c2c, #2a5a3a);
@@ -226,7 +226,19 @@
 <div class="layout">
     {% include 'partials/sidebar.html.twig' %}
 
-    <main class="main">
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
+
         <div class="content-wrapper">
 
 {# ── HEADER ── #}
@@ -234,11 +246,13 @@
     <div class="page-header-left">
         <p class="page-breadcrumb">🏠 Accueil / Dashboard</p>
         <h1 class="page-title">📊 Dashboard Administrateur</h1>
-        <p class="page-subtitle">Vue d'ensemble de l'exploitation — lecture seule</p>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;">
-        <a href="{{ path('parcelle_index') }}" class="btn btn-secondary">🗺️ Parcelles</a>
-        <a href="{{ path('culture_index') }}"  class="btn btn-primary">🌱 Cultures</a>
+        <p class="page-subtitle">
+            {% if currentFarm|default(null) %}
+                Vue d'ensemble pour la ferme : <span style="color: var(--g); font-weight: 800;">{{ currentFarm.name }}</span>
+            {% else %}
+                Vue d'ensemble globale — lecture seule
+            {% endif %}
+        </p>
     </div>
 </div>
 
@@ -428,7 +442,7 @@
     <div class="dash-section-title anim-in">
         🤖 Récoltes IA — Historique
         <span class="badge">{{ recentRecoltes|length }} récente(s)</span>
-        <a href="{{ path('culture_analytics') }}"
+        <a href="{{ path('admin_culture_analytics') }}"
            style="margin-left:auto;font-size:0.78rem;font-weight:600;color:var(--green-600);text-decoration:none;">
             Voir tout →
         </a>
@@ -522,11 +536,11 @@
 {% block javascripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-const ETAT_DATA = {{ etatCounts|json_encode|raw }};
-const TYPE_DATA = {{ typeCounts|json_encode|raw }};
-const TOP_DATA  = {{ topParcelles|json_encode|raw }};
-const SURF_USED = {{ surfaceUtilisee }};
-const SURF_REST = {{ surfaceRestante }};
+const ETAT_DATA = {{ etatCounts|json_encode|raw }} || {};
+const TYPE_DATA = {{ typeCounts|json_encode|raw }} || {};
+const TOP_DATA  = {{ topParcelles|json_encode|raw }} || [];
+const SURF_USED = {{ surfaceUtilisee|default(0) }};
+const SURF_REST = {{ surfaceRestante|default(0) }};
 
 Chart.defaults.font.family = "'Inter','Segoe UI',sans-serif";
 Chart.defaults.color = '#666';

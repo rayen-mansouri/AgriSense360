@@ -3,6 +3,7 @@ namespace App\Controller;
 
 use App\Service\CultureService;
 use App\Service\ParcelleService;
+use App\Service\WeatherService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -15,7 +16,8 @@ class EmbedController extends AbstractController
 {
     public function __construct(
         private CultureService  $cultureService,
-        private ParcelleService $parcelleService
+        private ParcelleService $parcelleService,
+        private WeatherService  $weatherService
     ) {}
 
     // ── /agenda ──────────────────────────────────────────────────────────────
@@ -68,4 +70,4 @@ class EmbedController extends AbstractController
             'parcellesJson' => json_encode($data, JSON_UNESCAPED_UNICODE),
         ]);
     }
-}
+}

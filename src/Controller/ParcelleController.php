@@ -112,9 +112,41 @@ class ParcelleController extends AbstractController
 
         $cultures = $this->cultureService->getCulturesByParcelle($id);
 
+        $cultureData = array_map(function($c) {
+            // Calculate growth % based on dates
+            $start = $c->getDatePlantation();
+            $end   = $c->getDateRecolte();
+            $now   = new \DateTime();
+            $growth = 0;
+            if ($start && $end) {
+                $total = $end->getTimestamp() - $start->getTimestamp();
+                $diff  = $now->getTimestamp() - $start->getTimestamp();
+                $growth = $total > 0 ? max(0, min(100, round(($diff / $total) * 100))) : 0;
+            } else {
+                // Simple fallback if dates are missing
+                $growth = match($c->getEtat()) {
+                    'Maturité' => 90,
+                    'Croissance' => 60,
+                    'Semis' => 20,
+                    default => 100
+                };
+            }
+            
+            return [
+                'id'           => $c->getId(),
+                'nom'          => $c->getNom(),
+                'typeCulture'  => $c->getTypeCulture(),
+                'surface'      => $c->getSurface() ?? 0,
+                'etat'         => $c->getEtat(),
+                'growth'       => $growth,
+                'dateRecolte'  => $c->getDateRecolte() ? $c->getDateRecolte()->format('d/m/Y') : '—'
+            ];
+        }, $cultures);
+
         return $this->render('embed/visualizer3d.html.twig', [
-            'parcelle' => $parcelle,
-            'cultures' => $cultures,
+            'parcelle'    => $parcelle,
+            'cultures'    => $cultures,
+            'cultureData' => $cultureData, // Added for JSON
         ]);
     }
 

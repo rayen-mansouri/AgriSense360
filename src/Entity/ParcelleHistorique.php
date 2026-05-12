@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -50,8 +51,6 @@ class ParcelleHistorique
         $this->dateAction = new \DateTime();
     }
 
-    // ── Getters & Setters ─────────────────────────────────────────────────────
-
     public function getId(): ?int { return $this->id; }
 
     public function getParcelleId(): int { return $this->parcelleId; }
@@ -86,8 +85,6 @@ class ParcelleHistorique
 
     public function getQuantiteRecolte(): ?float { return $this->quantiteRecolte; }
     public function setQuantiteRecolte(?float $v): self { $this->quantiteRecolte = $v; return $this; }
-
-    // ── Helpers (mirrors Java entity) ─────────────────────────────────────────
 
     public function getTypeIcon(): string
     {

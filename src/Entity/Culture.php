@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -34,30 +35,24 @@ class Culture
     private ?string $img = null;
 
     #[ORM\ManyToOne(targetEntity: Parcelle::class, inversedBy: 'cultures')]
-    #[ORM\JoinColumn(name: 'parcelle_Id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'parcelle_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private Parcelle $parcelle;
 
     #[ORM\ManyToOne(targetEntity: Farm::class)]
     #[ORM\JoinColumn(name: 'farm_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Farm $farm = null;
 
-    // ── NEW FIELDS — added for IA harvest feature ─────────────────────────────
-
     /**
      * IA-computed harvest quantity in kg.
-     * Filled when the farmer confirms the harvest via the IA modal.
      */
     #[ORM\Column(name: 'quantite_recolte', type: 'float', nullable: true)]
     private ?float $quantiteRecolte = null;
 
     /**
      * IA quality score 0-100.
-     * Reflects surface efficiency × lateness penalty × weather impact.
      */
     #[ORM\Column(name: 'ia_score', type: 'float', nullable: true)]
     private ?float $iaScore = null;
-
-    // ── Original getters/setters (unchanged) ─────────────────────────────────
 
     public function getId(): ?int { return $this->id; }
 
@@ -88,27 +83,18 @@ class Culture
     public function getFarm(): ?Farm { return $this->farm; }
     public function setFarm(?Farm $farm): self { $this->farm = $farm; return $this; }
 
-    // ── New getters/setters ───────────────────────────────────────────────────
-
     public function getQuantiteRecolte(): ?float { return $this->quantiteRecolte; }
     public function setQuantiteRecolte(?float $v): self { $this->quantiteRecolte = $v; return $this; }
 
     public function getIaScore(): ?float { return $this->iaScore; }
     public function setIaScore(?float $v): self { $this->iaScore = $v; return $this; }
 
-    // ── Convenience helpers ───────────────────────────────────────────────────
-
-    /**
-     * Returns true when the culture is within 10 days of harvest
-     * OR already overdue — used by Twig to show the Récolter button.
-     */
     public function isReadyToHarvest(): bool
     {
         if (!$this->dateRecolte) return false;
         $today = new \DateTime('today');
         $dr    = \DateTime::createFromInterface($this->dateRecolte)->setTime(0, 0, 0);
         $diff  = (int) $today->diff($dr)->days * ($dr >= $today ? 1 : -1);
-        // Show button if ≤ 10 days away or already past
         return $diff <= 10;
     }
 
@@ -121,3 +107,4 @@ class Culture
         return (int) $dr->diff($today)->days;
     }
 }
+

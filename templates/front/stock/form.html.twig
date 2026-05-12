@@ -1,0 +1,210 @@
+{# templates/front/stock/form.html.twig #}
+{% extends 'base.html.twig' %}
+{% set activePage = 'stock_list' %}
+{% block title %}{{ title }} — Agrisens 360{% endblock %}
+{% block navbar %}{% endblock %}
+
+{# Surcharge thème Symfony - supprimer toutes les erreurs Symfony #}
+{% block form_errors %}{% endblock %}
+{% block form_help %}{% endblock %}
+
+{% block styles %}
+{% include 'partials/sidebar_styles.html.twig' %}
+{% include 'partials/home_nav_styles.html.twig' %}
+<style>
+    /* ── BASE LAYOUT ── */
+    body { background-color: var(--pg) !important; font-family: 'Inter', sans-serif !important; }
+    .front-main { padding-top: 70px; width: 100%; }
+    .front-main-container { max-width: 900px; margin: 0 auto; padding: 60px 24px; }
+
+    /* ── FORM CARD ── */
+    .stock-form-card {
+        background: var(--cb);
+        border: 1px solid var(--cbr);
+        border-radius: 32px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .stock-form-header {
+        background: linear-gradient(135deg, var(--gd), var(--g));
+        padding: 50px 40px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+    }
+    .stock-form-header::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+        background: linear-gradient(90deg, var(--g), #a8d060);
+    }
+    .stock-form-header h1 { font-size: 2.5rem; font-weight: 900; color: #fff; letter-spacing: -0.04em; margin-bottom: 10px; }
+    .stock-form-header p { color: rgba(255,255,255,0.8); font-size: 1.1rem; }
+
+    /* ── PRODUCT PREVIEW ── */
+    .product-preview {
+        background: var(--surface2);
+        backdrop-filter: blur(10px);
+        padding: 24px 32px;
+        border-bottom: 1px solid var(--cbr);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .preview-img { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; border: 2px solid var(--cbr); }
+    .preview-info { flex: 1; }
+    .preview-name { font-weight: 800; font-size: 1.1rem; color: var(--ch3); }
+    .preview-cat { font-size: 0.85rem; color: var(--cp); }
+
+    .stock-form-body { padding: 40px; }
+    .form-group { margin-bottom: 24px; }
+    .form-label { display: block; font-weight: 700; margin-bottom: 10px; color: var(--cp); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-control {
+        width: 100%; padding: 14px 20px; background: var(--fi);
+        border: 1px solid var(--cbr); border-radius: 14px; color: var(--ch3);
+        font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .form-control:focus { border-color: var(--g); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+    .form-actions {
+        display: flex; justify-content: flex-end; gap: 16px;
+        margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--cbr);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- GLOBAL HEADER -->
+{% include 'partials/home_nav.html.twig' %}
+
+<main class="front-main">
+    <div class="front-main-container">
+
+        <!-- CARD ACTIONS -->
+        <div style="margin-bottom: 30px;">
+            <a href="{{ path('front_produit_show', {id: produit.id}) }}" class="hn-btn hn-btn--outline" style="border-radius:12px;">
+                <i class="fa-solid fa-arrow-left" style="margin-right:8px;"></i> Retour au Produit
+            </a>
+        </div>
+
+        <div class="stock-form-card">
+            <div class="stock-form-header">
+                <h1>{{ title }}</h1>
+                <p>{{ subtitle }}</p>
+            </div>
+
+            <!-- PRODUCT PREVIEW -->
+            <div class="product-preview">
+                {% if produit.photoUrl %}<img src="{{ asset(produit.photoUrl) }}" class="preview-img">
+                {% else %}<div style="width:64px; height:64px; border-radius:14px; background:var(--fi); display:flex; align-items:center; justify-content:center; color:var(--g); font-size:1.5rem;"><i class="fa-solid fa-leaf"></i></div>{% endif %}
+                <div class="preview-info">
+                    <div class="preview-name">{{ produit.nom }}</div>
+                    <div class="preview-cat">{{ produit.categorie }} — {{ produit.prixUnitaire }} DT</div>
+                </div>
+                <div style="margin-left: auto;">
+                    {% set stockActuel = produit.stockActuel %}
+                    {% if stockActuel %}
+                         <span style="font-size:0.75rem; font-weight:800; color:var(--g); background:rgba(90,181,90,0.1); padding:6px 14px; border-radius:50px;">{{ stockActuel.quantiteActuelle }} {{ stockActuel.uniteMesure }} en Stock</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="post" id="stockFrontForm" novalidate class="stock-form-body">
+                {{ form_widget(form._token) }}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Quantité Actuelle *</label>
+                        {{ form_widget(form.quantiteActuelle, {'attr': {'class': 'form-control field-quantite'}}) }}
+                        <div class="error-quantite" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Unité de Mesure *</label>
+                        {{ form_widget(form.uniteMesure, {'attr': {'class': 'form-control field-unite'}}) }}
+                        <div class="error-unite" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Seuil d'Alerte</label>
+                        {{ form_widget(form.seuilAlerte, {'attr': {'class': 'form-control field-seuil'}}) }}
+                        <div class="error-seuil" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Emplacement Physique</label>
+                        {{ form_widget(form.emplacement, {'attr': {'class': 'form-control field-emplacement', 'placeholder': 'Ex: Hangar A, Rayon 3'}}) }}
+                        <div class="error-emplacement" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date de Réception</label>
+                        {{ form_widget(form.dateReception, {'attr': {'class': 'form-control field-dateReception'}}) }}
+                        <div class="error-dateReception" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Date d'Expiration</label>
+                        {{ form_widget(form.dateExpiration, {'attr': {'class': 'form-control field-dateExpiration'}}) }}
+                        <div class="error-dateExpiration" style="margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ path('front_stock_list') }}" class="hn-btn hn-btn--outline" style="border-radius:12px;">Annuler</a>
+                    <button type="submit" class="hn-btn hn-btn--solid" style="border-radius:12px; padding:0 40px;">{{ btnLabel }}</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<script>
+(function() {
+    var form = document.getElementById('stockFrontForm');
+    if (!form) return;
+
+    function trouverChamp(c) { var el = document.getElementsByClassName('field-' + c); return (el && el.length > 0) ? el[0] : null; }
+    function trouverErreur(c) { var el = document.getElementsByClassName('error-' + c); return (el && el.length > 0) ? el[0] : null; }
+
+    function afficherErreur(c, msg) {
+        var d = trouverErreur(c);
+        if (d) d.innerHTML = '<div style="background:var(--fi); color:var(--danger-c); padding:10px 14px; border-radius:10px; font-size:12px; font-weight:700; border-left:4px solid var(--danger-c);">⚠️ ' + msg + '</div>';
+        var ch = trouverChamp(c);
+        if (ch) ch.style.borderColor = 'var(--danger-c)';
+    }
+
+    function masquerErreur(c) {
+        var d = trouverErreur(c); if (d) d.innerHTML = '';
+        var ch = trouverChamp(c); if (ch) ch.style.borderColor = '';
+    }
+
+    form.onsubmit = function(e) {
+        var ok = true;
+        ['quantite','unite'].forEach(function(c) {
+            var val = (trouverChamp(c) ? trouverChamp(c).value : '').trim();
+            if (!val) { afficherErreur(c, 'Ce champ est obligatoire'); ok = false; }
+            else { masquerErreur(c); }
+        });
+        if (!ok) e.preventDefault();
+        return ok;
+    };
+
+    // Theme toggle
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeToggleNav');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('agri-theme', next);
+        });
+    }
+})();
+</script>
+{% endblock %}

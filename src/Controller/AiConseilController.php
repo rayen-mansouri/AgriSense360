@@ -18,11 +18,14 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class AiConseilController extends AbstractController
 {
+    public function __construct(
+        private string $groqKey
+    ) {}
+
     #[Route('/ai-conseil', name: 'ai_conseil', methods: ['POST'])]
     public function conseil(Request $request): JsonResponse
     {
-        $groqKey = $_ENV['GROQ_API_KEY'] ?? '';
-        if (!$groqKey) {
+        if (!$this->groqKey) {
             return $this->json(['error' => 'Clé Groq non configurée (GROQ_API_KEY manquant dans .env)'], 500);
         }
 
@@ -37,12 +40,13 @@ class AiConseilController extends AbstractController
         try {
             $response = $client->request('POST', 'https://api.groq.com/openai/v1/chat/completions', [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $groqKey,
+                    'Authorization' => 'Bearer ' . $this->groqKey,
                     'Content-Type'  => 'application/json',
                 ],
+                'timeout' => 15,
                 'json' => [
-                    'model'       => 'llama-3.3-70b-versatile',
-                    'max_tokens'  => 600,
+                    'model'       => 'llama3-8b-8192',
+                    'max_tokens'  => 800,
                     'temperature' => 0.7,
                     'messages'    => [['role' => 'user', 'content' => $prompt]],
                 ],

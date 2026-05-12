@@ -67,7 +67,7 @@ class GerantController extends AbstractController
     #[Route('/stockes', name: 'gerant_stockes')]
     public function stockes(): Response
     {
-        return $this->render('gerant/stockes.html.twig');
+        return $this->redirectToRoute('homestock');
     }
 
     #[Route('/equipements', name: 'gerant_equipements')]
@@ -85,6 +85,6 @@ class GerantController extends AbstractController
     #[Route('/animaux', name: 'gerant_animaux')]
     public function animaux(): Response
     {
-        return $this->render('gerant/animaux.html.twig');
+        return $this->redirectToRoute('animal_management_index');
     }
 }

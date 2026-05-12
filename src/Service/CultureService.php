@@ -286,18 +286,39 @@ $this->historiqueService->logAction(
      */
     public function refreshAllEtats(?\App\Entity\Farm $farm = null): void
     {
-        foreach ($this->getAllCultures($farm) as $c) {
-            if ($c->getDatePlantation() && $c->getDateRecolte()) {
-                $c->setEtat(self::calculateEtat(
-                    $c->getDatePlantation(),
-                    $c->getDateRecolte(),
-                    $c->getNom()
-                ));
-                // ── Fire alert if harvest is today ────────────────────
-                $this->checkAndSendAlert($c);
+        // Simple cache to avoid multiple refreshes in the same request
+        static $refreshed = [];
+        $farmId = $farm ? $farm->getId() : 0;
+        if (isset($refreshed[$farmId])) return;
+        $refreshed[$farmId] = true;
+
+        $cultures = $this->getAllCultures($farm);
+        $changed = false;
+        $today = new \DateTime('today');
+        
+        foreach ($cultures as $c) {
+            // Optimization: Skip cultures already harvested or deleted (though they shouldn't be in this list)
+            if (!$c->getDatePlantation() || !$c->getDateRecolte()) continue;
+
+            $newEtat = self::calculateEtat(
+                $c->getDatePlantation(),
+                $c->getDateRecolte(),
+                $c->getNom()
+            );
+            
+            if ($c->getEtat() !== $newEtat) {
+                $c->setEtat($newEtat);
+                $changed = true;
+                // Only alert for critical state changes
+                if (in_array($newEtat, ['Récolte Prévue', 'Récolte en Retard'])) {
+                    $this->checkAndSendAlert($c);
+                }
             }
         }
-        $this->em->flush();
+        
+        if ($changed) {
+            $this->em->flush();
+        }
     }
 
     // ── Stats ─────────────────────────────────────────────────────────

@@ -1,0 +1,31 @@
+<header class="topbar">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="logo" style="font-size: 1.2rem; font-weight: 800; color: var(--g);">
+            AgriSense<span style="opacity:0.6">360</span>
+            {% if activeSection|default('') == 'admin' %}
+                <span style="font-size: 0.7rem; background: var(--badge-g); padding: 2px 8px; border-radius: 6px; margin-left: 5px;">ADMIN</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 16px; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--cp);">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></div>
+            {{ app.user.name }}
+        </div>
+
+        <button class="theme-toggle" id="themeToggle" title="Changer le thème">
+            <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+        </button>
+        
+        <div style="height: 24px; width: 1px; background: var(--cbr);"></div>
+        
+        <a href="{{ path('app_logout') }}" title="Déconnexion" style="color: var(--cp); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--cp)'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </a>
+    </div>
+</header>

@@ -6,111 +6,86 @@
     <script>(function(){var t=localStorage.getItem('agri-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
     <title>{% block title %}AgriSense 360{% endblock %}</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ asset('css/expert_design.css') }}">
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-            --green-dark:#2d6a2d;
-            --green-mid:#3e8e3e;
-            --green-light:#5ab55a;
-            --green-pale:#d4edda;
-            --bg:#e8f5e4;
-            --white:#fff;
-            --text-dark:#1e3a1e;
-            --text-mid:#4a6741;
-            --text-light:#7fa87a;
-            --border:#c3ddbf;
-            --shadow:0 4px 20px rgba(46,107,46,.12);
-            --radius:14px;
-        }
-
         body {
-            font-family: 'Lato', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-dark);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--pg);
+            color: var(--pc);
+            transition: background 0.3s ease;
         }
 
-        /* NAVBAR */
-/* NAVBAR */
-.navbar {
-    width: 100%;
-    padding: 22px 40px; /* 🔥 taller header */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--white);
-    box-shadow: var(--shadow);
-}
-
-.logo {
-    font-weight: 800;
-    font-size: 1.6rem;
-    color: var(--green-dark);
-}
-
-/* BUTTONS */
-.nav-actions {
-    display: flex;
-    gap: 12px;
-}
-
-.btn-main {
-    padding: 10px 22px;
-    background: var(--green-mid);
-    color: white;
-    border-radius: 50px;
-    text-decoration: none;
-    font-weight: 700;
-}
-
-.btn-main:hover {
-    background: var(--green-dark);
-}
-
-.btn-outline {
-    padding: 10px 20px;
-    border: 2px solid var(--green-mid);
-    border-radius: 50px;
-    text-decoration: none;
-    color: var(--green-mid);
-    font-weight: 600;
-}
-
-.btn-outline:hover {
-    background: var(--green-pale);
-}
-
-        .nav-links a:hover {
-            color: var(--green-dark);
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
         }
 
-        .container {
-            padding: 40px 20px;
+        /* PREMIUM NAVBAR */
+        .navbar {
+            width: 100%;
+            padding: 20px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--cb);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--cbr);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        .btn-primary {
-            display:block;
-            width:100%;
-            padding:14px;
-            background:var(--green-mid);
-            color:#fff;
-            border-radius:50px;
-            text-align:center;
-            text-decoration:none;
-            font-weight:700;
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: var(--g);
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-main {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, var(--g), var(--gm));
+            color: white;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 10px 20px rgba(45, 106, 79, 0.2);
+            transition: all 0.3s;
+        }
+
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(45, 106, 79, 0.3);
         }
 
         .btn-outline {
-            display:block;
-            width:100%;
-            padding:13px;
-            border:2px solid var(--green-mid);
-            border-radius:50px;
-            text-align:center;
-            text-decoration:none;
-            color:var(--green-mid);
+            padding: 12px 28px;
+            border: 1.5px solid var(--cbr);
+            border-radius: 14px;
+            text-decoration: none;
+            color: var(--ch3);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-outline:hover {
+            background: var(--pg);
+            border-color: var(--g);
         }
 
     </style>
@@ -125,11 +100,11 @@
 {% if not app.user %}
 <!-- NAVBAR -->
 <div class="navbar">
-    <div class="logo">🌱 AgriSense 360</div>
+    <div class="logo"><span>🌿</span> AgriSense<span style="opacity:0.6">360</span></div>
 
     <div class="nav-actions">
         <a href="{{ path('app_login') }}" class="btn-outline">Se connecter</a>
-        <a href="{{ path('app_register') }}" class="btn-main">S'inscrire</a>
+        <a href="{{ path('app_register') }}" class="btn-main">Commencer gratuitement</a>
     </div>
 </div>
 {% endif %}
@@ -138,6 +113,5 @@
 {% block body %}{% endblock %}
 
 {% block javascripts %}{% endblock %}
-
 </body>
-</html>
+</html>

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -75,3 +76,4 @@ class Parcelle
         return round((($this->surface - $this->surfaceRestant) / $this->surface) * 100, 1);
     }
 }
+

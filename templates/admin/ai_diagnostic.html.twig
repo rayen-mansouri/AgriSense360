@@ -1,0 +1,132 @@
+{% block styles %}
+    <link rel="stylesheet" href="{{ asset('css/expert_design.css') }}">
+    <style>
+        .diag-kpi {
+            background: rgba(0,0,0,0.03);
+            padding: 20px;
+            border-radius: 18px;
+            margin-top: 15px;
+            border: 1px solid var(--cbr);
+        }
+        [data-theme="dark"] .diag-kpi {
+            background: rgba(255,255,255,0.03);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+    {% include 'partials/sidebar.html.twig' %}
+    
+    <main class="main" id="mainContent">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <button class="theme-toggle" id="themeToggle">
+                    <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-wrapper" style="padding: 40px 60px;">
+            <div class="page-header fade-in-up" style="margin-bottom: 50px; text-align: center;">
+                <h1 class="page-title" style="font-size: 2.5rem; margin-bottom: 10px;">🧠 État des Systèmes IA</h1>
+                <p class="page-subtitle" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Vérification en temps réel des moteurs d'intelligence artificielle AgriSense 360.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto;">
+                
+                {# Groq Test Card #}
+                <div class="expert-card glass fade-in-up" style="border-top: 4px solid {% if results.groq.status == 'success' %}#22c55e{% else %}#ef4444{% endif %}; padding: 35px;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 25px;">
+                        <div>
+                            <h2 style="display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size: 1.5rem;">
+                                <span style="background:var(--badge-g); padding: 10px; border-radius: 14px; font-size: 1.2rem;">🤖</span> Groq Cloud
+                            </h2>
+                            <p style="color:var(--cp); font-size: 0.95rem;">Llama 3 • Assistance agronomique</p>
+                        </div>
+                        <span class="badge-expert" style="background:{% if results.groq.status == 'success' %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %}; color:{% if results.groq.status == 'success' %}#22c55e{% else %}#ef4444{% endif %}; border: 1px solid currentColor; padding: 8px 18px;">
+                            {{ results.groq.status|upper }}
+                        </span>
+                    </div>
+                    
+                    <div class="diag-kpi" style="padding: 25px; border-radius: 20px; background: rgba(0,0,0,0.05); border: 1px solid var(--cbr);">
+                        <div style="font-size:1rem; color: var(--pc); margin-bottom:12px; line-height: 1.6; font-weight: 500;">
+                            {% if results.groq.status == 'success' %}
+                                {{ results.groq.message }}
+                            {% else %}
+                                ⚠️ <strong>Problème détecté :</strong><br>
+                                {{ results.groq.message }}
+                            {% endif %}
+                        </div>
+                        {% if results.groq.latency is defined %}
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color:#22c55e; font-size: 0.9rem; margin-top: 15px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                {{ results.groq.latency }} (Excellent)
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="margin-top:25px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size:0.8rem; color:var(--cp);">Connectivité SSL : <span style="color:#22c55e;">Sécurisée</span></span>
+                        <div style="font-size:0.75rem; color:var(--cp); font-family: monospace; opacity: 0.6;">{{ groqKey }}</div>
+                    </div>
+                </div>
+
+                {# Flask Test Card #}
+                <div class="expert-card glass fade-in-up" style="animation-delay: 0.15s; border-top: 4px solid {% if results.flask.status == 'success' %}#22c55e{% else %}#f59e0b{% endif %}; padding: 35px;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 25px;">
+                        <div>
+                            <h2 style="display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size: 1.5rem;">
+                                <span style="background:rgba(82,183,136,0.15); padding: 10px; border-radius: 14px; font-size: 1.2rem;">🐍</span> ML Local
+                            </h2>
+                            <p style="color:var(--cp); font-size: 0.95rem;">Flask • Prédiction de rendements</p>
+                        </div>
+                        <span class="badge-expert" style="background:{% if results.flask.status == 'success' %}rgba(34,197,94,0.15){% else %}rgba(245,158,11,0.15){% endif %}; color:{% if results.flask.status == 'success' %}#22c55e{% else %}#f59e0b{% endif %}; border: 1px solid currentColor; padding: 8px 18px;">
+                            {{ results.flask.status|upper }}
+                        </span>
+                    </div>
+                    
+                    <div class="diag-kpi" style="padding: 25px; border-radius: 20px; background: rgba(0,0,0,0.05); border: 1px solid var(--cbr);">
+                        <div style="font-size:1rem; color: var(--pc); margin-bottom:12px; line-height: 1.6; font-weight: 500;">
+                            {% if results.flask.status == 'success' %}
+                                {{ results.flask.message }}
+                            {% else %}
+                                🕒 <strong>Note technique :</strong><br>
+                                Le service Flask n'est pas actif sur le port 8001.
+                            {% endif %}
+                        </div>
+                        {% if results.flask.latency is defined %}
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color:#22c55e; font-size: 0.9rem; margin-top: 15px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                {{ results.flask.latency }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div style="margin-top:25px; padding: 15px; border-radius: 14px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);">
+                        <div style="font-size:0.85rem; color:#d97706; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.1rem;">🛡️</span>
+                            <span><strong>Mode de Secours :</strong> Algorithme Symfony actif.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="margin-top:60px; text-align:center; display: flex; gap: 20px; justify-content: center; align-items: center;">
+                <a href="{{ path('admin_home') }}" class="btn-expert btn-expert-secondary" style="padding: 14px 30px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Retour
+                </a>
+                <button onclick="window.location.reload(); this.disabled=true; this.innerHTML='🔄 Vérification...';" class="btn-expert btn-expert-primary" style="padding: 14px 40px; font-size: 1rem;">
+                    Relancer le Diagnostic
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

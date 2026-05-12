@@ -12,7 +12,6 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/admin')]
-#[IsGranted('ROLE_ADMIN')]
 class AdminController extends AbstractController
 {
     private const ALLOWED_ROLES = ['ROLE_ADMIN', 'ROLE_GERANT', 'ROLE_OUVRIER'];
@@ -27,6 +26,7 @@ class AdminController extends AbstractController
     // ── Accueil admin ──────────────────────────────────────────
     #[Route('', name: 'admin_home')]
     #[Route('/accueil', name: 'admin_home_alt')]
+    #[IsGranted('ROLE_ADMIN')]
     public function home(): Response
     {
         $users = $this->userRepository->findAll();
@@ -34,7 +34,7 @@ class AdminController extends AbstractController
         $admins = count(array_filter($users, fn($u) => in_array('ROLE_ADMIN',   $u->getRoles())));
         $gerants = count(array_filter($users, fn($u) => in_array('ROLE_GERANT', $u->getRoles())));
         $ouvriers = count(array_filter($users, fn($u) => in_array('ROLE_OUVRIER',$u->getRoles())));
-        $actifs = count(array_filter($users, fn($u) => $u->getStatus() === 'active'));
+        $actifs = count(array_filter($users, fn($u) => in_array($u->getStatus(), ['active', 'approved'])));
 
         return $this->render('admin/home.html.twig', [
             'total'    => $total,
@@ -48,6 +48,7 @@ class AdminController extends AbstractController
 
     // ── Liste utilisateurs ─────────────────────────────────────
     #[Route('/utilisateurs', name: 'admin_dashboard')]
+    #[IsGranted('ROLE_ADMIN')]
     public function users(): Response
     {
         return $this->render('admin/dashboard.html.twig', [
@@ -55,22 +56,37 @@ class AdminController extends AbstractController
         ]);
     }
 
-    // ── Dashboard Culture (Admin) ──────────────────────────────
+    // ── Dashboard Culture (Admin & Gerant) ──────────────────────────────
     #[Route('/culture-dashboard', name: 'admin_culture_dashboard')]
+    #[IsGranted('ROLE_GERANT')]
     public function cultureDashboard(): Response
     {
-        $this->cultureService->refreshAllEtats();
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        $farm = $user ? $user->getFarm() : null;
 
-        $parcelles = $this->parcelleService->getAllParcelles();
-        $cultures  = $this->cultureService->getAllCultures();
+        // If Super Admin has no farm assigned, pick the first one to show some data
+        if (!$farm && $this->isGranted('ROLE_ADMIN')) {
+            $allFarms = $this->em->getRepository(\App\Entity\Farm::class)->findAll();
+            if (!empty($allFarms)) {
+                $farm = $allFarms[0];
+            }
+        }
 
-        $surfaceTotal   = $this->parcelleService->getTotalSurface();
+        if ($farm) {
+            $this->cultureService->refreshAllEtats($farm);
+        }
+
+        $parcelles = $this->parcelleService->getAllParcelles($farm);
+        $cultures  = $this->cultureService->getAllCultures($farm);
+
+        $surfaceTotal   = $this->parcelleService->getTotalSurface($farm);
         $surfaceOccupee = 0;
         foreach ($cultures as $c) $surfaceOccupee += $c->getSurface();
 
         $tauxOccupation = $surfaceTotal > 0 ? round(($surfaceOccupee / $surfaceTotal) * 100, 1) : 0;
 
-        $stats = $this->cultureService->getStats();
+        $stats = $this->cultureService->getStats($farm);
 
         // Top parcelles (by occupancy rate)
         $topParcellesData = [];
@@ -96,8 +112,15 @@ class AdminController extends AbstractController
         $recentRecoltes = $this->em->getRepository(\App\Entity\ParcelleHistorique::class)
             ->createQueryBuilder('h')
             ->where('h.typeAction = :type')
-            ->setParameter('type', 'RECOLTE')
-            ->orderBy('h.dateAction', 'DESC')
+            ->setParameter('type', 'RECOLTE');
+
+        if ($farm) {
+            $recentRecoltes->join('App\Entity\Parcelle', 'p', 'WITH', 'h.parcelleId = p.id')
+                ->andWhere('p.farm = :farm')
+                ->setParameter('farm', $farm);
+        }
+
+        $recentRecoltes = $recentRecoltes->orderBy('h.dateAction', 'DESC')
             ->setMaxResults(12)
             ->getQuery()
             ->getResult();
@@ -121,10 +144,13 @@ class AdminController extends AbstractController
         }
 
         return $this->render('home/index.html.twig', [
-            'activePage'      => 'cultures_admin',
+            'activePage'      => 'cultures_dashboard',
+            'currentFarm'     => $farm,
             'totalParcelles'  => count($parcelles),
             'totalCultures'   => count($cultures),
             'surfaceTotal'    => $surfaceTotal,
+            'surfaceUtilisee' => $surfaceOccupee,
+            'surfaceRestante' => max(0, $surfaceTotal - $surfaceOccupee),
             'tauxOccupation'  => $tauxOccupation,
             'culturesPretes'  => $stats['pretes'],
             'culturesRetard'  => $stats['retard'],
@@ -136,17 +162,36 @@ class AdminController extends AbstractController
             'parcelleMap'     => $parcelleMap,
             'etatCounts'      => $etatCounts,
             'typeCounts'      => $typeCounts,
-            'surfaceUtilisee' => $surfaceOccupee,
-            'surfaceRestante' => max(0, $surfaceTotal - $surfaceOccupee),
+        ]);
+    }
+
+    // ── Historique Récoltes IA (Admin) ──────────────────────────
+    #[Route('/culture-analytics', name: 'admin_culture_analytics')]
+    #[IsGranted('ROLE_GERANT')]
+    public function adminCultureAnalytics(): Response
+    {
+        $harvests = $this->em->getRepository(\App\Entity\ParcelleHistorique::class)
+            ->createQueryBuilder('h')
+            ->where('h.typeAction = :type')
+            ->setParameter('type', 'RECOLTE')
+            ->orderBy('h.dateAction', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        return $this->render('admin/culture/analytics.html.twig', [
+            'activePage' => 'cultures_admin',
+            'harvests'   => $harvests,
         ]);
     }
 
     // ── Ajouter un utilisateur ─────────────────────────────────
     #[Route('/utilisateurs/ajouter', name: 'admin_user_add', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function add(
         Request $request,
         UserPasswordHasherInterface $passwordHasher
     ): Response {
+        // ... (existing code preserved)
         $error = null;
 
         if ($request->isMethod('POST')) {
@@ -166,7 +211,7 @@ class AdminController extends AbstractController
                 $error = 'Les mots de passe ne correspondent pas.';
             } elseif (strlen($password) < 6) {
                 $error = 'Le mot de passe doit contenir au moins 6 caractères.';
-            } elseif ($userRepository->findOneBy(['email' => $email])) {
+            } elseif ($this->userRepository->findOneBy(['email' => $email])) {
                 $error = 'Un compte avec cet email existe déjà.';
             } else {
                 $user = new User();
@@ -186,19 +231,14 @@ if ($role === 'ROLE_ADMIN') {
         $error = "CV obligatoire";
     } else {
 
-        $result = $onboardingService->process($user, $cvFile);
+        // $result = $onboardingService->process($user, $cvFile);
 
-        $user->setCvFile($result['filename']);
-        $user->setAiSuggestedRole($result['role']);
-        $user->setDecisionReason($result['reason']);
+        // $user->setCvFile($result['filename']);
+        // $user->setAiSuggestedRole($result['role']);
+        // $user->setDecisionReason($result['reason']);
 
         $user->setRoles(['ROLE_PENDING']);
-
-        if ($result['decision'] === 'reject') {
-            $user->setStatus('rejected');
-        } else {
-            $user->setStatus('pending');
-        }
+        $user->setStatus('pending');
     }
 }
                 $user->setAuthProvider('local');
@@ -206,8 +246,7 @@ if ($role === 'ROLE_ADMIN') {
                 $user->setPassword($passwordHasher->hashPassword($user, $password));
                 $user->setCreatedAt(new \DateTime());
                 $user->setUpdatedAt(new \DateTime());
-                $userRepository = $this->userRepository;
-                $userRepository->save($user, true);
+                $this->userRepository->save($user, true);
 
                 $this->addFlash('success', "Utilisateur « {$name} » créé avec succès !");
                 return $this->redirectToRoute('admin_dashboard');
@@ -219,6 +258,7 @@ if ($role === 'ROLE_ADMIN') {
 
     // ── Voir un utilisateur ────────────────────────────────────
     #[Route('/utilisateurs/{id}', name: 'admin_user_show', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function show(User $user): Response
     {
         return $this->render('admin/user_show.html.twig', ['user' => $user]);
@@ -226,6 +266,7 @@ if ($role === 'ROLE_ADMIN') {
 
     // ── Modifier un utilisateur ────────────────────────────────
     #[Route('/utilisateurs/{id}/modifier', name: 'admin_user_edit', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function edit(User $user, Request $request): Response
     {
         $userRepository = $this->userRepository;
@@ -250,6 +291,7 @@ if ($role === 'ROLE_ADMIN') {
 
     // ── Supprimer un utilisateur ───────────────────────────────
     #[Route('/utilisateurs/{id}/supprimer', name: 'admin_user_delete', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function delete(User $user, Request $request): Response
     {
         $userRepository = $this->userRepository;

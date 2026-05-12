@@ -1,0 +1,101 @@
+<style>
+    body { font-family: 'Helvetica', sans-serif; color: #333; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2d6a4f; padding-bottom: 10px; }
+    .header h1 { color: #2d6a4f; margin: 0; font-size: 24px; }
+    .header p { color: #666; font-size: 12px; margin: 5px 0 0; }
+    
+    .info-section { margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+    .info-grid { display: table; width: 100%; }
+    .info-item { display: table-cell; width: 50%; font-size: 12px; }
+    .info-label { font-weight: bold; color: #555; }
+    
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background-color: #2d6a4f; color: white; font-size: 11px; text-transform: uppercase; padding: 10px; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 11px; }
+    tr:nth-child(even) { background-color: #fcfcfc; }
+    
+    .type-badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 9px; color: white; }
+    .badge-RECOLTE { background-color: #10b981; }
+    .badge-CULTURE_AJOUTEE { background-color: #3b82f6; }
+    .badge-CULTURE_SUPPRIMEE { background-color: #ef4444; }
+    .badge-CULTURE_MODIFIEE { background-color: #f59e0b; }
+    
+    .totals { margin-top: 20px; text-align: right; }
+    .totals-box { display: inline-block; background: #2d6a4f; color: white; padding: 15px; border-radius: 8px; }
+    .totals-title { font-size: 10px; text-transform: uppercase; margin-bottom: 5px; }
+    .totals-value { font-size: 18px; font-weight: bold; }
+    
+    .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+</style>
+
+<div class="header">
+    <h1>AgriSense 360 — Historique de Parcelle</h1>
+    <p>Rapport généré le {{ "now"|date("d/m/Y à H:i") }}</p>
+</div>
+
+<div class="info-section">
+    <div class="info-grid">
+        <div class="info-item">
+            <span class="info-label">Parcelle :</span> {{ parcelle.nom }}<br>
+            <span class="info-label">Localisation :</span> {{ parcelle.localisation }}<br>
+            <span class="info-label">Surface Totale :</span> {{ parcelle.surface }} m²
+        </div>
+        <div class="info-item">
+            <span class="info-label">Type de Sol :</span> {{ parcelle.typeSol }}<br>
+            <span class="info-label">Ferme :</span> {{ parcelle.farm.name }}<br>
+            <span class="info-label">Filtre appliqué :</span> {{ typeFilter ?: 'Tous les événements' }}
+        </div>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Culture</th>
+            <th>Surface (m²)</th>
+            <th>Qté (kg)</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for h in historique %}
+        <tr>
+            <td>{{ h.dateAction|date('d/m/Y H:i') }}</td>
+            <td>
+                <span class="type-badge badge-{{ h.typeAction }}">
+                    {{ h.typeAction }}
+                </span>
+            </td>
+            <td><strong>{{ h.cultureNom }}</strong><br><small>{{ h.typeCulture }}</small></td>
+            <td>{{ h.surface ? h.surface|number_format(1, ',', ' ') ~ ' m²' : '—' }}</td>
+            <td style="font-weight: bold; color: {{ h.typeAction == 'RECOLTE' ? '#10b981' : '#333' }}">
+                {{ h.quantiteRecolte ? h.quantiteRecolte|number_format(1, ',', ' ') ~ ' kg' : '—' }}
+            </td>
+            <td><small>{{ h.description }}</small></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% set totalKg = 0 %}
+{% for h in historique %}
+    {% if h.typeAction == 'RECOLTE' %}
+        {% set totalKg = totalKg + h.quantiteRecolte %}
+    {% endif %}
+{% endfor %}
+
+{% if totalKg > 0 %}
+<div class="totals">
+    <div class="totals-box">
+        <div class="totals-title">Total Récolté sur cette période</div>
+        <div class="totals-value">{{ totalKg|number_format(1, ',', ' ') }} kg</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="footer">
+    AgriSense 360 — Intelligence Artificielle au service de l'Agriculture<br>
+    Page {PAGENO} sur {nbpg}
+</div>
